@@ -2710,18 +2710,6 @@ FROM
   view_user_changes
 ORDER BY
   13, 14, 18, 5;
-  
-ALTER TABLE "import_control"
-  ALTER COLUMN "start_time" TYPE timestamptz
-    USING "start_time" AT TIME ZONE 'Europe/Berlin',
-  ALTER COLUMN "stop_time" TYPE timestamptz
-    USING "stop_time" AT TIME ZONE 'Europe/Berlin',
-  ALTER COLUMN "last_change_in_config" TYPE timestamptz
-    USING "last_change_in_config" AT TIME ZONE 'Europe/Berlin';
-ALTER TABLE "import_control"
-  ALTER COLUMN "start_time" SET DEFAULT CURRENT_TIMESTAMP;
-
--- recreate view after changes
 
 CREATE OR REPLACE VIEW "public"."view_reportable_changes" AS
 SELECT
@@ -2843,8 +2831,6 @@ ALTER TABLE "report_schedule"
 ALTER TABLE notification
   ALTER COLUMN last_sent TYPE timestamptz
     USING last_sent AT TIME ZONE 'Europe/Berlin';
-
-
 
 ALTER TABLE owner
   ALTER COLUMN last_recert_check TYPE timestamptz
@@ -3035,9 +3021,7 @@ ALTER TABLE request.comment
   ALTER COLUMN creation_date TYPE timestamptz
     USING creation_date AT TIME ZONE 'Europe/Berlin';
 
---request.ticket
-
-ALTER TABLE request.ticket
+ALTER TABLE request.impltask
   ALTER COLUMN start TYPE timestamptz
     USING start AT TIME ZONE 'Europe/Berlin',
   ALTER COLUMN stop TYPE timestamptz
@@ -3046,8 +3030,6 @@ ALTER TABLE request.ticket
     USING target_begin_date AT TIME ZONE 'Europe/Berlin',
   ALTER COLUMN target_end_date TYPE timestamptz
     USING target_end_date AT TIME ZONE 'Europe/Berlin';
-
--- 
 
 ALTER TABLE compliance.network_zone
   ALTER COLUMN removed TYPE timestamptz
