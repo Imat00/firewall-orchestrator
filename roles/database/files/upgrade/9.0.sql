@@ -2207,3 +2207,301 @@ END$$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS owner_responsible_owner_dn_type_unique ON owner_responsible(owner_id, dn, responsible_type);
 CREATE INDEX IF NOT EXISTS owner_responsible_dn_idx ON owner_responsible(dn);
+
+---- Timestamp to Timestamp with zone = timestamptz
+
+ALTER TABLE device
+  ALTER COLUMN dev_create TYPE timestamptz
+    USING dev_create AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN dev_update TYPE timestamptz
+    USING dev_update AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE device
+  ALTER COLUMN dev_create SET DEFAULT CURRENT_TIMESTAMP,
+  ALTER COLUMN dev_update SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE "management"
+  ALTER COLUMN "mgm_create" TYPE timestamptz
+    USING "mgm_create" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "mgm_update" TYPE timestamptz
+    USING "mgm_update" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "last_import_attempt" TYPE timestamptz
+    USING "last_import_attempt" AT TIME ZONE 'Europe/Berlin';
+
+ALTER "management"
+  ALTER COLUMN "mgm_create" SET DEFAULT CURRENT_TIMESTAMP,
+  ALTER COLUMN "mgm_update" SET DEFAULT CURRENT_TIMESTAMP;
+  
+ALTER TABLE "rule_metadata"
+  ALTER COLUMN "rule_first_hit" TYPE timestamptz
+    USING "rule_first_hit" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "rule_last_hit" TYPE timestamptz
+    USING "rule_last_hit" AT TIME ZONE 'Europe/Berlin';
+  
+ALTER TABLE "uiuser"
+  ALTER COLUMN "uiuser_last_login" TYPE timestamptz
+    USING "uiuser_last_login" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "uiuser_last_password_change" TYPE timestamptz
+    USING "uiuser_last_password_change" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "tenant"
+  ALTER COLUMN "tenant_create" TYPE timestamptz
+    USING "tenant_create" AT TIME ZONE 'Europe/Berlin';
+ALTER "tenant"
+  ALTER COLUMN "tenant_create" SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE "tenant_network"
+  ALTER COLUMN "tenant_net_create" TYPE timestamptz
+    USING "tenant_net_create" AT TIME ZONE 'Europe/Berlin';
+ALTER "tenant_network"
+  ALTER COLUMN "tenant_net_create" SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE "import_control"
+  ALTER COLUMN "start_time" TYPE timestamptz
+    USING "start_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "stop_time" TYPE timestamptz
+    USING "stop_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "last_change_in_config" TYPE timestamptz
+    USING "last_change_in_config" AT TIME ZONE 'Europe/Berlin';
+ALTER "import_control"
+  ALTER COLUMN "start_time" SET DEFAULT CURRENT_TIMESTAMP;
+  
+ALTER TABLE "import_service"
+  ALTER COLUMN "last_change_time" TYPE timestamptz
+    USING "last_change_time" AT TIME ZONE 'Europe/Berlin';
+	
+ALTER TABLE "import_object"
+  ALTER COLUMN "last_change_time" TYPE timestamptz
+    USING "last_change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "import_user"
+  ALTER COLUMN "last_change_time" TYPE timestamptz
+    USING "last_change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "import_rule"
+  ALTER COLUMN "last_change_time" TYPE timestamptz
+    USING "last_change_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "last_hit" TYPE timestamptz
+    USING "last_hit" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "import_zone"
+  ALTER COLUMN "last_change_time" TYPE timestamptz
+    USING "last_change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "log_data_issue"
+  ALTER COLUMN "issue_timestamp" TYPE timestamptz
+    USING "issue_timestamp" AT TIME ZONE 'Europe/Berlin';
+ALTER "log_data_issue"
+  ALTER COLUMN "issue_timestamp" SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE "alert"
+  ALTER COLUMN "alert_timestamp" TYPE timestamptz
+    USING "alert_timestamp" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "ack_timestamp" TYPE timestamptz
+    USING "ack_timestamp" AT TIME ZONE 'Europe/Berlin';
+ALTER "alert"
+  ALTER COLUMN "alert_timestamp" SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE "import_changelog"
+  ALTER COLUMN "change_time" TYPE timestamptz
+    USING "change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "changelog_object"
+  ALTER COLUMN "docu_time" TYPE timestamptz
+    USING "docu_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "change_time" TYPE timestamptz
+    USING "change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "changelog_service"
+  ALTER COLUMN "docu_time" TYPE timestamptz
+    USING "docu_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "change_time" TYPE timestamptz
+    USING "change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "changelog_user"
+  ALTER COLUMN "docu_time" TYPE timestamptz
+    USING "docu_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "change_time" TYPE timestamptz
+    USING "change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "changelog_rule"
+  ALTER COLUMN "docu_time" TYPE timestamptz
+    USING "docu_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "change_time" TYPE timestamptz
+    USING "change_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "report_template"
+  ALTER COLUMN "report_template_create" TYPE timestamptz
+    USING "report_template_create" AT TIME ZONE 'Europe/Berlin';
+ALTER "report_template"
+  ALTER COLUMN "report_template_create" SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE "report"
+  ALTER COLUMN "report_start_time" TYPE timestamptz
+    USING "report_start_time" AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN "report_end_time" TYPE timestamptz
+    USING "report_end_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE "report_schedule"
+  ALTER COLUMN "report_schedule_start_time" TYPE timestamptz
+    USING "report_schedule_start_time" AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE notification
+  ALTER COLUMN last_sent TYPE timestamptz
+    USING last_sent AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE owner
+  ALTER COLUMN last_recert_check TYPE timestamptz
+    USING last_recert_check AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN last_recertified TYPE timestamptz
+    USING last_recertified AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN next_recert_date TYPE timestamptz
+    USING next_recert_date AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE recertification
+  ALTER COLUMN recert_date TYPE timestamptz
+    USING recert_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN next_recert_date TYPE timestamptz
+    USING next_recert_date AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE owner_recertification
+  ALTER COLUMN recert_date TYPE timestamptz
+    USING recert_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN next_recert_date TYPE timestamptz
+    USING next_recert_date AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE ext_request
+  ALTER COLUMN create_date TYPE timestamptz
+    USING create_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN finish_date TYPE timestamptz
+    USING finish_date AT TIME ZONE 'Europe/Berlin';
+ALTER ext_request
+  ALTER COLUMN create_date SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE request.reqtask
+  ALTER COLUMN start TYPE timestamptz
+    USING start AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN stop TYPE timestamptz
+    USING stop AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN last_recert_date TYPE timestamptz
+    USING last_recert_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN target_begin_date TYPE timestamptz
+    USING target_begin_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN target_end_date TYPE timestamptz
+    USING target_end_date AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE request.approval 
+  ALTER COLUMN date_opened TYPE timestamptz
+    USING date_opened AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN approval_date TYPE timestamptz
+    USING approval_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN approval_deadline TYPE timestamptz
+    USING approval_deadline AT TIME ZONE 'Europe/Berlin';
+ALTER request.approval 
+  ALTER COLUMN date_opened SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE request.ticket
+  ALTER COLUMN date_created TYPE timestamptz
+    USING date_created AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN date_completed TYPE timestamptz
+    USING date_completed AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN ticket_deadline TYPE timestamptz
+    USING ticket_deadline AT TIME ZONE 'Europe/Berlin';
+ALTER request.ticket
+  ALTER COLUMN date_created SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE request.comment
+  ALTER COLUMN creation_date TYPE timestamptz
+    USING creation_date AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE request.ticket
+  ALTER COLUMN start TYPE timestamptz
+    USING start AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN stop TYPE timestamptz
+    USING stop AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN target_begin_date TYPE timestamptz
+    USING target_begin_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN target_end_date TYPE timestamptz
+    USING target_end_date AT TIME ZONE 'Europe/Berlin';
+
+ALTER TABLE compliance.network_zone
+  ALTER COLUMN removed TYPE timestamptz
+    USING removed AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN created TYPE timestamptz
+    USING created AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.network_zone
+  ALTER COLUMN created SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE compliance.network_zone_communication
+  ALTER COLUMN removed TYPE timestamptz
+    USING removed AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN created TYPE timestamptz
+    USING created AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.network_zone_communication
+  ALTER COLUMN created SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE compliance.ip_range
+  ALTER COLUMN removed TYPE timestamptz
+    USING removed AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN created TYPE timestamptz
+    USING created AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.ip_range
+  ALTER COLUMN created SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE compliance.policy
+  ALTER COLUMN created_date TYPE timestamptz
+    USING created_date AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.policy
+  ALTER COLUMN created_date SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE compliance.policy_criterion
+  ALTER COLUMN removed TYPE timestamptz
+    USING removed AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN created TYPE timestamptz
+    USING created AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.policy_criterion
+  ALTER COLUMN created SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE compliance.criterion
+  ALTER COLUMN removed TYPE timestamptz
+    USING removed AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN created TYPE timestamptz
+    USING created AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.criterion
+  ALTER COLUMN created SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE compliance.violation
+  ALTER COLUMN found_date TYPE timestamptz
+    USING found_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN removed_date TYPE timestamptz
+    USING removed_date AT TIME ZONE 'Europe/Berlin';
+ALTER compliance.violation
+  ALTER COLUMN found_date SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE modelling.nwgroup
+  ALTER COLUMN creation_date TYPE timestamptz
+    USING creation_date AT TIME ZONE 'Europe/Berlin';
+ALTER modelling.nwgroup
+  ALTER COLUMN creation_date SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE modelling.connection
+  ALTER COLUMN creation_date TYPE timestamptz
+    USING creation_date AT TIME ZONE 'Europe/Berlin',
+  ALTER COLUMN removal_date TYPE timestamptz
+    USING removal_date AT TIME ZONE 'Europe/Berlin';
+ALTER modelling.connection
+  ALTER COLUMN creation_date SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE modelling.service_group
+  ALTER COLUMN creation_date TYPE timestamptz
+    USING creation_date AT TIME ZONE 'Europe/Berlin';
+ALTER modelling.service_group
+  ALTER COLUMN creation_date SET DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE modelling.change_history
+  ALTER COLUMN change_time TYPE timestamptz
+    USING change_time AT TIME ZONE 'Europe/Berlin';
+ALTER modelling.change_history
+  ALTER COLUMN change_time SET DEFAULT CURRENT_TIMESTAMP;
+
+SET timezone = 'UTC';
