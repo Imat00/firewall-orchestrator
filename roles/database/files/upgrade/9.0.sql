@@ -2208,8 +2208,7 @@ END$$;
 CREATE UNIQUE INDEX IF NOT EXISTS owner_responsible_owner_dn_type_unique ON owner_responsible(owner_id, dn, responsible_type);
 CREATE INDEX IF NOT EXISTS owner_responsible_dn_idx ON owner_responsible(dn);
 
----- Timestamp to Timestamp with zone = timestamptz
-
+---- Timestamp to Timestamp with time zone = timestamptz
 ALTER TABLE device
   ALTER COLUMN dev_create TYPE timestamptz
     USING dev_create AT TIME ZONE 'Europe/Berlin',
