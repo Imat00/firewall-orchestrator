@@ -84,6 +84,6 @@ namespace FWO.Data
         public int? RepetitionsAfterDeadline { get; set; }
 
         [JsonProperty("last_sent"), JsonPropertyName("last_sent")]
-        public DateTime? LastSent { get; set; }
+        public DateTimeOffset? LastSent { get; set; }
     }
 }

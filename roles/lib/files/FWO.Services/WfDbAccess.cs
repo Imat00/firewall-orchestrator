@@ -1,4 +1,4 @@
-﻿using FWO.Data;
+using FWO.Data;
 using FWO.Data.Workflow;
 using FWO.Config.Api;
 using FWO.Api.Client;
@@ -86,7 +86,7 @@ namespace FWO.Services
             return ticket;
         }
 
-        public async Task<List<WfTicket>> GetTicketsByParameters(string taskType, int startState, int endState, DateTime cutOffDate)
+        public async Task<List<WfTicket>> GetTicketsByParameters(string taskType, int startState, int endState, DateTimeOffset cutOffDate)
         {
             List<WfTicket> tickets = [];
             try

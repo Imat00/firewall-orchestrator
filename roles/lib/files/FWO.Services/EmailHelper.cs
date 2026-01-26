@@ -295,7 +295,7 @@ namespace FWO.Services
             try
             {
                 Regex regex = new(@"\s", RegexOptions.None, TimeSpan.FromMilliseconds(500));
-                return $"{regex.Replace(input, "")}_{DateTime.Now.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssK")}.{fileFormat}";
+                return $"{regex.Replace(input, "")}_{DateTimeOffset.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssK")}.{fileFormat}";
             }
             catch (RegexMatchTimeoutException)
             {

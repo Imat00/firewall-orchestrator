@@ -172,7 +172,7 @@ namespace FWO.Services
             {
                 if(ConnToDelete.RequestedOnFw || ConnToDelete.IsPublished)
                 {
-                    if ((await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.updateConnectionRemove, new { id = ConnToDelete.Id, removalDate = DateTime.Now })).UpdatedId == ConnToDelete.Id)
+                    if ((await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.updateConnectionRemove, new { id = ConnToDelete.Id, removalDate = DateTimeOffset.UtcNow })).UpdatedId == ConnToDelete.Id)
                     {
                         if (removeObjectLinks)
                         {

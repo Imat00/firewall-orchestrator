@@ -122,8 +122,8 @@ else
     private ConfigData? configData;
     private Language selectedLanguage = new Language();
     private NotificationLayout selectedImpChgNotType;
-    private DateTime startDate = DateTime.Today;
-    private DateTime startTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset startDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset startTime = DateTimeOffset.Now.AddSeconds(-DateTimeOffset.UtcNow.Second);
 
     protected override async Task OnInitializedAsync()
     {

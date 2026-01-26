@@ -462,7 +462,7 @@ namespace FWO.Middleware.Server
                     extRequestState = extRequest.ExtRequestState == ExtStates.ExtReqRejected.ToString() ?
                         ExtStates.ExtReqAckRejected.ToString() :
                         ExtStates.ExtReqAcknowledged.ToString(),
-                    finishDate = DateTime.Now
+                    finishDate = DateTimeOffset.UtcNow
                 };
                 await ApiConnection.SendQueryAsync<ReturnId>(ExtRequestQueries.updateExtRequestFinal, Variables);
             }

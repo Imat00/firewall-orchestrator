@@ -58,7 +58,7 @@ namespace FWO.Middleware.Server
         /// <param name="content">Text for notification (e.g. email body)</param>
         /// <param name="report">Optional report to be sent as attachment</param>
         /// <returns>number of emails sent</returns>
-        public async Task<int> SendNotifications(FwoOwner owner, DateTime? extDeadline, string content, ReportBase? report = null)
+        public async Task<int> SendNotifications(FwoOwner owner, DateTimeOffset? extDeadline, string content, ReportBase? report = null)
         {
             int emailsSent = 0;
             foreach (var notification in Notifications.Where(n => n.OwnerId == null || n.OwnerId == owner.Id))
@@ -77,7 +77,7 @@ namespace FWO.Middleware.Server
         /// <param name="content">Text for notification (e.g. email body)</param>
         /// <param name="report">Optional report to be sent as attachment</param>
         /// <returns>number of emails sent</returns>
-        public async Task<int> SendNotification(FwoNotification notification, FwoOwner owner, DateTime? extDeadline, string content, ReportBase? report = null)
+        public async Task<int> SendNotification(FwoNotification notification, FwoOwner owner, DateTimeOffset? extDeadline, string content, ReportBase? report = null)
         {
             int emailsSent = 0;
             if(SendNow(owner, extDeadline, notification))
@@ -99,19 +99,19 @@ namespace FWO.Middleware.Server
         /// <returns></returns>
         public async Task<int> UpdateNotificationsLastSent()
         {
-            int updatedNotifications = (await ApiConnection.SendQueryAsync<ReturnId>(NotificationQueries.updateNotificationsLastSent, new { ids = CheckedNotificationIds, lastSent = DateTime.Now })).AffectedRows;
+            int updatedNotifications = (await ApiConnection.SendQueryAsync<ReturnId>(NotificationQueries.updateNotificationsLastSent, new { ids = CheckedNotificationIds, lastSent = DateTimeOffset.UtcNow })).AffectedRows;
             CheckedNotificationIds = [];
             return updatedNotifications;
         }
 
-        private static bool SendNow(FwoOwner owner, DateTime? extDeadline, FwoNotification notification)
+        private static bool SendNow(FwoOwner owner, DateTimeOffset? extDeadline, FwoNotification notification)
         {
             if (notification.Deadline == NotificationDeadline.None)
             {
                 return true;
             }
-            DateTime deadline = GetDeadlineDate(notification.Deadline, owner, extDeadline);
-            if (deadline >= DateTime.Now)
+            DateTimeOffset deadline = GetDeadlineDate(notification.Deadline, owner, extDeadline);
+            if (deadline >= DateTimeOffset.UtcNow)
             {
                 var notifDate = notification.IntervalBeforeDeadline switch
                 {
@@ -133,7 +133,7 @@ namespace FWO.Middleware.Server
                 };
                 var currentNotifDate = nextNotifDate;
                 int counter = -1;
-                while (nextNotifDate <= DateTime.Now.Date && counter++ <= notification.RepetitionsAfterDeadline)
+                while (nextNotifDate <= DateTimeOffset.UtcNow.Date && counter++ <= notification.RepetitionsAfterDeadline)
                 {
                     currentNotifDate = nextNotifDate;
                     nextNotifDate = notification.RepeatIntervalAfterDeadline switch
@@ -148,22 +148,22 @@ namespace FWO.Middleware.Server
             }
         }
 
-        private static bool IsTimeToSend(DateTime? lastSent, DateTime notifDate)
+        private static bool IsTimeToSend(DateTimeOffset? lastSent, DateTimeOffset notifDate)
         {
-            return (lastSent == null || ((DateTime)lastSent).Date < notifDate.Date) && notifDate.Date <= DateTime.Now.Date;
+            return (lastSent == null || ((DateTimeOffset)lastSent).Date < notifDate.Date) && notifDate.Date <= DateTimeOffset.UtcNow.Date;
         }
 
-        private static DateTime GetDeadlineDate(NotificationDeadline deadline, FwoOwner owner, DateTime? extDeadline)
+        private static DateTimeOffset GetDeadlineDate(NotificationDeadline deadline, FwoOwner owner, DateTimeOffset? extDeadline)
         {
             if (deadline == NotificationDeadline.RecertDate && owner.NextRecertDate != null)
             {
-                return (DateTime)owner.NextRecertDate;
+                return (DateTimeOffset)owner.NextRecertDate;
             }
             else if(deadline == NotificationDeadline.RequestDate && extDeadline != null)
             {
-                 return (DateTime)extDeadline;
+                 return (DateTimeOffset)extDeadline;
             }
-            return DateTime.Now;
+            return DateTimeOffset.UtcNow;
         }
 
         private static async Task<List<FwoNotification>> LoadNotifications(NotificationClient notificationClient, ApiConnection apiConnection)

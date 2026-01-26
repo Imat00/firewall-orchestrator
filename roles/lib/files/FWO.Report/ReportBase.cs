@@ -195,7 +195,7 @@ namespace FWO.Report
             return $"<span class=\"{symbol}\">&nbsp;</span><a onclick=\"event.stopPropagation();\" href=\"{linkAddress}\" target=\"_top\" style=\"{style}\">{name}</a>";
         }
 
-        protected string GenerateHtmlFrameBase(string title, string filter, DateTime date, StringBuilder htmlReport, string? deviceFilter = null, string? ownerFilter = null, TimeFilter? timeFilter = null)
+        protected string GenerateHtmlFrameBase(string title, string filter, DateTimeOffset date, StringBuilder htmlReport, string? deviceFilter = null, string? ownerFilter = null, TimeFilter? timeFilter = null)
         {
             if (string.IsNullOrEmpty(htmlExport))
             {
@@ -284,7 +284,7 @@ namespace FWO.Report
         {
             try
             {
-                return timestring != null ? DateTime.Parse(timestring).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK") : "";
+                return timestring != null ? DateTimeOffset.Parse(timestring).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK") : "";
             }
             catch (Exception)
             {

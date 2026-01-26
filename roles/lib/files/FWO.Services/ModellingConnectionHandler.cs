@@ -1580,7 +1580,7 @@ namespace FWO.Services
                     id = ActConn.Id,
                     reason = ActConn.Reason,
                     connProp = ActConn.Properties,
-                    removalDate = DateTime.Now
+                    removalDate = DateTimeOffset.UtcNow
                 };
                 await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.updateConnectionDecommission, Variables);
                 await LogChange(ModellingTypes.ChangeType.Decommission, ModellingTypes.ModObjectType.Connection, ActConn.Id,
@@ -1649,7 +1649,7 @@ namespace FWO.Services
                             ModellingServiceGroupWrapper.Resolve(ActConn.ServiceGroups).ToList());
                     }
                     ActConn.Creator = userConfig.User.Name;
-                    ActConn.CreationDate = DateTime.Now;
+                    ActConn.CreationDate = DateTimeOffset.UtcNow;
                     Connections.Add(ActConn);
                     Connections.Sort((ModellingConnection a, ModellingConnection b) => a?.CompareTo(b) ?? -1);
                 }

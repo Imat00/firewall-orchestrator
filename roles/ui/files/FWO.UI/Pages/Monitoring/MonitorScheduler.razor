@@ -198,7 +198,7 @@ else
             }
         }
 
-        DateTime localTime = fireTimeUtc.Value.LocalDateTime;
+        DateTimeOffset localTime = fireTimeUtc.Value.LocalDateTime;
         TimeSpan? interval = TryParseInterval(intervalDescription);
 
         bool hasSeconds = localTime.Second != 0;

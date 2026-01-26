@@ -402,8 +402,8 @@ else
     private bool searchSpecUserArea = false;
     private bool searchUpdObjArea = false;
     private ModellingNamingConvention namingConvention = new();
-    private DateTime varAnalysisDate = DateTime.Today;
-    private DateTime varAnalysisTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset varAnalysisDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset varAnalysisTime = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second);
     private RuleRecognitionOption ruleRecognitionOption = new();
 
     private bool initComplete = false;

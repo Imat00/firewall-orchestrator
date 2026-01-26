@@ -46,7 +46,7 @@ namespace FWO.Middleware.Server
             public ImportManagement Mgmt { get; set; }
 
             [JsonProperty("stop_time"), JsonPropertyName("stop_time")]
-            public DateTime StopTime { get; set; }
+            public DateTimeOffset StopTime { get; set; }
 
             [JsonProperty("security_relevant_changes_counter"), JsonPropertyName("security_relevant_changes_counter")]
             public int RelevantChanges { get; set; }
@@ -218,7 +218,7 @@ namespace FWO.Middleware.Server
         {
             if (content != null)
             {
-                string fileName = $"{Regex.Replace(globalConfig.ImpChangeNotifySubject, @"\s", "")}_{DateTime.Now.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssK")}.{fileFormat}";
+                string fileName = $"{Regex.Replace(globalConfig.ImpChangeNotifySubject, @"\s", "")}_{DateTimeOffset.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH-mm-ssK")}.{fileFormat}";
 
                 MemoryStream memoryStream;
                 string contentType;

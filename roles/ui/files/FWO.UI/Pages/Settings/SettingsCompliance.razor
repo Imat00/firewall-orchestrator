@@ -326,8 +326,8 @@ else
     Action<Exception?, string, string, bool> DisplayMessageInUi { get; set; } = DefaultInit.DoNothing;
 
     private ConfigData? configData;
-    private DateTime complianceCheckStartDate = DateTime.Today;
-    private DateTime complianceCheckStartTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset complianceCheckStartDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset complianceCheckStartTime = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second);
     private bool EditFixCritMode = false;
     private List<CompliancePolicy> policies = [];
     private CompliancePolicy? actPolicy;

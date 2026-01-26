@@ -149,8 +149,8 @@ else
     private bool extTicketingSystemLookup = false;
     private List<ExternalTicketSystem> extTicketSystems = [];
     private List<ExternalTicketTemplate> extTicketingSystemTemplates = [];
-    private DateTime extReqStartDate = DateTime.Today;
-    private DateTime extReqStartTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset extReqStartDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset extReqStartTime = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second);
     private ExternalTicketTemplate newTemplate = new();
     private List<string> actTaskTypes = [];
 

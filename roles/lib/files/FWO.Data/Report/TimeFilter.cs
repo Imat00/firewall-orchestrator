@@ -36,8 +36,7 @@ namespace FWO.Data.Report
         public string TimeShortcut { get; set; } = "now";
 
         [JsonProperty("report_time"), JsonPropertyName("report_time")]
-        public DateTime ReportTime { get; set; } = DateTime.Now.AddSeconds(-DateTime.Now.Second);
-
+        public DateTimeOffset ReportTime { get; set; } = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second).AddMicroseconds(-DateTimeOffset.UtcNow.Millisecond);
 
         [JsonProperty("timerange_type"), JsonPropertyName("timerange_type")]
         public TimeRangeType TimeRangeType { get; set; } = TimeRangeType.Shortcut;
@@ -52,13 +51,13 @@ namespace FWO.Data.Report
         public SchedulerInterval Interval { get; set; } = SchedulerInterval.Days;
 
         [JsonProperty("start_time"), JsonPropertyName("start_time")]
-        public DateTime StartTime { get; set; } = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+        public DateTimeOffset StartTime { get; set; } = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second).AddMicroseconds(-DateTimeOffset.UtcNow.Millisecond);
 
         [JsonProperty("open_start"), JsonPropertyName("open_start")]
         public bool OpenStart { get; set; } = false;
 
         [JsonProperty("end_time"), JsonPropertyName("end_time")]
-        public DateTime EndTime { get; set; } = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+        public DateTimeOffset EndTime { get; set; } = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second).AddMicroseconds(-DateTimeOffset.UtcNow.Millisecond);
 
         [JsonProperty("open_end"), JsonPropertyName("open_end")]
         public bool OpenEnd { get; set; } = false;

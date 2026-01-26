@@ -192,7 +192,7 @@
             foreach(var linkedPolicy in linkedPolicies.Where(p => activePolicies.FirstOrDefault(x => x.Id == p.PolicyId) != null))
             {
                 await apiConnection.SendQueryAsync<ReturnId>(ComplianceQueries.removeCritFromPolicy,
-                    new{ policyId = linkedPolicy.PolicyId, criterionId = oldCritId, removed = DateTime.UtcNow});
+                    new{ policyId = linkedPolicy.PolicyId, criterionId = oldCritId, removed = DateTimeOffset.UtcNow});
                 await apiConnection.SendQueryAsync<ReturnId>(ComplianceQueries.addCritToPolicy,
                     new{ policyId = linkedPolicy.PolicyId, criterionId = SelectedCriterion.Id });
             }
@@ -204,7 +204,7 @@
         if(criterion.Removed == null)
         {
             await apiConnection.SendQueryAsync<ReturnId>(ComplianceQueries.removeCriterion,
-                new { id = criterion.Id, removed = DateTime.UtcNow });
+                new { id = criterion.Id, removed = DateTimeOffset.UtcNow });
         }
     }
 

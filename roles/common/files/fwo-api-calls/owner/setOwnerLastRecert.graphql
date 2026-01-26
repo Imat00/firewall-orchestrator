@@ -1,9 +1,9 @@
 mutation setOwnerLastRecert(
   $id: Int!
-  $lastRecert: timestamp
+  $lastRecert: timestamptz
   $lastRecertifierId: Int
   $lastRecertifierDn: String
-  $nextRecertDate: timestamp
+  $nextRecertDate: timestamptz
   ) {
   update_owner_by_pk(
     pk_columns: { id: $id }

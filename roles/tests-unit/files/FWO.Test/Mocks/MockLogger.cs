@@ -5,7 +5,7 @@ namespace FWO.Logging
 {
     public class MockLogger : Mock<ILogger>
     {
-        public Dictionary<DateTime, string> Logmessages = new();
+        public Dictionary<DateTimeOffset, string> Logmessages = new();
         protected override void Configure(ILogger sub)
         {
             // Info
@@ -13,14 +13,14 @@ namespace FWO.Logging
             sub.When(x => x.TryWriteInfo(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>()))
                .Do(ci =>
                {
-                    Logmessages[DateTime.Now] = $"{ci.ArgAt<string>(0)} - {ci.ArgAt<string>(1)}";
+                    Logmessages[DateTimeOffset.UtcNow] = $"{ci.ArgAt<string>(0)} - {ci.ArgAt<string>(1)}";
                });
 
             // Error
             sub.When(x => x.TryWriteError(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>()))
                .Do(ci =>
                {
-                    Logmessages[DateTime.Now] = $"{ci.ArgAt<string>(0)} - {ci.ArgAt<string>(1)}";
+                    Logmessages[DateTimeOffset.UtcNow] = $"{ci.ArgAt<string>(0)} - {ci.ArgAt<string>(1)}";
                });
 
 

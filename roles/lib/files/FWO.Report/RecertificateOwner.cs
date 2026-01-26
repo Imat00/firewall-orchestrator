@@ -15,7 +15,7 @@ namespace FWO.Report
             int chapterNumber = 0;
             AppendOwnerData(ref report, ReportData.OwnerData, chapterNumber);
 
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
         public void AppendOwnerData(ref StringBuilder report, List<OwnerConnectionReport> ownerReports, int chapterNumber, int levelshift = 0)

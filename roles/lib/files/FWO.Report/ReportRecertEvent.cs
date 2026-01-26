@@ -20,7 +20,7 @@ namespace FWO.Report
             recertOwner.AppendOwnerData(ref report, ReportData.OwnerData, chapterNumber, 1);
             report.AppendLine(Headline(userConfig.GetText("recertified_rules"), 3));
             ConstructHtmlReport(ref report, ReportData.ManagementData, chapterNumber, 1);
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
         public static async Task<List<OwnerConnectionReport>> GetRecertification(long? reportId, ApiConnection apiConnection)

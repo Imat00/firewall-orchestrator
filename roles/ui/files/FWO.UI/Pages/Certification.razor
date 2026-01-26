@@ -350,7 +350,7 @@
                 foreach (var device in deleteList)
                 {
                     await ticketCreator.CreateDecertRuleDeleteTicket(device.Key, device.Value, actComment,
-                    DateTime.Now.AddDays(userConfig.RuleRemovalGracePeriod));
+                    DateTimeOffset.UtcNow.AddDays(userConfig.RuleRemovalGracePeriod));
                 }
             }
 

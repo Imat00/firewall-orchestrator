@@ -1,6 +1,6 @@
 mutation updateConnectionDecommission(
   $id: Int!
-  $removalDate: timestamp
+  $removalDate: timestamptz
   $connProp: String
   $reason: String
   ) {

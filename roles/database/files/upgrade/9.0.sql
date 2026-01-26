@@ -3110,4 +3110,8 @@ ALTER TABLE modelling.change_history
 ALTER TABLE modelling.change_history
   ALTER COLUMN change_time SET DEFAULT CURRENT_TIMESTAMP;
 
+ALTER TABLE uiuser
+  ALTER COLUMN uiuser_start_date
+    SET DEFAULT CURRENT_DATE;
+
 SET timezone = 'UTC';

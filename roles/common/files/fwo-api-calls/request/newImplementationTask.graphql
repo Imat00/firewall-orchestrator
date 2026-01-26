@@ -9,8 +9,8 @@ mutation newImplementationTask(
   $ruleAction: Int
   $tracking: Int
   $handler: Int
-  $validFrom: timestamp
-  $validTo: timestamp
+  $validFrom: timestamptz
+  $validTo: timestamptz
   $freeText: String
   ) {
   insert_request_impltask(objects: {

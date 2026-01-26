@@ -1,6 +1,6 @@
 mutation setOwnerLastCheck(
   $id: Int!
-  $lastRecertCheck: timestamp
+  $lastRecertCheck: timestamptz
   ) {
   update_owner_by_pk(
     pk_columns: { id: $id }

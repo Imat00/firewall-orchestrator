@@ -3,7 +3,7 @@ mutation prepareNextRecertification(
   $ruleId: bigint!
   $ipMatch: String
   $ownerId: Int!
-  $nextRecertDate: timestamp
+  $nextRecertDate: timestamptz
   ) {
   insert_recertification(objects: {
     rule_metadata_id: $ruleMetadataId

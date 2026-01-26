@@ -41,7 +41,7 @@ namespace FWO.Report
                 AppendRemainingRules(ref report, ownerReport, chapterNumber);
                 report.AppendLine("<hr>");
             }
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
         public static OwnerConnectionReport CollectObjectsInReport(OwnerConnectionReport ownerReport)

@@ -115,7 +115,7 @@
             try
             {
                 ConnHandler.ActConn.Removed = true;
-                ConnHandler.ActConn.Reason += $"<br>{DateTime.Now.ToString("dd.MM.yyyy")} {userConfig.User.Name}: {userConfig.GetText("decomm_interface")}: {Reason}";
+                ConnHandler.ActConn.Reason += $"<br>{DateTimeOffset.UtcNow.ToString("dd.MM.yyyy")} {userConfig.User.Name}: {userConfig.GetText("decomm_interface")}: {Reason}";
                 await ConnHandler.Save(true, true);
                 await ConnHandler.RemoveFromAllSelections();
                 if(userConfig.ModDecommEmailReceiver != EmailRecipientOption.None)

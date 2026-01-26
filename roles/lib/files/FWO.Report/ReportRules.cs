@@ -444,7 +444,7 @@ namespace FWO.Report
             StringBuilder report = new();
             int chapterNumber = 0;
             ConstructHtmlReport(ref report, ReportData.ManagementData, chapterNumber);
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
         public void ConstructHtmlReport(ref StringBuilder report, List<ManagementReport> managementData, int chapterNumber, int levelshift = 0)

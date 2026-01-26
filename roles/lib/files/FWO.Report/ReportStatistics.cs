@@ -127,7 +127,7 @@ namespace FWO.Report
                 report.AppendLine("</table>");
                 report.AppendLine("<hr>");
             }
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
     }
 }

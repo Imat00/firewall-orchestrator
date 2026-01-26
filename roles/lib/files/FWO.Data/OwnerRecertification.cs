@@ -15,13 +15,13 @@ namespace FWO.Data
         public string? RecertifierDn { get; set; }
 
         [JsonProperty("recert_date"), JsonPropertyName("recert_date")]
-        public DateTime? RecertDate { get; set; }
+        public DateTimeOffset? RecertDate { get; set; }
 
         [JsonProperty("recertified"), JsonPropertyName("recertified")]
         public bool Recertified { get; set; } = false;
 
         [JsonProperty("next_recert_date"), JsonPropertyName("next_recert_date")]
-        public DateTime? NextRecertDate { get; set; }
+        public DateTimeOffset? NextRecertDate { get; set; }
 
         [JsonProperty("comment"), JsonPropertyName("comment")]
         public string Comment { get; set; } = "";

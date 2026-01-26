@@ -7,7 +7,7 @@ namespace FWO.Data
     {
 
         [JsonProperty("recert_date"), JsonPropertyName("recert_date")]
-        public DateTime? RecertDate { get; set; }
+        public DateTimeOffset? RecertDate { get; set; }
 
         [JsonProperty("recertified"), JsonPropertyName("recertified")]
         public bool Recertified { get; set; } = false;
@@ -16,7 +16,7 @@ namespace FWO.Data
         public string IpMatch { get; set; } = "";
 
         [JsonProperty("next_recert_date"), JsonPropertyName("next_recert_date")]
-        public DateTime? NextRecertDate { get; set; }
+        public DateTimeOffset? NextRecertDate { get; set; }
 
         [JsonProperty("owner_id"), JsonPropertyName("owner_id")]
         public int OwnerId { get; set; }

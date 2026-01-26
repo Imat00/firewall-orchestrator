@@ -13,10 +13,10 @@ namespace FWO.Data.Workflow
         public string Title { get; set; } = "";
 
         [JsonProperty("date_created"), JsonPropertyName("date_created")]
-        public DateTime CreationDate { get; set; }
+        public DateTimeOffset CreationDate { get; set; }
 
         [JsonProperty("date_completed"), JsonPropertyName("date_completed")]
-        public DateTime? CompletionDate { get; set; }
+        public DateTimeOffset? CompletionDate { get; set; }
 
         [JsonProperty("requester"), JsonPropertyName("requester")]
         public UiUser? Requester { get; set; }
@@ -40,7 +40,7 @@ namespace FWO.Data.Workflow
         public int? ExternalTicketSource { get; set; }
 
         [JsonProperty("ticket_deadline"), JsonPropertyName("ticket_deadline")]
-        public DateTime? Deadline { get; set; }
+        public DateTimeOffset? Deadline { get; set; }
 
         [JsonProperty("ticket_priority"), JsonPropertyName("ticket_priority")]
         public int? Priority { get; set; }

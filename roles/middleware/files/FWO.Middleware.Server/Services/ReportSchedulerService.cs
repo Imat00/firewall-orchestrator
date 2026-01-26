@@ -88,7 +88,7 @@ namespace FWO.Middleware.Server.Services
             await scheduler.ScheduleJob(trigger);
 
             Log.WriteInfo(SchedulerName,
-                $"Trigger scheduled, Start: {DateTime.Now:yyyy-MM-dd HH:mm:ss}, Interval: {DefaultIntervalSeconds}s");
+                $"Trigger scheduled, Start: {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss}, Interval: {DefaultIntervalSeconds}s");
         }
     }
 }

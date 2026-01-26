@@ -99,7 +99,7 @@ namespace FWO.Data.Workflow
             string allComments = "";
             foreach(var comment in Comments)
             {
-                allComments += comment.Comment.CreationDate.ToShortDateString() + " "
+                allComments += comment.Comment.CreationDate.LocalDateTime.ToShortDateString() + " "
                             + comment.Comment.Creator.Name + ": "
                             + comment.Comment.CommentText + (asMarkup ? "<br>" : "\r\n");
             }

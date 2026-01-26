@@ -7,7 +7,7 @@
         {
             if (LastIncompleteImport != null && LastIncompleteImport.Length > 0)
             {
-                <p>@(userConfig.GetText("U5104") + (LastIncompleteImport[0].StartTime != null ? Math.Round(((TimeSpan)(DateTime.Now - LastIncompleteImport[0].StartTime!)).TotalMinutes).ToString() : "?") + userConfig.GetText("U5105"))</p>
+                <p>@(userConfig.GetText("U5104") + (LastIncompleteImport[0].StartTime != null ? Math.Round(((TimeSpan)(DateTimeOffset.UtcNow - LastIncompleteImport[0].StartTime!)).TotalMinutes).ToString() : "?") + userConfig.GetText("U5105"))</p>
             }
             else
             {

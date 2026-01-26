@@ -33,7 +33,7 @@ namespace FWO.Recert
                 ownerId = owner?.Id ?? 0,
                 userDn = userConfig.User.Dn,
                 recertified = rule.Metadata.Recert,
-                recertDate = DateTime.Now,
+                recertDate = DateTimeOffset.UtcNow,
                 comment = comment,
                 ownerRecertId = owner?.LastRecertId == 0 ? null : owner?.LastRecertId
             };
@@ -48,8 +48,8 @@ namespace FWO.Recert
         private async Task<FwoOwner> RecertifyOwner(FwoOwner owner, string? comment = "", bool initialRecert = false)
         {
             FwoOwner recertifiedOwner = new(owner);
-            DateTime recertDate = DateTime.Now;
-            DateTime? nextRecertDate = CalcNextRecertDate(owner, recertDate, initialRecert);
+            DateTimeOffset recertDate = DateTimeOffset.UtcNow;
+            DateTimeOffset? nextRecertDate = CalcNextRecertDate(owner, recertDate, initialRecert);
             var recertVariables = new
             {
                 ownerId = owner.Id,
@@ -72,7 +72,7 @@ namespace FWO.Recert
             return recertifiedOwner;
         }
 
-        private DateTime? CalcNextRecertDate(FwoOwner owner, DateTime recertDate, bool initial)
+        private DateTimeOffset? CalcNextRecertDate(FwoOwner owner, DateTimeOffset recertDate, bool initial)
         {
             int nextRegularCertInterval = owner.RecertInterval ?? userConfig.RecertificationPeriod;
             int recertInterval = initial ? Math.Min(userConfig.InitialRecertificationPeriod, nextRegularCertInterval) : nextRegularCertInterval;
@@ -102,7 +102,7 @@ namespace FWO.Recert
                 nextRecertDate = owner?.NextRecertDate,
                 userDn = userConfig.User.Dn,
                 recertified = true,
-                recertDate = DateTime.Now,
+                recertDate = DateTimeOffset.UtcNow,
                 comment = comment,
                 ownerRecertId = owner?.LastRecertId
             };
@@ -118,7 +118,7 @@ namespace FWO.Recert
                 ruleId = rule.Id,
                 ipMatch = rule.IpMatch != "" ? rule.IpMatch : null,
                 ownerId = owner?.Id ?? 0,
-                nextRecertDate = DateTime.Now.AddDays(recertInterval)
+                nextRecertDate = DateTimeOffset.UtcNow.AddDays(recertInterval)
             };
             await apiConnection.SendQueryAsync<object>(RecertQueries.prepareNextRecertification, prepvariables);
         }

@@ -28,7 +28,7 @@ namespace FWO.Data.Modelling
         public string Changer { get; set; } = "";
 
         [JsonProperty("change_time"), JsonPropertyName("change_time")]
-        public DateTime? ChangeTime { get; set; }
+        public DateTimeOffset? ChangeTime { get; set; }
 
         [JsonProperty("change_source"), JsonPropertyName("change_source")]
         public string ChangeSource { get; set; } = GlobalConst.kManual;

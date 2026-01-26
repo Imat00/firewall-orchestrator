@@ -234,7 +234,7 @@ namespace FWO.Middleware.Server
                         tenant = user.Tenant != null ? user.Tenant.Id : (int?)null,
                         passwordMustBeChanged = false,
                         ldapConnectionId = user.LdapConnection.Id,
-                        loginTime = DateTime.UtcNow
+                        loginTime = DateTimeOffset.UtcNow
                     };
                     ReturnId[]? returnIds = (await apiConn.SendQueryAsync<ReturnIdWrapper>(AuthQueries.upsertUiUser, VariablesWithLogin)).ReturnIds;
                     if (returnIds != null)
@@ -275,7 +275,7 @@ namespace FWO.Middleware.Server
                 var Variables = new
                 {
                     id = id,
-                    loginTime = DateTime.UtcNow
+                    loginTime = DateTimeOffset.UtcNow
                 };
                 return (await apiConn.SendQueryAsync<ReturnId>(AuthQueries.updateUserLastLogin, Variables)).PasswordMustBeChanged;
             }
@@ -297,7 +297,7 @@ namespace FWO.Middleware.Server
                 {
                     dn = userDn,
                     passwordMustBeChanged = passwordMustBeChanged,
-                    changeTime = DateTime.UtcNow
+                    changeTime = DateTimeOffset.UtcNow
                 };
                 await apiConn.SendQueryAsync<ReturnId>(AuthQueries.updateUserPasswordChange, Variables);
             }

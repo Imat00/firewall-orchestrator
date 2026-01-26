@@ -34,10 +34,10 @@ namespace FWO.Data
         public string? Language { get; set; }
 
         [JsonProperty("uiuser_last_login"), JsonPropertyName("uiuser_last_login")]
-        public DateTime? LastLogin { get; set; }
+        public DateTimeOffset? LastLogin { get; set; }
 
         [JsonProperty("uiuser_last_password_change"), JsonPropertyName("uiuser_last_password_change")]
-        public DateTime? LastPasswordChange { get; set; }
+        public DateTimeOffset? LastPasswordChange { get; set; }
 
         [JsonProperty("uiuser_password_must_be_changed"), JsonPropertyName("uiuser_password_must_be_changed")]
         public bool PasswordMustBeChanged { get; set; }

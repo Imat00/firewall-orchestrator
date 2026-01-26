@@ -233,10 +233,10 @@ else
     private List<string> PathsToDeleteSubnet = [];
     private string actPath = "";
     private string SubnetActPath = "";
-    private DateTime appDataDate = DateTime.Today;
-    private DateTime appDataTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
-    private DateTime subnetDataDate = DateTime.Today;
-    private DateTime subnetDataTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset appDataDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset appDataTime = DateTimeOffset.Now.AddSeconds(-DateTimeOffset.UtcNow.Second);
+    private DateTimeOffset subnetDataDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset subnetDataTime = DateTimeOffset.Now.AddSeconds(-DateTimeOffset.UtcNow.Second);
     private List<UiLdapConnection> connectedLdaps = [];
     private UiLdapConnection selectedLdap = new();
     private Dictionary<int, List<string>> RolesToSetByType = [];

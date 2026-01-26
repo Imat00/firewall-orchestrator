@@ -123,7 +123,7 @@ namespace FWO.Middleware.Server.Jobs
                 {
                     id = alertId,
                     ackUser = 0,
-                    ackTime = DateTime.Now
+                    ackTime = DateTimeOffset.UtcNow
                 };
                 await apiConnection.SendQueryAsync<ReturnId>(MonitorQueries.acknowledgeAlert, Variables);
             }

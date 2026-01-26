@@ -841,7 +841,7 @@
                 { 
                     id = alertId,
                     ackUser = userConfig.User.DbId,
-                    ackTime = DateTime.Now
+                    ackTime = DateTimeOffset.UtcNow
                 };
                 await apiConnection.SendQueryAsync<ReturnId>(MonitorQueries.acknowledgeAlert, Variables);
             }

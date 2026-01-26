@@ -54,7 +54,7 @@ namespace FWO.Test
             // ARRANGE
 
             CancellationToken ct = default;
-            DateTime foundDate = DateTime.Now;
+            DateTimeOffset foundDate = DateTimeOffset.UtcNow;
 
             _testDiffReport.DiffReferenceInDays = 7;
 
@@ -169,7 +169,7 @@ namespace FWO.Test
             return ruleChunks;
         }
 
-        private ComplianceViolation CreateMockComplianceViolation(int id = 0, int ruleId = 0, DateTime? foundDate = null, DateTime? removedDate = null, string details = "", int policyId = 0, ComplianceCriterion? criterion = null, ComplianceViolationType type = ComplianceViolationType.None)
+        private ComplianceViolation CreateMockComplianceViolation(int id = 0, int ruleId = 0, DateTimeOffset? foundDate = null, DateTimeOffset? removedDate = null, string details = "", int policyId = 0, ComplianceCriterion? criterion = null, ComplianceViolationType type = ComplianceViolationType.None)
         {
             if (string.IsNullOrEmpty(details))
             {
@@ -188,7 +188,7 @@ namespace FWO.Test
             {
                 Id = id,
                 RuleId = ruleId,
-                FoundDate = foundDate ?? DateTime.Now,
+                FoundDate = foundDate ?? DateTimeOffset.UtcNow,
                 Details = details,
                 RiskScore = 0,
                 PolicyId = policyId,
@@ -201,7 +201,7 @@ namespace FWO.Test
             return violation;
         }
 
-        private string CreateViolationDetailsControlString(DateTime foundDate, int violationId)
+        private string CreateViolationDetailsControlString(DateTimeOffset foundDate, int violationId)
         {
             return $"Found: ({foundDate:dd.MM.yyyy} - {foundDate:hh:mm}) Test violation {violationId}";
         }

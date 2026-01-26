@@ -15,7 +15,7 @@ namespace FWO.Data
         public int Severity { get; set; }
 
         [JsonProperty("issue_timestamp"), JsonPropertyName("issue_timestamp")]
-        public DateTime Timestamp { get; set; }
+        public DateTimeOffset Timestamptz { get; set; }
 
         [JsonProperty("suspected_cause"), JsonPropertyName("suspected_cause")]
         public string? SuspectedCause { get; set; }

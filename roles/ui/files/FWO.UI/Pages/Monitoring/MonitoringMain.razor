@@ -69,7 +69,7 @@
                         </Template>
                     </Column>
                     <Column TableItem="Alert" Title="@(userConfig.GetText("id"))" Field="@(x => x.Id)" Sortable="true" Filterable="true" />
-                    <Column TableItem="Alert" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.Timestamp)" Sortable="true" Filterable="true" />
+                    <Column TableItem="Alert" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.Timestamptz)" Sortable="true" Filterable="true" />
                     <Column TableItem="Alert" Title="@(userConfig.GetText("source"))" Field="@(x => x.Source)" Sortable="true" Filterable="true" />
                     <Column TableItem="Alert" Title="@(userConfig.GetText("title"))" Field="@(x => x.Title)" Sortable="true" Filterable="true" />
                     <Column TableItem="Alert" Title="@(userConfig.GetText("code"))" Field="@(x => x.AlertCode)" Sortable="true" Filterable="true" />
@@ -170,7 +170,7 @@
             {
                 id = alert.Id,
                 ackUser = userConfig.User.DbId,
-                ackTime = DateTime.Now
+                ackTime = DateTimeOffset.UtcNow
             };
             await apiConnection.SendQueryAsync<ReturnId>(MonitorQueries.acknowledgeAlert, Variables);
             alertEntrys.Remove(alert);

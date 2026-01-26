@@ -16,7 +16,7 @@
         <PageSizeComponent PageSize="20" PageSizeCallback="UpdatePageSize"></PageSizeComponent>
         <Table PageSize="PageSize" TableClass="table table-bordered table-sm th-bg-secondary table-responsive overflow-auto sticky-header" TableItem="Alert" Items="alertEntrys">
             <Column TableItem="Alert" Title="@(userConfig.GetText("id"))" Field="@(x => x.Id)"  Sortable="true" Filterable="true"/>
-            <Column TableItem="Alert" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.Timestamp)"  Sortable="true" Filterable="true"/>
+            <Column TableItem="Alert" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.Timestamptz)"  Sortable="true" Filterable="true"/>
             <Column TableItem="Alert" Title="@(userConfig.GetText("source"))" Field="@(x => x.Source)" Sortable="true" Filterable="true"/>
             <Column TableItem="Alert" Title="@(userConfig.GetText("title"))" Field="@(x => x.Title)" Sortable="true" Filterable="true"/>
             <Column TableItem="Alert" Title="@(userConfig.GetText("code"))" Field="@(x => x.AlertCode)" Sortable="true" Filterable="true"/>
@@ -32,7 +32,7 @@
                     @(uiUsers.FirstOrDefault(x => x.DbId == context.AcknowledgedBy)?.Name)
                 </Template>
             </Column>
-            <Column TableItem="Alert" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.AckTimestamp)" Sortable="true" Filterable="true"/>
+            <Column TableItem="Alert" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.AckTimestamptz)" Sortable="true" Filterable="true"/>
             <Pager ShowPageNumber="true" ShowTotalCount="true" />
         </Table>
     </div>

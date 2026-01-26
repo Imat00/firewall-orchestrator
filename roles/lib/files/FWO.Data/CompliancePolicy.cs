@@ -12,7 +12,7 @@ namespace FWO.Data
         public string Name { get; set; } = "";
 
         [JsonProperty("created_date"), JsonPropertyName("created_date")]
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateTimeOffset CreatedDate { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("disabled"), JsonPropertyName("disabled")]
         public bool Disabled { get; set; } = false;

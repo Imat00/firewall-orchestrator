@@ -10,7 +10,7 @@ namespace FWO.Data
     public class ChangeImport
     {
         [JsonProperty("time"), JsonPropertyName("time")]
-        public DateTime Time { get; set; }
+        public DateTimeOffset Time { get; set; }
 
         public ChangeImport() {}
         

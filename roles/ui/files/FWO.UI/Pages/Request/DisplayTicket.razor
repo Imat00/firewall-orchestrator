@@ -72,7 +72,7 @@
                                 }
                                 else
                                 {
-                                    <label class="col-sm-12 border bg-secondary">@(WfHandler.ActTicket.Deadline != null ? ((DateTime)WfHandler.ActTicket.Deadline).ToShortDateString() : "-")</label>
+                                    <label class="col-sm-12 border bg-secondary">@(WfHandler.ActTicket.Deadline != null ? WfHandler.ActTicket.Deadline.Value.LocalDateTime.ToShortDateString() : "-")</label>
                                 }
                             </div>
                         </div>

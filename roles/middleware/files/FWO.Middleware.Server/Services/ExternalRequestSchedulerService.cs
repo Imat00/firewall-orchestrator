@@ -130,18 +130,18 @@ namespace FWO.Middleware.Server.Services
                 $"Trigger scheduled. Start: {startTime:yyyy-MM-dd HH:mm:ss}, Interval: {globalConfig.ExternalRequestSleepTime}s");
         }
 
-        private static DateTimeOffset CalculateStartTime(DateTime configuredStartTime, int intervalSeconds)
+        private static DateTimeOffset CalculateStartTime(DateTimeOffset configuredStartTime, int intervalSeconds)
         {
-            DateTime startTime = configuredStartTime;
-            DateTime now = DateTime.Now;
+            DateTimeOffset startTime = configuredStartTime;
+            DateTimeOffset utcNow = DateTimeOffset.UtcNow;
 
             // Move start time forward until it's in the future
-            while (startTime < now)
+            while (startTime < utcNow)
             {
                 startTime = startTime.AddSeconds(intervalSeconds);
             }
 
-            return new DateTimeOffset(startTime);
+            return startTime;
         }
 
         private void ApiExceptionHandler(Exception exception)

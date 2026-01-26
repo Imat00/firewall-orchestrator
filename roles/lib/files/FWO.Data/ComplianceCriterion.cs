@@ -35,10 +35,10 @@ namespace FWO.Data
         public string? Comment { get; set; }
 
         [JsonProperty("created"), JsonPropertyName("created")]
-        public DateTime Created { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset Created { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("removed"), JsonPropertyName("removed")]
-        public DateTime? Removed { get; set; }
+        public DateTimeOffset? Removed { get; set; }
     }
 
     public class ComplianceCriterionWrapper

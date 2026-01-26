@@ -60,10 +60,10 @@ namespace FWO.Middleware.Server
                 issuer: FWO.Basics.JwtConstants.Issuer,
                 audience: FWO.Basics.JwtConstants.Audience,
                 subject: subject,
-                notBefore: DateTime.UtcNow.AddMinutes(-1), // we currently allow for some deviation in timing of the systems
-                issuedAt: DateTime.UtcNow.AddMinutes(-1),
+                notBefore: DateTimeOffset.UtcNow.AddMinutes(-1).UtcDateTime, // we currently allow for some deviation in timing of the systems
+                issuedAt: DateTimeOffset.UtcNow.AddMinutes(-1).UtcDateTime,
                 // Anonymous jwt is valid for ten years (does not violate security)
-                expires: DateTime.UtcNow.AddMinutes(user != null ? jwtMinutesValid : 60 * 24 * 365 * 10),
+                expires: DateTimeOffset.UtcNow.AddMinutes(user != null ? jwtMinutesValid : 60 * 24 * 365 * 10).UtcDateTime,
                 signingCredentials: new SigningCredentials(jwtPrivateKey, SecurityAlgorithms.RsaSha256)
             );
 
@@ -108,9 +108,9 @@ namespace FWO.Middleware.Server
                 issuer: FWO.Basics.JwtConstants.Issuer,
                 audience: FWO.Basics.JwtConstants.Audience,
                 subject: subject,
-                notBefore: DateTime.UtcNow.AddMinutes(-1), // we currently allow for some deviation in timing of the systems
-                issuedAt: DateTime.UtcNow.AddMinutes(-1),
-                expires: DateTime.UtcNow.AddYears(200),
+                notBefore: DateTimeOffset.UtcNow.AddMinutes(-1).UtcDateTime, // we currently allow for some deviation in timing of the systems
+                issuedAt: DateTimeOffset.UtcNow.AddMinutes(-1).UtcDateTime,
+                expires: DateTimeOffset.UtcNow.AddYears(200).UtcDateTime,
                 signingCredentials: new SigningCredentials(jwtPrivateKey, SecurityAlgorithms.RsaSha256)
             );
             string GeneratedToken = tokenHandler.WriteToken(token);

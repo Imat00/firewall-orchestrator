@@ -143,7 +143,7 @@ namespace FWO.Middleware.Server.Jobs
             {
                 if (imp.LastIncompleteImport != null && imp.LastIncompleteImport.Length > 0)
                 {
-                    if (imp.LastIncompleteImport[0].StartTime < DateTime.Now.AddHours(-globalConfig.MaxImportDuration))
+                    if (imp.LastIncompleteImport[0].StartTime < DateTimeOffset.UtcNow.AddHours(-globalConfig.MaxImportDuration))
                     {
                         jsonData = imp.LastIncompleteImport;
                         await SchedulerJobHelper.SetAlert(apiConnection, globalConfig.GetText("import"), globalConfig.GetText("E7011"), GlobalConst.kDailyCheck, AlertCode.ImportRunningTooLong, new SchedulerJobHelper.AdditionalAlertData { MgmtId = imp.MgmId, JsonData = jsonData });
@@ -156,7 +156,7 @@ namespace FWO.Middleware.Server.Jobs
                     await SchedulerJobHelper.SetAlert(apiConnection, globalConfig.GetText("import"), globalConfig.GetText("E7012"), GlobalConst.kDailyCheck, AlertCode.NoImport, new SchedulerJobHelper.AdditionalAlertData { MgmtId = imp.MgmId, JsonData = jsonData });
                     importIssues++;
                 }
-                else if (imp.LastImportAttempt != null && imp.LastImportAttempt < DateTime.Now.AddHours(-globalConfig.MaxImportInterval))
+                else if (imp.LastImportAttempt != null && imp.LastImportAttempt < DateTimeOffset.UtcNow.AddHours(-globalConfig.MaxImportInterval))
                 {
                     jsonData = imp;
                     await SchedulerJobHelper.SetAlert(apiConnection, globalConfig.GetText("import"), globalConfig.GetText("E7013"), GlobalConst.kDailyCheck, AlertCode.SuccessfulImportOverdue, new SchedulerJobHelper.AdditionalAlertData { MgmtId = imp.MgmId, JsonData = jsonData });

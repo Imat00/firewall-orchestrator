@@ -223,8 +223,8 @@ else
 
     private ConfigData? configData;
     private Language selectedLanguage = new Language();
-    private DateTime autoDiscStartDate = DateTime.Today;
-    private DateTime autoDiscStartTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset autoDiscStartDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset autoDiscStartTime = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second);
     private List<Module> availableModules { get; set; } = [];
     private Dictionary<Module, bool> modulesVisibleDict = [];
     private bool InitComplete = false;

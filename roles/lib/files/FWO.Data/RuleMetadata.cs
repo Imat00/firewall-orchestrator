@@ -24,10 +24,10 @@ namespace FWO.Data
         public ImportControl? LastModifiedImport { get; set; }
 
         [JsonProperty("rule_first_hit"), JsonPropertyName("rule_first_hit")]
-        public DateTime? FirstHit { get; set; }
+        public DateTimeOffset? FirstHit { get; set; }
 
         [JsonProperty("rule_last_hit"), JsonPropertyName("rule_last_hit")]
-        public DateTime? LastHit { get; set; }
+        public DateTimeOffset? LastHit { get; set; }
 
         [JsonProperty("recertification"), JsonPropertyName("recertification")]
         public List<Recertification> RuleRecertification { get; set; } = [];
@@ -42,26 +42,26 @@ namespace FWO.Data
         public Rule[] Rules { get; set; } = [];
 
         [SystemTextJsonIgnore, NewtonsoftJsonIgnore]
-        public DateTime? Created => CreatedImport?.StartTime;
+        public DateTimeOffset? Created => CreatedImport?.StartTime;
 
         [SystemTextJsonIgnore, NewtonsoftJsonIgnore]
-        public DateTime? LastModified => LastModifiedImport?.StartTime;
+        public DateTimeOffset? LastModified => LastModifiedImport?.StartTime;
 
         [SystemTextJsonIgnore, NewtonsoftJsonIgnore]
         public string Comment => RecertHistory.OrderByDescending(r => r.RecertDate).FirstOrDefault()?.Comment ?? "";
 
         [SystemTextJsonIgnore, NewtonsoftJsonIgnore]
-        public DateTime? LastCertified => RecertHistory.Where(r => r.Recertified)
+        public DateTimeOffset? LastCertified => RecertHistory.Where(r => r.Recertified)
             .OrderByDescending(r => r.RecertDate).FirstOrDefault()?.RecertDate;
 
         [SystemTextJsonIgnore, NewtonsoftJsonIgnore]
-        public DateTime? DecertificationDate => RecertHistory.Where(r => !r.Recertified)
+        public DateTimeOffset? DecertificationDate => RecertHistory.Where(r => !r.Recertified)
             .OrderByDescending(r => r.RecertDate).FirstOrDefault()?.RecertDate;
 
         [SystemTextJsonIgnore, NewtonsoftJsonIgnore]
         public bool ToBeRemoved { get; set; }
 
-        public DateTime NextRecert { get; set; }
+        public DateTimeOffset NextRecert { get; set; }
 
         public string LastCertifierName { get; set; } = "";
 
@@ -74,18 +74,18 @@ namespace FWO.Data
             Recertification? latestRecert = RecertHistory.OrderByDescending(r => r.RecertDate).FirstOrDefault();
             LastCertifierName = latestRecert?.UserDn != null ? new DistName(latestRecert.UserDn).UserName : "-";
 
-            DateTime? nextRecertFromData = RuleRecertification.Where(r => r.NextRecertDate != null)
+            DateTimeOffset? nextRecertFromData = RuleRecertification.Where(r => r.NextRecertDate != null)
                 .Select(r => r.NextRecertDate)
                 .OrderBy(d => d)
                 .FirstOrDefault();
 
-            NextRecert = nextRecertFromData ?? DateTime.Now;
+            NextRecert = nextRecertFromData ?? DateTimeOffset.UtcNow;
 
-            if (NextRecert <= DateTime.Now)
+            if (NextRecert <= DateTimeOffset.UtcNow)
             {
                 Style = "background-overdue";
             }
-            else if (NextRecert <= DateTime.Now.AddDays(recertificationNoticePeriod))
+            else if (NextRecert <= DateTimeOffset.UtcNow.AddDays(recertificationNoticePeriod))
             {
                 Style = "background-upcoming";
             }

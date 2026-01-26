@@ -17,7 +17,7 @@ namespace FWO.Data.Report
         public UiUser ScheduleOwningUser { get; set; } = new ();
 
         [JsonProperty("report_schedule_start_time"), JsonPropertyName("report_schedule_start_time")]
-        public DateTime StartTime { get; set; } = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+        public DateTimeOffset StartTime { get; set; } = DateTimeOffset.UtcNow.AddSeconds(-DateTimeOffset.UtcNow.Second);
 
         [JsonProperty("report_schedule_repeat"), JsonPropertyName("report_schedule_repeat")]
         public int RepeatOffset { get; set; } = 1;

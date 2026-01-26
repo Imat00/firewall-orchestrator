@@ -1,4 +1,4 @@
-﻿using FWO.Basics;
+using FWO.Basics;
 using NetTools;
 using Newtonsoft.Json;
 using System.Net;
@@ -38,10 +38,10 @@ namespace FWO.Data
         public ComplianceNetworkZone[] AllowedCommunicationDestinations { get; set; } = [];
 
         [JsonProperty("created"), JsonPropertyName("created")]
-        public DateTime Created { get; set; }
+        public DateTimeOffset Created { get; set; }
 
         [JsonProperty("removed"), JsonPropertyName("removed")]
-        public DateTime? Removed { get; set; }
+        public DateTimeOffset? Removed { get; set; }
 
         [JsonProperty("criterion_id"), JsonPropertyName("criterion_id")]
         public int CriterionId { get; set; } = 0;

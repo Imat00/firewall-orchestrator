@@ -383,7 +383,7 @@ namespace FWO.Test
 
             // Act
 
-            DateTime executionStart = DateTime.Now;
+            DateTimeOffset executionStart = DateTimeOffset.UtcNow;
             foreach (var chunk in RuleChunks)
             {
                 foreach (var rule in chunk)
@@ -391,7 +391,7 @@ namespace FWO.Test
                     await ComplianceCheck.CheckRuleCompliance(rule, criteria);
                 }
             }
-            DateTime executionEnd = DateTime.Now;
+            DateTimeOffset executionEnd = DateTimeOffset.Now;
             TimeSpan executionTime = executionEnd - executionStart;
 
             // Assert

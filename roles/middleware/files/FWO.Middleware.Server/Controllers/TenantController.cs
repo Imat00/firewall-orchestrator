@@ -95,7 +95,7 @@ namespace FWO.Middleware.Server.Controllers
                         project = tenant.Project,
                         comment = tenant.Comment,
                         viewAllDevices = tenant.ViewAllDevices,
-                        create = DateTime.Now
+                        create = DateTimeOffset.UtcNow
                     };
                     ReturnId[]? returnIds = (await apiConnection.SendQueryAsync<ReturnIdWrapper>(AuthQueries.addTenant, Variables)).ReturnIds;
                     if (returnIds != null)

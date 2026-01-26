@@ -13,7 +13,7 @@ namespace FWO.Data.Workflow
         public string Scope { get; set; } = "";
 
         [JsonProperty("creation_date"), JsonPropertyName("creation_date")]
-        public DateTime CreationDate { get; set; } = DateTime.Now;
+        public DateTimeOffset CreationDate { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("creator"), JsonPropertyName("creator")]
         public UiUser Creator { get; set; } = new UiUser();

@@ -1,7 +1,7 @@
 mutation newComment(
   $refId: bigint
   $scope: String
-  $creationDate: timestamp
+  $creationDate: timestamptz
   $creator: Int
   $text: String
   ) {

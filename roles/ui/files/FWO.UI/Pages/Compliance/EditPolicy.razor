@@ -166,7 +166,7 @@
         foreach(var crit in CriteriaToDelete)
         {
             await apiConnection.SendQueryAsync<ReturnId>(ComplianceQueries.removeCritFromPolicy,
-                new{ policyId = policyId, criterionId = crit.Id, removed = DateTime.UtcNow});
+                new{ policyId = policyId, criterionId = crit.Id, removed = DateTimeOffset.UtcNow});
             Policy.Criteria.Remove(Policy.Criteria[Policy.Criteria.FindIndex(c => c.Content.Id == crit.Id)]);
         }
     }

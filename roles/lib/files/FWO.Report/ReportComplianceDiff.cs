@@ -52,8 +52,8 @@ namespace FWO.Report
         {
             if (rule.ViolationDetails == "")
             {
-                DateTime from = DateTime.Now.AddDays(-DiffReferenceInDays);
-                rule.ViolationDetails = $"No changes between {from:dd.MM.yyyy} - {from:HH:mm} and {DateTime.Now:dd.MM.yyyy} - {DateTime.Now:HH:mm}";
+                DateTimeOffset from = DateTimeOffset.UtcNow.AddDays(-DiffReferenceInDays);
+                rule.ViolationDetails = $"No changes between {from:dd.MM.yyyy} - {from:HH:mm} and {DateTimeOffset.UtcNow:dd.MM.yyyy} - {DateTimeOffset.UtcNow:HH:mm}";
             }
 
             string managementUid = Managements?.FirstOrDefault(m => m.Id == rule.MgmtId)?.Uid ?? "";
@@ -77,8 +77,8 @@ namespace FWO.Report
                 {
                     ["found_date"] = new Dictionary<string, object?>
                     {
-                        ["_gte"] = DateTime.Now.AddDays(-DiffReferenceInDays),
-                        ["_lt"]  = DateTime.Now
+                        ["_gte"] = DateTimeOffset.UtcNow.AddDays(-DiffReferenceInDays),
+                        ["_lt"]  = DateTimeOffset.UtcNow
                     }
                 };
                 if (GlobalConfig.ComplianceFilterOutInitialViolations)

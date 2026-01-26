@@ -1,4 +1,4 @@
-query getTicketsByParameters($cutOffDate: timestamp, $taskType: String, $fromState: Int!, $toState: Int!) {
+query getTicketsByParameters($cutOffDate: timestamptz, $taskType: String, $fromState: Int!, $toState: Int!) {
   request_ticket(where: {
   _and: [
     {

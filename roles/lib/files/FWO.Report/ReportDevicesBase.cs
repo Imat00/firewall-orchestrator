@@ -30,11 +30,11 @@ namespace FWO.Report
             }
         }
 
-        public async Task<List<ManagementReport>> GetRelevantImportIds(ApiConnection apiConnection, string? timestamp = null)
+        public async Task<List<ManagementReport>> GetRelevantImportIds(ApiConnection apiConnection, string? timestamptz = null)
         {
             Dictionary<string, object> ImpIdQueryVariables = new()
             {
-                [QueryVar.Time] = timestamp ?? (Query.ReportTimeString != "" ? Query.ReportTimeString : DateTime.Now.ToString(DynGraphqlQuery.fullTimeFormat)),
+                [QueryVar.Time] = timestamptz ?? (Query.ReportTimeString != "" ? Query.ReportTimeString : DateTimeOffset.UtcNow.ToString(DynGraphqlQuery.fullTimeFormat)),
                 [QueryVar.MgmIds] = Query.RelevantManagementIds
             };
             List<ManagementReport> managementReports = await apiConnection.SendQueryAsync<List<ManagementReport>>(ReportQueries.getRelevantImportIdsAtTime, ImpIdQueryVariables);
@@ -222,10 +222,10 @@ namespace FWO.Report
         {
             StringBuilder report = new();
             report.AppendLine($"\"report type\": \"{userConfig.GetText(ReportType.ToString())}\",");
-            report.AppendLine($"\"report generation date\": \"{DateTime.Now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)\",");
+            report.AppendLine($"\"report generation date\": \"{DateTimeOffset.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)\",");
             if (!ReportType.IsChangeReport())
             {
-                report.AppendLine($"\"date of configuration shown\": \"{DateTime.Parse(Query.ReportTimeString).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)\",");
+                report.AppendLine($"\"date of configuration shown\": \"{DateTimeOffset.Parse(Query.ReportTimeString).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)\",");
             }
             report.AppendLine($"\"device filter\": \"{string.Join(" ", ReportData.ManagementData.Where(mgt => !mgt.Ignore).Select(m => m.NameAndRulebaseNames(" ")))}\",");
             report.AppendLine($"\"other filters\": \"{Query.RawFilter}\",");
@@ -280,10 +280,10 @@ namespace FWO.Report
         {
             StringBuilder report = new();
             report.AppendLine($"# report type: {userConfig.GetText(ReportType.ToString())}");
-            report.AppendLine($"# report generation date: {DateTime.Now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)");
+            report.AppendLine($"# report generation date: {DateTimeOffset.UtcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)");
             if (!ReportType.IsChangeReport())
             {
-                report.AppendLine($"# date of configuration shown: {DateTime.Parse(Query.ReportTimeString).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)");
+                report.AppendLine($"# date of configuration shown: {DateTimeOffset.Parse(Query.ReportTimeString).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssK")} (UTC)");
             }
             report.AppendLine($"# device filter: {string.Join(" ", ReportData.ManagementData.Where(mgt => !mgt.Ignore).Select(m => m.NameAndRulebaseNames(" ")))}");
             report.AppendLine($"# other filters: {Query.RawFilter}");
@@ -299,7 +299,7 @@ namespace FWO.Report
         }
 
 
-        protected string GenerateHtmlFrame(string title, string filter, DateTime date, StringBuilder htmlReport, TimeFilter? timefilter = null)
+        protected string GenerateHtmlFrame(string title, string filter, DateTimeOffset date, StringBuilder htmlReport, TimeFilter? timefilter = null)
         {
             string deviceFilter = string.Join("; ", Array.ConvertAll(ReportData.ManagementData.Where(mgt => !mgt.Ignore).ToArray(), m => ReportType.IsRulebaseReport() ? m.Name : m.NameAndDeviceNames()));
             return GenerateHtmlFrameBase(title, filter, date, htmlReport, deviceFilter, Query.SelectedOwner?.Name, timefilter);

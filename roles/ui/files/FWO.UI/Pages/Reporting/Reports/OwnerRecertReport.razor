@@ -59,6 +59,6 @@
 
     private string GetNextRecertDate(FwoOwner owner)
     {
-        return owner.NextRecertDate != null ? ((DateTime)owner.NextRecertDate).ToString("dd.MM.yyyy") : "";
+        return owner.NextRecertDate != null ? owner.NextRecertDate.Value.ToString("dd.MM.yyyy") : "";
     }
 }

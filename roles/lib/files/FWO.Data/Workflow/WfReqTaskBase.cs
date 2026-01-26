@@ -35,7 +35,7 @@ namespace FWO.Data.Workflow
         public string? AdditionalInfo { get; set; }
 
         [JsonProperty("last_recert_date"), JsonPropertyName("last_recert_date")]
-        public DateTime? LastRecertDate { get; set; }
+        public DateTimeOffset? LastRecertDate { get; set; }
 
         [JsonProperty("mgm_id"), JsonPropertyName("mgm_id")]
         public int? ManagementId { get; set; }

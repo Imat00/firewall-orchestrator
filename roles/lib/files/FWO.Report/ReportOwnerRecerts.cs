@@ -53,7 +53,7 @@ namespace FWO.Report
                 AppendOwnerTable(ref report, furtherOwners);
             }
            
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
         private void AppendOwnerTable(ref StringBuilder report, List<FwoOwner> owners)

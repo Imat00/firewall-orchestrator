@@ -1,4 +1,4 @@
-﻿using FWO.Api.Client;
+using FWO.Api.Client;
 using FWO.Api.Client.Queries;
 using FWO.Basics;
 using FWO.Basics.Interfaces;
@@ -333,7 +333,7 @@ namespace FWO.Compliance
                 {
                     Logger.TryWriteInfo("Compliance Check", $"{ids.Count} violations to remove.", LocalSettings.ComplianceCheckVerbose);
 
-                    DateTime removedAt = DateTime.UtcNow;
+                    DateTimeOffset removedAt = DateTimeOffset.UtcNow;
 
                     object variablesRemove = new
                     {
@@ -574,7 +574,7 @@ namespace FWO.Compliance
         /// <returns>Task that completes when the asynchronous compliance evaluation finished.</returns>
         private async Task CheckAll(bool isInitial = false)
         {
-            DateTime startTime = DateTime.UtcNow;
+            DateTimeOffset startTime = DateTimeOffset.UtcNow;
 
             try
             {
@@ -656,7 +656,7 @@ namespace FWO.Compliance
                     return;
                 }
 
-                TimeSpan elapsed = DateTime.UtcNow - startTime;
+                TimeSpan elapsed = DateTimeOffset.UtcNow - startTime;
 
                 Logger.TryWriteInfo("Compliance Check", $"Compliance check evaluated {RulesInCheck.Count} rules in {elapsed.TotalSeconds} seconds.", true);
                 Logger.TryWriteInfo("Compliance Check", "Compliance check completed.", true);
@@ -664,7 +664,7 @@ namespace FWO.Compliance
             }
             catch (Exception e)
             {
-                TimeSpan elapsed = DateTime.UtcNow - startTime;
+                TimeSpan elapsed = DateTimeOffset.UtcNow - startTime;
                 Logger.TryWriteInfo("Compliance Check", $"Compliance check failed after {elapsed.TotalSeconds} seconds.", true);
                 Logger.TryWriteError("Compliance Check", e, true);
             }

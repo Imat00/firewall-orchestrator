@@ -10,7 +10,7 @@ namespace FWO.Data
         public int Id { get; set; }
 
         [JsonProperty("last_recert_check"), JsonPropertyName("last_recert_check")]
-        public DateTime? LastRecertCheck { get; set; }
+        public DateTimeOffset? LastRecertCheck { get; set; }
 
         [JsonProperty("recert_check_params"), JsonPropertyName("recert_check_params")]
         public string? RecertCheckParamString { get; set; }
@@ -34,7 +34,7 @@ namespace FWO.Data
         public AggregateCount ConnectionCount { get; set; } = new();
 
         [JsonProperty("last_recertified"), JsonPropertyName("last_recertified")]
-        public DateTime? LastRecertified { get; set; }
+        public DateTimeOffset? LastRecertified { get; set; }
 
         [JsonProperty("last_recertifier"), JsonPropertyName("last_recertifier")]
         public int? LastRecertifierId { get; set; }
@@ -43,7 +43,7 @@ namespace FWO.Data
         public string? LastRecertifierDn { get; set; }
 
         [JsonProperty("next_recert_date"), JsonPropertyName("next_recert_date")]
-        public DateTime? NextRecertDate { get; set; }
+        public DateTimeOffset? NextRecertDate { get; set; }
 
         [JsonProperty("recert_active"), JsonPropertyName("recert_active")]
         public bool RecertActive { get; set; } = false;

@@ -44,10 +44,10 @@ namespace FWO.Data.Workflow
         public int? Tracking { get; set; }
 
         [JsonProperty("start"), JsonPropertyName("start")]
-        public DateTime? Start { get; set; }
+        public DateTimeOffset? Start { get; set; }
 
         [JsonProperty("stop"), JsonPropertyName("stop")]
-        public DateTime? Stop { get; set; }
+        public DateTimeOffset? Stop { get; set; }
 
         [JsonProperty("svc_grp_id"), JsonPropertyName("svc_grp_id")]
         public int? ServiceGroupId { get; set; }
@@ -62,10 +62,10 @@ namespace FWO.Data.Workflow
         public string? FreeText { get; set; }
 
         [JsonProperty("target_begin_date"), JsonPropertyName("target_begin_date")]
-        public DateTime? TargetBeginDate { get; set; }
+        public DateTimeOffset? TargetBeginDate { get; set; }
 
         [JsonProperty("target_end_date"), JsonPropertyName("target_end_date")]
-        public DateTime? TargetEndDate { get; set; }
+        public DateTimeOffset? TargetEndDate { get; set; }
 
 
         public WfTaskBase()

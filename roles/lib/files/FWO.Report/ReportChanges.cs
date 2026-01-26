@@ -375,7 +375,7 @@ namespace FWO.Report
                 }
             }
 
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report, timeFilter);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report, timeFilter);
         }
 
         private void AppendRuleChangeRowsHTML(StringBuilder report, ManagementReport management, RuleChangeDisplayHtml ruleChangeDisplayHtml)

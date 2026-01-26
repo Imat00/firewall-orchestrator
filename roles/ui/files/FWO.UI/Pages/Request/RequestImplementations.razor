@@ -162,7 +162,7 @@ else
     {
         try
         {
-            implTask.Start = DateTime.Now;
+            implTask.Start = DateTimeOffset.UtcNow;
             implTask.Stop = null;
             await wfHandler.StartWorkOnImplTask(implTask, ObjAction.implement);
         }

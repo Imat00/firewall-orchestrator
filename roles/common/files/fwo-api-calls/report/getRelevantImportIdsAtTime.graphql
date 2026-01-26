@@ -1,5 +1,5 @@
 query getRelevantImportIdsAtTime(
-  $time: timestamp!
+  $time: timestamptz!
   $mgmIds: [Int!]
   $ruleChangesFound: Boolean
 ) {

@@ -230,7 +230,7 @@
             if(selectedMatrix.Removed == null)
             {
                 await apiConnection.SendQueryAsync<ReturnId>(ComplianceQueries.removeCriterion,
-                    new { id = selectedMatrix.Id, removed = DateTime.UtcNow });
+                    new { id = selectedMatrix.Id, removed = DateTimeOffset.UtcNow });
                 matrices.Remove(selectedMatrix);
                 await InitMatrix();
                 deleteMatrixMode = false;
@@ -272,7 +272,7 @@
                         to_network_zone_id = new { _eq = zones.Item2.Id }
                     }
                 ),
-                removed = DateTime.UtcNow
+                removed = DateTimeOffset.UtcNow
             };
             await apiConnection.SendQueryAsync<dynamic>(ComplianceQueries.updateNetworkZoneCommunication, variables);
             await LoadMatrix();

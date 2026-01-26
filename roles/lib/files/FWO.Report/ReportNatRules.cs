@@ -51,7 +51,7 @@ namespace FWO.Report
                 report.AppendLine("</table>");
             }
 
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
 		public string ExportSingleRulebaseToHtml(Rule[] rulebase, NatRuleDisplayHtml ruleDisplay, int chapterNumber)

@@ -1,4 +1,4 @@
-﻿using FWO.Api.Client;
+using FWO.Api.Client;
 using FWO.Api.Client.Queries;
 using FWO.Basics;
 using FWO.Config.Api;
@@ -157,7 +157,7 @@ namespace FWO.Services
             {
                 if(!InitOngoing && apiConnection != null)
                 {
-                    Log.WriteDebug("Init start:  ", $"{DateTime.Now:hh:mm:ss,fff}");
+                    Log.WriteDebug("Init start:  ", $"{DateTimeOffset.UtcNow:hh:mm:ss,fff}");
                     InitOngoing = true;
                     if(usedInMwServer)
                     {
@@ -185,7 +185,7 @@ namespace FWO.Services
                     ReloadTasks = !fullTickets;
                     PrioList = System.Text.Json.JsonSerializer.Deserialize<List<WfPriority>>(userConfig.ReqPriorities) ?? throw new JsonException("Config data could not be parsed.");
                     apiConnection.SwitchBack();
-                    Log.WriteDebug("Init stop:   ", $"{DateTime.Now:hh:mm:ss,fff}");
+                    Log.WriteDebug("Init stop:   ", $"{DateTimeOffset.UtcNow:hh:mm:ss,fff}");
                     InitOngoing = false;
                     InitDone = true;
                     return true;
@@ -326,11 +326,11 @@ namespace FWO.Services
         {
             if(dbAcc != null)
             {
-                DateTime cutOffDate = interval switch
+                DateTimeOffset cutOffDate = interval switch
                 {
-                    SchedulerInterval.Days => DateTime.Now.AddDays(-cutOffPeriod),
-                    SchedulerInterval.Weeks => DateTime.Now.AddDays(-cutOffPeriod * GlobalConst.kDaysPerWeek),
-                    SchedulerInterval.Months => DateTime.Now.AddMonths(-cutOffPeriod),
+                    SchedulerInterval.Days => DateTimeOffset.UtcNow.AddDays(-cutOffPeriod),
+                    SchedulerInterval.Weeks => DateTimeOffset.UtcNow.AddDays(-cutOffPeriod * GlobalConst.kDaysPerWeek),
+                    SchedulerInterval.Months => DateTimeOffset.UtcNow.AddMonths(-cutOffPeriod),
                     _ => throw new NotSupportedException("Time interval is not supported."),
                 };
                 return await dbAcc.GetTicketsByParameters(taskType, StateMatrix(taskType).LowestInputState, StateMatrix(taskType).LowestEndState, cutOffDate);
@@ -436,13 +436,13 @@ namespace FWO.Services
                     if(ActTicket.Deadline == null)
                     {
                         int? tickDeadline = PrioList.FirstOrDefault(x => x.NumPrio == ActTicket.Priority)?.TicketDeadline;
-                        ActTicket.Deadline = tickDeadline != null && tickDeadline > 0 ? DateTime.Now.AddDays((int)tickDeadline) : null;
+                        ActTicket.Deadline = tickDeadline != null && tickDeadline > 0 ? DateTimeOffset.UtcNow.AddDays((int)tickDeadline) : null;
                     }
 
                     if (AddTicketMode)
                     {
                         // insert new ticket
-                        ActTicket.CreationDate = DateTime.Now;
+                        ActTicket.CreationDate = DateTimeOffset.UtcNow;
                         ActTicket.Requester = userConfig.User;
                         ActTicket = await dbAcc.AddTicketToDb(ActTicket);
                         TicketList.Add(ActTicket);
@@ -688,7 +688,7 @@ namespace FWO.Services
             WfComment comment = new ()
             {
                 Scope = WfObjectScopes.RequestTask.ToString(),
-                CreationDate = DateTime.Now,
+                CreationDate = DateTimeOffset.UtcNow,
                 Creator = userConfig.User,
                 CommentText = commentText
             };
@@ -737,7 +737,7 @@ namespace FWO.Services
                 ActReqTask.StateId = reqTask.StateId;
                 if (ActReqTask.Start == null && ActReqTask.StateId >= ActStateMatrix.LowestStartedState)
                 {
-                    ActReqTask.Start = DateTime.Now;
+                    ActReqTask.Start = DateTimeOffset.UtcNow;
                     ActReqTask.CurrentHandler = userConfig.User;
                 }
                 await UpdateActReqTaskState();
@@ -859,15 +859,15 @@ namespace FWO.Services
                 approvalParams = System.Text.Json.JsonSerializer.Deserialize<ApprovalParams>(extParams) ?? throw new JsonException("Extparams could not be parsed.");
             }
 
-            DateTime? deadline = null;
+            DateTimeOffset? deadline = null;
             if(extParams != "")
             {
-                deadline = approvalParams.Deadline > 0 ? DateTime.Now.AddDays(approvalParams.Deadline) : null;
+                deadline = approvalParams.Deadline > 0 ? DateTimeOffset.UtcNow.AddDays(approvalParams.Deadline) : null;
             }
             else
             {
                 int? appDeadline = PrioList.FirstOrDefault(x => x.NumPrio == ActTicket.Priority)?.ApprovalDeadline;
-                deadline = appDeadline != null && appDeadline > 0 ? DateTime.Now.AddDays((int)appDeadline) : null;
+                deadline = appDeadline != null && appDeadline > 0 ? DateTimeOffset.UtcNow.AddDays((int)appDeadline) : null;
             }
 
             WfApproval approval = new ()
@@ -895,7 +895,7 @@ namespace FWO.Services
                 ActApproval.StateId = approval.StateId;
                 if(ActApproval.StateId >= ActStateMatrix.LowestEndState)
                 {
-                    ActApproval.ApprovalDate = DateTime.Now;
+                    ActApproval.ApprovalDate = DateTimeOffset.UtcNow;
                     ActApproval.ApproverDn = userConfig.User.Dn;
                 }
                 if(approval.OptComment() != null && approval.OptComment() != "")
@@ -949,7 +949,7 @@ namespace FWO.Services
             WfComment comment = new ()
             {
                 Scope = WfObjectScopes.Approval.ToString(),
-                CreationDate = DateTime.Now,
+                CreationDate = DateTimeOffset.UtcNow,
                 Creator = userConfig.User,
                 CommentText = commentText
             };
@@ -1172,7 +1172,7 @@ namespace FWO.Services
             WfComment comment = new ()
             {
                 Scope = WfObjectScopes.ImplementationTask.ToString(),
-                CreationDate = DateTime.Now,
+                CreationDate = DateTimeOffset.UtcNow,
                 Creator = userConfig.User,
                 CommentText = commentText
             };
@@ -1196,7 +1196,7 @@ namespace FWO.Services
                 ActImplTask.CurrentHandler = userConfig.User;
                 if (Phase == WorkflowPhases.implementation && ActImplTask.Stop == null && ActImplTask.StateId >= ActStateMatrix.LowestEndState)
                 {
-                    ActImplTask.Stop = DateTime.Now;
+                    ActImplTask.Stop = DateTimeOffset.UtcNow;
                 }
                 await UpdateActImplTaskState();
                 ResetImplTaskList();
@@ -1474,7 +1474,7 @@ namespace FWO.Services
         {
             if (ActTicket.StateId >= MasterStateMatrix.MinTicketCompleted)
             {
-                ActTicket.CompletionDate = DateTime.Now;
+                ActTicket.CompletionDate = DateTimeOffset.UtcNow;
             }
             await AutoCreateOrUpdateImplTasks();
             if(dbAcc != null)

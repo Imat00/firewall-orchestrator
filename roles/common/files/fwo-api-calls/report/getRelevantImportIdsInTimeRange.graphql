@@ -1,6 +1,6 @@
 query getRelevantImportIdsInTimeRange(
-  $start_time: timestamp!
-  $end_time: timestamp!
+  $start_time: timestamptz!
+  $end_time: timestamptz!
   $mgmIds: [Int!]!
   $ruleChangesFound: Boolean
 ) {

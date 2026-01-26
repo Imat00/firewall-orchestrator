@@ -1,4 +1,4 @@
-﻿using FWO.Api.Client;
+using FWO.Api.Client;
 using FWO.Api.Client.Queries;
 using FWO.Basics;
 using FWO.Basics.Comparer;
@@ -182,7 +182,7 @@ namespace FWO.Services
                 ),
                 addZoneCommunication = addZoneCommunication,
                 deleteZoneCommunicationExp = deleteZoneCommunicationExp,
-                removed = DateTime.UtcNow,
+                removed = DateTimeOffset.UtcNow,
                 isAutoCalculatedInternetZone = networkZone.IsAutoCalculatedInternetZone
             };
 
@@ -216,7 +216,7 @@ namespace FWO.Services
                     }
                 ),
                 id = networkZone.Id,
-                removed = DateTime.UtcNow
+                removed = DateTimeOffset.UtcNow
             };
             await apiConnection.SendQueryAsync<dynamic>(ComplianceQueries.removeNetworkZone, variables);
         }

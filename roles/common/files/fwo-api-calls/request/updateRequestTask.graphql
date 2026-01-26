@@ -7,8 +7,8 @@ mutation updateRequestTask(
   $requestAction: action_enum
   $ruleAction: Int
   $tracking: Int
-  $validFrom: timestamp
-  $validTo: timestamp
+  $validFrom: timestamptz
+  $validTo: timestamptz
   $reason: String
   $additionalInfo: String
   $freeText: String

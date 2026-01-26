@@ -125,7 +125,7 @@
             actRulebase = newRulebase;
             var Variables = new
             {
-                time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                time = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                 mgmIds = actManagement.Id
             };
             List<Management> managementsWithRelevantImportId =

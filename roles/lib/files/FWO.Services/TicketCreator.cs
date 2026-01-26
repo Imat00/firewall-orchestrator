@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using FWO.Data;
 using FWO.Data.Workflow;
 using FWO.Config.Api;
@@ -169,7 +169,7 @@ namespace FWO.Services
             return false;
         }
 
-        public async Task CreateDecertRuleDeleteTicket(int deviceId, List<string> ruleUids, string comment = "", DateTime? deadline = null)
+        public async Task CreateDecertRuleDeleteTicket(int deviceId, List<string> ruleUids, string comment = "", DateTimeOffset? deadline = null)
         {
             stateId = userConfig.RecDeleteRuleInitState;
             ticketTitle = userConfig.RecDeleteRuleTicketTitle + " ";
@@ -180,7 +180,7 @@ namespace FWO.Services
             await CreateRuleDeleteTicket(deviceId, ruleUids, comment, deadline);
         }
 
-        public async Task CreateUnusedRuleDeleteTicket(int deviceId, List<string> ruleUids, string comment = "", DateTime? deadline = null)
+        public async Task CreateUnusedRuleDeleteTicket(int deviceId, List<string> ruleUids, string comment = "", DateTimeOffset? deadline = null)
         {
             stateId = userConfig.RecDeleteRuleInitState;
             ticketTitle = userConfig.GetText("delete_unused_rules") + ": ";
@@ -191,7 +191,7 @@ namespace FWO.Services
             await CreateRuleDeleteTicket(deviceId, ruleUids, comment, deadline);
         }
 
-        private async Task CreateRuleDeleteTicket(int deviceId, List<string> ruleUids, string comment = "", DateTime? deadline = null)
+        private async Task CreateRuleDeleteTicket(int deviceId, List<string> ruleUids, string comment = "", DateTimeOffset? deadline = null)
         {
             await wfHandler.Init();
             wfHandler.ActTicket = new WfTicket()

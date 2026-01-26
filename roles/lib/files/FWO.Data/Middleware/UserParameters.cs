@@ -1,4 +1,4 @@
-﻿namespace FWO.Data.Middleware
+namespace FWO.Data.Middleware
 {
     public class UserGetReturnParameters
     {
@@ -10,8 +10,8 @@
         public string? Lastname { get; set; }
         public int TenantId { get; set; }
         public string? Language { get; set; }
-        public DateTime? LastLogin { get; set; }
-        public DateTime? LastPasswordChange { get; set; }
+        public DateTimeOffset? LastLogin { get; set; }
+        public DateTimeOffset? LastPasswordChange { get; set; }
         public bool PwChangeRequired { get; set; }
         public int LdapId { get; set; }
     }

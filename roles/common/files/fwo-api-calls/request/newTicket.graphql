@@ -3,7 +3,7 @@ mutation newTicket(
   $reason: String
   $state: Int
   $requesterId: Int
-  $deadline: timestamp
+  $deadline: timestamptz
   $priority: Int
   $requestTasks: request_reqtask_arr_rel_insert_input
   ) {

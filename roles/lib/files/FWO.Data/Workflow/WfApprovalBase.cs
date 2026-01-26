@@ -7,13 +7,13 @@ namespace FWO.Data.Workflow
     public class WfApprovalBase : WfStatefulObject
     {
         [JsonProperty("date_opened"), JsonPropertyName("date_opened")]
-        public DateTime DateOpened { get; set; } = DateTime.Now;
+        public DateTimeOffset DateOpened { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("approval_date"), JsonPropertyName("approval_date")]
-        public DateTime? ApprovalDate { get; set; }
+        public DateTimeOffset? ApprovalDate { get; set; }
 
         [JsonProperty("approval_deadline"), JsonPropertyName("approval_deadline")]
-        public DateTime? Deadline { get; set; }
+        public DateTimeOffset? Deadline { get; set; }
 
         [JsonProperty("approver_group"), JsonPropertyName("approver_group")]
         public string? ApproverGroup { get; set; }

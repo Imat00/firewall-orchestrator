@@ -16,7 +16,7 @@
         <PageSizeComponent PageSize="20" PageSizeCallback="UpdatePageSize"></PageSizeComponent>
         <Table PageSize="PageSize" TableClass="table table-bordered table-sm th-bg-secondary table-responsive overflow-auto sticky-header" TableItem="LogEntry" Items="logEntrys">
             <Column TableItem="LogEntry" Title="@(userConfig.GetText("id"))" Field="@(x => x.Id)" Sortable="true" Filterable="true"/>
-            <Column TableItem="LogEntry" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.Timestamp)" Sortable="true" Filterable="true"/>
+            <Column TableItem="LogEntry" Title="@(userConfig.GetText("timestamp"))" Field="@(x => x.Timestamptz)" Sortable="true" Filterable="true"/>
             <Column TableItem="LogEntry" Title="@(userConfig.GetText("found_by"))" Field="@(x => x.UserId)" Sortable="true">
                 <Template>
                     @(uiUsers.FirstOrDefault(x => x.DbId == context.UserId)?.Name)

@@ -1,18 +1,18 @@
-﻿using FWO.Report.Filter.Ast;
+using FWO.Report.Filter.Ast;
 using FWO.Report.Filter.Exceptions;
 
 namespace FWO.Report.Filter.FilterTypes
 {
     class DateTimeRange
     {
-        public readonly DateTime? Start;
-        public readonly DateTime? End;
+        public readonly DateTimeOffset? Start;
+        public readonly DateTimeOffset? End;
 
         public DateTimeRange(AstNodeFilterDateTimeRange filter)
         {
-            bool isSingleDate = DateTime.TryParse(filter.Value.Text, out DateTime time);
-            int currentYear = DateTime.Now.Year;
-            int currentMonth = DateTime.Now.Month;
+            bool isSingleDate = DateTimeOffset.TryParse(filter.Value.Text, out DateTimeOffset time);
+            int currentYear = DateTimeOffset.UtcNow.Year;
+            int currentMonth = DateTimeOffset.UtcNow.Month;
 
             switch (filter.Operator.Kind)
             {
@@ -22,25 +22,25 @@ namespace FWO.Report.Filter.FilterTypes
                     {
                         // todo: add today, yesterday, this week, last week
                         case "now":
-                            DateTime now = DateTime.Now;
+                            DateTimeOffset now = DateTimeOffset.UtcNow;
                             Start = now;
                             End = now;
                             break;
                         case "this year":
-                            Start = new DateTime(currentYear, 01, 01, 00, 00, 00);
-                            End = new DateTime(currentYear + 1, 01, 01, 00, 00, 00);
+                            Start = new DateTimeOffset(currentYear, 01, 01, 00, 00, 00, TimeSpan.Zero);
+                            End = new DateTimeOffset(currentYear, 01, 01, 00, 00, 00, TimeSpan.Zero).AddYears(1);
                             break;
                         case "last year":
-                            Start = new DateTime(currentYear - 1, 01, 01, 00, 00, 00);
-                            End = new DateTime(currentYear, 01, 01, 00, 00, 00);
+                            Start = new DateTimeOffset(currentYear, 01, 01, 00, 00, 00, TimeSpan.Zero).AddYears(-1);
+                            End = new DateTimeOffset(currentYear, 01, 01, 00, 00, 00, TimeSpan.Zero);
                             break;
                         case "this month":
-                            Start = new DateTime(currentYear, currentMonth, 01, 00, 00, 00);
-                            End = new DateTime(currentYear, currentMonth + 1, 01, 00, 00, 00);
+                            Start = new DateTimeOffset(currentYear, currentMonth, 01, 00, 00, 00, TimeSpan.Zero);
+                            End = new DateTimeOffset(currentYear, currentMonth, 01, 00, 00, 00, TimeSpan.Zero).AddMonths(1);
                             break;
                         case "last month":
-                            Start = new DateTime(currentYear, currentMonth - 1, 01, 00, 00, 00);
-                            End = new DateTime(currentYear, currentMonth, 01, 00, 00, 00);
+                            Start = new DateTimeOffset(currentYear, currentMonth, 01, 00, 00, 00, TimeSpan.Zero).AddMonths(-1);
+                            End = new DateTimeOffset(currentYear, currentMonth, 01, 00, 00, 00, TimeSpan.Zero);
                             break;
                         default:
                             if (isSingleDate)

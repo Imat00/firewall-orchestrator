@@ -73,7 +73,7 @@ namespace FWO.Ui.Display
             if (ruleMetadata.LastHit == null)
                 return "";
             else
-                return DateOnly.FromDateTime((DateTime)ruleMetadata.LastHit).ToString("yyyy-MM-dd");
+                return ruleMetadata.LastHit.Value.UtcDateTime.ToString("yyyy-MM-dd");
         }
 
         public static string DisplayLastRecertifier(RuleMetadata ruleMetadata)
@@ -184,8 +184,8 @@ namespace FWO.Ui.Display
             string dateOnly = "-";
             if (recert.NextRecertDate != null)
             {
-                dateOnly = DateOnly.FromDateTime((DateTime)recert.NextRecertDate).ToString("yyyy-MM-dd");
-                if (recert.NextRecertDate < DateTime.Now)
+                dateOnly = recert.NextRecertDate.Value.UtcDateTime.ToString("yyyy-MM-dd");
+                if (recert.NextRecertDate < DateTimeOffset.UtcNow)
                 {
                     color = $" style=\"{GlobalConst.kStyleHighlightedRed}\"";
                 }

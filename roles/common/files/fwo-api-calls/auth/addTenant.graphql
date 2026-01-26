@@ -3,7 +3,7 @@ mutation addTenant(
   $project: String
   $comment: String
   $viewAllDevices: Boolean
-  $create: timestamp
+  $create: timestamptz
 ) {
   insert_tenant(
     objects: {

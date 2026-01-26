@@ -13,7 +13,7 @@ namespace FWO.Data.Modelling
         public string? Creator { get; set; }
 
         [JsonProperty("creation_date"), JsonPropertyName("creation_date")]
-        public DateTime? CreationDate { get; set; }
+        public DateTimeOffset? CreationDate { get; set; }
 
         [JsonProperty("nwobjects"), JsonPropertyName("nwobjects")]
         public List<ModellingAppServerWrapper> AppServers { get; set; } = [];

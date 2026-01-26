@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 using FWO.Data;
 using FWO.Middleware.Server;
@@ -21,26 +21,26 @@ namespace FWO.Test
             NotificationService notificationService = await NotificationService.CreateAsync(NotificationClient.InterfaceRequest, globalConfig, apiConnection, ownerGroups);
             FwoOwner owner = new();
 
-            int emailsSent = await notificationService.SendNotifications(owner, DateTime.Now.AddDays(-8), EmailText);
+            int emailsSent = await notificationService.SendNotifications(owner, DateTimeOffset.UtcNow.AddDays(-8), EmailText);
             ClassicAssert.AreEqual(2, emailsSent);
             ClassicAssert.AreEqual(2, await notificationService.UpdateNotificationsLastSent());
 
-            notificationService.Notifications[0].LastSent = DateTime.Now.AddDays(-1);
-            emailsSent = await notificationService.SendNotifications(owner, DateTime.Now.AddDays(-8), EmailText);
+            notificationService.Notifications[0].LastSent = DateTimeOffset.UtcNow.AddDays(-1);
+            emailsSent = await notificationService.SendNotifications(owner, DateTimeOffset.UtcNow.AddDays(-8), EmailText);
             ClassicAssert.AreEqual(1, emailsSent);
             ClassicAssert.AreEqual(1, await notificationService.UpdateNotificationsLastSent());
 
-            notificationService.Notifications[1].LastSent = DateTime.Now.AddDays(-8);
-            emailsSent = await notificationService.SendNotifications(owner, DateTime.Now.AddDays(-15), EmailText);
+            notificationService.Notifications[1].LastSent = DateTimeOffset.Now.AddDays(-8);
+            emailsSent = await notificationService.SendNotifications(owner, DateTimeOffset.UtcNow.AddDays(-15), EmailText);
             ClassicAssert.AreEqual(0, emailsSent);
             ClassicAssert.AreEqual(0, await notificationService.UpdateNotificationsLastSent());
 
             notificationService.Notifications[1].InitialOffsetAfterDeadline = 7;
-            emailsSent = await notificationService.SendNotifications(owner, DateTime.Now.AddDays(-15), EmailText);
+            emailsSent = await notificationService.SendNotifications(owner, DateTimeOffset.UtcNow.AddDays(-15), EmailText);
             ClassicAssert.AreEqual(1, emailsSent);
 
             notificationService.Notifications[1].InitialOffsetAfterDeadline = -7;
-            emailsSent = await notificationService.SendNotifications(owner, DateTime.Now.AddDays(-1), EmailText);
+            emailsSent = await notificationService.SendNotifications(owner, DateTimeOffset.UtcNow.AddDays(-1), EmailText);
             ClassicAssert.AreEqual(1, emailsSent);
         }
 
@@ -49,22 +49,22 @@ namespace FWO.Test
         {
             List<UserGroup> ownerGroups = [];
             NotificationService notificationService = await NotificationService.CreateAsync(NotificationClient.Recertification, globalConfig, apiConnection, ownerGroups);
-            FwoOwner owner = new(){ NextRecertDate = DateTime.Now.AddDays(21)};
+            FwoOwner owner = new(){ NextRecertDate = DateTimeOffset.UtcNow.AddDays(21)};
 
             int emailsSent = await notificationService.SendNotifications(owner, null, EmailText, new ReportRecertEvent(new(""), new(globalConfig), Basics.ReportType.RecertificationEvent){});
             ClassicAssert.AreEqual(1, emailsSent);
 
-            notificationService.Notifications[0].LastSent = DateTime.Now;
+            notificationService.Notifications[0].LastSent = DateTimeOffset.UtcNow;
             emailsSent = await notificationService.SendNotifications(owner, null, EmailText);
             ClassicAssert.AreEqual(0, emailsSent);
 
-            notificationService.Notifications[0].LastSent = DateTime.Now.AddDays(-7);
-            owner.NextRecertDate = DateTime.Now.AddDays(-7);
+            notificationService.Notifications[0].LastSent = DateTimeOffset.UtcNow.AddDays(-7);
+            owner.NextRecertDate = DateTimeOffset.UtcNow.AddDays(-7);
             emailsSent = await notificationService.SendNotifications(owner, null, EmailText);
             ClassicAssert.AreEqual(1, emailsSent);
 
-            notificationService.Notifications[0].LastSent = DateTime.Now.AddDays(-7);
-            owner.NextRecertDate = DateTime.Now.AddDays(-14);
+            notificationService.Notifications[0].LastSent = DateTimeOffset.UtcNow.AddDays(-7);
+            owner.NextRecertDate = DateTimeOffset.UtcNow.AddDays(-14);
             emailsSent = await notificationService.SendNotifications(owner, null, EmailText);
             ClassicAssert.AreEqual(0, emailsSent);
         }

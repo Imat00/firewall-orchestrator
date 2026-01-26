@@ -1,7 +1,7 @@
 mutation addReportTemplate(
   $reportTemplateName: String!
   $reportFilterLine: String!
-  $reportTemplateCreate: timestamp!
+  $reportTemplateCreate: timestamptz!
   $reportTemplateComment: String!
   $reportTemplateOwner: Int
   $reportParameters: json

@@ -97,7 +97,7 @@ namespace FWO.Middleware.Server
 		/// <summary>
 		/// start the scheduling timer, to be called by specific scheduler
 		/// </summary>
-        protected void StartScheduleTimer(int sleepTime, DateTime startTime)
+        protected void StartScheduleTimer(int sleepTime, DateTimeOffset startTime)
         {
             SleepTime = sleepTime;
             if (SleepTime > 0)
@@ -112,7 +112,7 @@ namespace FWO.Middleware.Server
                     ScheduleTimer = new();
                     ScheduleTimer.Elapsed += Process;
                     ScheduleTimer.Elapsed += StartRecurringTimer;
-                    ScheduleTimer.Interval = (CalculateStartTime(startTime) - DateTime.Now).TotalMilliseconds;
+                    ScheduleTimer.Interval = (CalculateStartTime(startTime) - DateTimeOffset.UtcNow).TotalMilliseconds;
                     ScheduleTimer.AutoReset = false;
                     ScheduleTimer.Start();
                     Log.WriteInfo(SchedulerText, "ScheduleTimer started.");
@@ -146,11 +146,11 @@ namespace FWO.Middleware.Server
             }
         }
 
-        private DateTime CalculateStartTime(DateTime startTime)
+        private DateTimeOffset CalculateStartTime(DateTimeOffset startTime)
         {
             try
             {
-                while (startTime < DateTime.Now)
+                while (startTime < DateTimeOffset.Now)
                 {
                     startTime = SchedulerInterval switch
                     {
@@ -300,7 +300,7 @@ namespace FWO.Middleware.Server
                 {
                     id = alertId,
                     ackUser = 0,
-                    ackTime = DateTime.Now
+                    ackTime = DateTimeOffset.UtcNow
                 };
                 await apiConnection.SendQueryAsync<ReturnId>(MonitorQueries.acknowledgeAlert, Variables);
             }

@@ -1,7 +1,7 @@
 ﻿mutation addGeneratedReport(
   $report_name: String!
-  $report_start_time: timestamp!
-  $report_end_time: timestamp!
+  $report_start_time: timestamptz!
+  $report_end_time: timestamptz!
   $report_owner_id: Int!
   $report_pdf: String
   $report_csv: String

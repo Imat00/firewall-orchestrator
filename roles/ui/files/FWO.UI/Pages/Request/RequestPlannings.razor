@@ -92,7 +92,7 @@ else
     {
         try
         {
-            reqTask.Start = DateTime.Now;
+            reqTask.Start = DateTimeOffset.UtcNow;
             await wfHandler.StartWorkOnReqTask(reqTask, ObjAction.plan);
         }
         catch (Exception exception)

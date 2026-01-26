@@ -46,7 +46,7 @@ namespace FWO.Middleware.Server.Jobs
         public async Task Execute(IJobExecutionContext context)
         {
             Log.WriteDebug(LogMessageTitle, "Process started");
-            DateTime dateTimeNowRounded = RoundDown(DateTime.Now, CheckScheduleInterval);
+            DateTimeOffset dateTimeNowRounded = RoundDown(DateTimeOffset.UtcNow, CheckScheduleInterval);
             List<ReportSchedule> scheduledReports = await apiConnectionScheduler.SendQueryAsync<List<ReportSchedule>>(ReportQueries.getReportSchedules);
 
             if (scheduledReports is null || scheduledReports.Count == 0)
@@ -58,7 +58,7 @@ namespace FWO.Middleware.Server.Jobs
                 async (reportSchedule, ct) => await ProcessScheduledReport(reportSchedule, dateTimeNowRounded, ct));
         }
 
-        private async Task ProcessScheduledReport(ReportSchedule reportSchedule, DateTime dateTimeNowRounded, CancellationToken ct)
+        private async Task ProcessScheduledReport(ReportSchedule reportSchedule, DateTimeOffset dateTimeNowRounded, CancellationToken ct)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace FWO.Middleware.Server.Jobs
             }
         }
 
-        private async Task GenerateReport(ReportSchedule reportSchedule, DateTime dateTimeNowRounded, CancellationToken token)
+        private async Task GenerateReport(ReportSchedule reportSchedule, DateTimeOffset dateTimeNowRounded, CancellationToken token)
         {
             ApiConnection? apiConnectionUserContext = null;
             UserConfig? userConfig = null;
@@ -107,8 +107,8 @@ namespace FWO.Middleware.Server.Jobs
 
                 ReportFile reportFile = new()
                 {
-                    Name = $"{reportSchedule.Name}_{dateTimeNowRounded.ToShortDateString()}",
-                    GenerationDateStart = DateTime.Now,
+                    Name = $"{reportSchedule.Name}_{dateTimeNowRounded:yyyyy-MM-dd}",
+                    GenerationDateStart = DateTimeOffset.UtcNow,
                     TemplateId = reportSchedule.Template.Id,
                     OwningUserId = reportSchedule.ScheduleOwningUser.DbId,
                     Type = reportSchedule.Template.ReportParams.ReportType,
@@ -250,7 +250,7 @@ namespace FWO.Middleware.Server.Jobs
                 }
             }
 
-            reportFile.GenerationDateEnd = DateTime.Now;
+            reportFile.GenerationDateEnd = DateTimeOffset.UtcNow;
         }
 
         private static async Task SaveReportToArchive(ReportFile reportFile, string desc, ApiConnection apiConnectionUser)
@@ -368,10 +368,10 @@ namespace FWO.Middleware.Server.Jobs
         }
 
 
-        private static DateTime RoundDown(DateTime dateTime, TimeSpan roundInterval)
+        private static DateTimeOffset RoundDown(DateTimeOffset dateTimeOffset, TimeSpan roundInterval)
         {
-            long delta = dateTime.Ticks % roundInterval.Ticks;
-            return new DateTime(dateTime.Ticks - delta, dateTime.Kind);
+            long delta = dateTimeOffset.Ticks % roundInterval.Ticks;
+            return new DateTimeOffset(dateTimeOffset.Ticks - delta, dateTimeOffset.Offset);
         }
     }
 }

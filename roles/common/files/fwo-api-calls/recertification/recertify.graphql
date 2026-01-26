@@ -3,7 +3,7 @@ mutation recertify(
   $ownerId: Int!
   $userDn: String
   $recertified: Boolean
-  $recertDate: timestamp
+  $recertDate: timestamptz
   $comment: String
   $ownerRecertId: bigint
   ) {

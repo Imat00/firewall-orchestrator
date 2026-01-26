@@ -235,7 +235,7 @@
                     project = "",
                     comment = "",
                     viewAllDevices = false,
-                    create = DateTime.Now
+                    create = DateTimeOffset.UtcNow
                 };
                 await apiConnection.SendQueryAsync<ReturnIdWrapper>(AuthQueries.addTenant, Variables);
             }

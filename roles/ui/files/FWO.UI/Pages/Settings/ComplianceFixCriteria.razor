@@ -99,7 +99,7 @@
             if(ActCrit.Removed == null)
             {
                 await apiConnection.SendQueryAsync<ReturnId>(ComplianceQueries.removeCriterion,
-                    new { id = ActCrit.Id, removed = DateTime.UtcNow });
+                    new { id = ActCrit.Id, removed = DateTimeOffset.UtcNow });
                 FixCriteria.Remove(ActCrit);
                 ActCrit = new();
                 DeleteCritMode = false;

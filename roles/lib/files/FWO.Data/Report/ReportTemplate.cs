@@ -13,7 +13,7 @@ namespace FWO.Data.Report
         public string Name { get; set; } = "";
 
         [JsonProperty("report_template_create"), JsonPropertyName("report_template_create")]
-        public DateTime CreationDate { get; set; }
+        public DateTimeOffset CreationDate { get; set; }
 
         [JsonProperty("report_template_comment"), JsonPropertyName("report_template_comment")]
         public string Comment { get; set; } = "";

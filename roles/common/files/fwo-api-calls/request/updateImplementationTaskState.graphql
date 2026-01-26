@@ -1,8 +1,8 @@
 mutation updateImplementationTaskState(
   $id: bigint!
   $state: Int
-  $start: timestamp
-  $stop: timestamp
+  $start: timestamptz
+  $stop: timestamptz
   $handler: Int
   $recentHandler: Int
   $assignedGroup: String

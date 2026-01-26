@@ -1,4 +1,4 @@
-mutation updateAlert($userId: Int, $alertId: bigint, $ackTimeStamp: timestamp) {
+mutation updateAlert($userId: Int, $alertId: bigint, $ackTimeStamp: timestamptz) {
     update_alert(where: {alert_id: {_eq: $alertId}}, _set: {ack_by: $userId, ack_timestamp: $ackTimeStamp}) {
         affected_rows
     }

@@ -9,10 +9,10 @@ namespace FWO.Data
         public long ControlId { get; set; }
 
         [JsonProperty("start_time"), JsonPropertyName("start_time")]
-        public DateTime? StartTime { get; set; }
+        public DateTimeOffset? StartTime { get; set; }
 
         [JsonProperty("stop_time"), JsonPropertyName("stop_time")]
-        public DateTime? StopTime { get; set; }
+        public DateTimeOffset? StopTime { get; set; }
 
         [JsonProperty("successful_import"), JsonPropertyName("successful_import")]
         public bool SuccessfulImport { get; set; }
@@ -33,7 +33,7 @@ namespace FWO.Data
         public bool ImportDisabled { get; set; }
 
         [JsonProperty("last_import_attempt"), JsonPropertyName("last_import_attempt")]
-        public DateTime? LastImportAttempt { get; set; }
+        public DateTimeOffset? LastImportAttempt { get; set; }
 
         [JsonProperty("last_import_attempt_successful"), JsonPropertyName("last_import_attempt_successful")]
         public bool LastImportAttemptSuccessful { get; set; }

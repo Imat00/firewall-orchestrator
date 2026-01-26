@@ -1,4 +1,4 @@
-﻿using FWO.Report.Filter.Exceptions;
+using FWO.Report.Filter.Exceptions;
 using FWO.Basics;
 
 
@@ -43,7 +43,7 @@ namespace FWO.Report.Filter.Ast
 
         private void ExtractRecertDisplayFilter(DynGraphqlQuery query)
         {
-            // string queryVarName = AddVariable<DateTime>(query, "refdate", Operator.Kind, DateTime.Now.AddDays(semanticValue));
+            // string queryVarName = AddVariable<DateTimeOffset>(query, "refdate", Operator.Kind, DateTimeOffset.utcNow.AddDays(semanticValue));
             // query.ruleWhereStatement += $@"  rule_metadatum: {{ recertifications: {{ next_recert_date: {{ _lte: ${queryVarName} }} }} }}";
         }
 
@@ -58,7 +58,7 @@ namespace FWO.Report.Filter.Ast
 
         private void ExtractUnusedFilter(DynGraphqlQuery query)
         {
-            string QueryVarName = AddVariable<DateTime>(query, "cut", Operator.Kind, DateTime.Now.AddDays(-semanticValue));
+            string QueryVarName = AddVariable<DateTimeOffset>(query, "cut", Operator.Kind, DateTimeOffset.UtcNow.AddDays(-semanticValue));
             query.RuleWhereStatement += $@"rule_metadatum: {{_or: [
                     {{_and: [{{rule_last_hit: {{_is_null: false}} }}, {{rule_last_hit: {{_lte: ${QueryVarName} }} }} ] }},
                     {{ rule_last_hit: {{_is_null: true}} }} 

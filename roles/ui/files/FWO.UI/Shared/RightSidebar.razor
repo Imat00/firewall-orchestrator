@@ -309,7 +309,7 @@
             {
                 if (rsbTimeShortcut == LSBTime.TimeShortcut)
                     return false;
-                rsbTimeStart = DateTime.Now.ToString(DynGraphqlQuery.fullTimeFormat);
+                rsbTimeStart = DateTimeOffset.UtcNow.ToString(DynGraphqlQuery.fullTimeFormat);
                 rsbTimeShortcut = LSBTime.TimeShortcut;
             }
             else
@@ -332,7 +332,7 @@
     {
         Dictionary<string, object> queryVars = new()
         {
-            [QueryVar.Time] = time != "" ? time : DateTime.Now.ToString(DynGraphqlQuery.fullTimeFormat),
+            [QueryVar.Time] = time != "" ? time : DateTimeOffset.UtcNow.ToString(DynGraphqlQuery.fullTimeFormat),
         };
         List<ManagementReport> result = await apiConnection.SendQueryAsync<List<ManagementReport>>(ReportQueries.getRelevantImportIdsAtTime, queryVars);
         Dictionary<int, long> importIds = new();

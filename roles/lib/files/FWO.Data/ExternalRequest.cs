@@ -54,7 +54,7 @@ namespace FWO.Data
         public string? LastProcessingResponse { get; set; }
 
         [JsonProperty("create_date"), JsonPropertyName("create_date")]
-        public DateTime CreationDate { get; set; }
+        public DateTimeOffset CreationDate { get; set; }
 
         [JsonProperty("locked"), JsonPropertyName("locked")]
         public bool Locked { get; set; } = false;

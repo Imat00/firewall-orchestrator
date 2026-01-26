@@ -33,15 +33,15 @@ namespace FWO.Report
 
         public static async Task<List<ManagementReport>> GetRelevantImportId(ApiConnection apiConnection, int managementId, string configTime)
         {
-            DateTime time;
+            DateTimeOffset time;
             try
             {
-                time = DateTime.ParseExact(configTime, DynGraphqlQuery.fullTimeFormat, System.Globalization.CultureInfo.InvariantCulture);
+                time = DateTimeOffset.ParseExact(configTime, DynGraphqlQuery.fullTimeFormat, System.Globalization.CultureInfo.InvariantCulture);
             }
             catch (FormatException)
             {
-                Log.WriteError("GetRelevantImportId", $"Invalid timestamp format.", null);
-                throw new ArgumentException($"Invalid timestamp format. Please use {DynGraphqlQuery.fullTimeFormat}.");
+                Log.WriteError("GetRelevantImportId", $"Invalid timestamptz format.", null);
+                throw new ArgumentException($"Invalid timestamptz format. Please use {DynGraphqlQuery.fullTimeFormat}.");
             }
             Dictionary<string, object> ImpIdQueryVariables = new()
             {

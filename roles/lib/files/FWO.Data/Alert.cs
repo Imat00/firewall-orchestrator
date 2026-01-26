@@ -67,13 +67,13 @@ namespace FWO.Data
         public int? UserId { get; set; }
 
         [JsonProperty("alert_timestamp"), JsonPropertyName("alert_timestamp")]
-        public DateTime Timestamp { get; set; }
+        public DateTimeOffset Timestamptz { get; set; }
 
         [JsonProperty("ack_by"), JsonPropertyName("ack_by")]
         public int? AcknowledgedBy { get; set; }
 
         [JsonProperty("ack_timestamp"), JsonPropertyName("ack_timestamp")]
-        public DateTime? AckTimestamp { get; set; }
+        public DateTimeOffset? AckTimestamptz { get; set; }
 
         [JsonProperty("json_data"), JsonPropertyName("json_data")]
         public object? JsonData { get; set; }

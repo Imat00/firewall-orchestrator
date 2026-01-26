@@ -98,24 +98,24 @@ namespace FWO.Middleware.Server
             RecertCheckParams checkParams = (owner.RecertCheckParamString != null && owner.RecertCheckParamString != "" ?
                 System.Text.Json.JsonSerializer.Deserialize<RecertCheckParams>(owner.RecertCheckParamString) :
                 globCheckParams) ?? throw new ArgumentException("Config Parameters not set.");
-            DateTime lastCheck = owner.LastRecertCheck ?? DateTime.MinValue;
-            DateTime nextCheck = checkParams.RecertCheckInterval switch
+            DateTimeOffset lastCheck = owner.LastRecertCheck ?? DateTimeOffset.MinValue;
+            DateTimeOffset nextCheck = checkParams.RecertCheckInterval switch
             {
                 SchedulerInterval.Days => lastCheck.AddDays(checkParams.RecertCheckOffset),
                 SchedulerInterval.Weeks => CalcForWeeks(lastCheck, checkParams),
                 SchedulerInterval.Months => CalcForMonths(lastCheck, checkParams),
                 _ => throw new NotSupportedException("Time interval is not supported.")
             };
-            if (nextCheck <= DateTime.Today)
+            if (nextCheck <= DateTimeOffset.UtcNow.Date)
             {
                 return true;
             }
             return false;
         }
 
-        private static DateTime CalcForWeeks(DateTime lastCheck, RecertCheckParams checkParams)
+        private static DateTimeOffset CalcForWeeks(DateTimeOffset lastCheck, RecertCheckParams checkParams)
         {
-            DateTime nextCheck;
+            DateTimeOffset nextCheck;
             if (checkParams.RecertCheckWeekday == null)
             {
                 nextCheck = lastCheck.AddDays(checkParams.RecertCheckOffset * GlobalConst.kDaysPerWeek);
@@ -133,9 +133,9 @@ namespace FWO.Middleware.Server
             return nextCheck;
         }
 
-        private static DateTime CalcForMonths(DateTime lastCheck, RecertCheckParams checkParams)
+        private static DateTimeOffset CalcForMonths(DateTimeOffset lastCheck, RecertCheckParams checkParams)
         {
-            DateTime nextCheck;
+            DateTimeOffset nextCheck;
             if (checkParams.RecertCheckDayOfMonth == null)
             {
                 nextCheck = lastCheck.AddMonths(checkParams.RecertCheckOffset);
@@ -166,7 +166,7 @@ namespace FWO.Middleware.Server
             List<Rule> overdueRecerts = [];
             foreach (Rule rule in openRecerts)
             {
-                if (rule.Metadata.RuleRecertification.Count > 0 && rule.Metadata.RuleRecertification[0].NextRecertDate >= DateTime.Now)
+                if (rule.Metadata.RuleRecertification.Count > 0 && rule.Metadata.RuleRecertification[0].NextRecertDate >= DateTimeOffset.UtcNow)
                 {
                     upcomingRecerts.Add(rule);
                 }
@@ -258,7 +258,7 @@ namespace FWO.Middleware.Server
         private static string PrepareLine(Rule rule)
         {
             Recertification? nextRecert = rule.Metadata.RuleRecertification.FirstOrDefault(x => x.RecertDate == null);
-            return (nextRecert != null && nextRecert.NextRecertDate != null ? DateOnly.FromDateTime((DateTime)nextRecert.NextRecertDate) : "") + ": "
+            return (nextRecert != null && nextRecert.NextRecertDate != null ? DateOnly.FromDateTime(nextRecert.NextRecertDate.Value.UtcDateTime) : "") + ": "
                     + rule.DeviceName + ": " + rule.Name + ":" + rule.Uid + "\r\n\r\n";  // link ?
         }
 
@@ -335,7 +335,7 @@ namespace FWO.Middleware.Server
 
         private string PrepareOwnerBody(FwoOwner owner)
         {
-            string msgText = owner.NextRecertDate >= DateTime.Today ? globalConfig.RecCheckEmailUpcomingText : globalConfig.RecCheckEmailOverdueText;
+            string msgText = owner.NextRecertDate >= DateTimeOffset.UtcNow.Date ? globalConfig.RecCheckEmailUpcomingText : globalConfig.RecCheckEmailOverdueText;
             return msgText.Replace(Placeholder.APPNAME, owner.Name);
         }
 
@@ -357,7 +357,7 @@ namespace FWO.Middleware.Server
             var Variables = new
             {
                 id = owner.Id,
-                lastRecertCheck = DateTime.Now
+                lastRecertCheck = DateTimeOffset.UtcNow
             };
             await apiConnectionMiddlewareServer.SendQueryAsync<object>(OwnerQueries.setOwnerLastCheck, Variables);
         }

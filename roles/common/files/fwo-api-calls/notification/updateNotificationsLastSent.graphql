@@ -1,6 +1,6 @@
 mutation updateNotificationsLastSent(
   $ids: [Int!]
-  $lastSent: timestamp
+  $lastSent: timestamptz
   ) {
   update_notification(
     where: { id: {_in: $ids} }

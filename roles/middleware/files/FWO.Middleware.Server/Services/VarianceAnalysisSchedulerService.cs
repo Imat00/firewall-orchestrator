@@ -121,15 +121,15 @@ namespace FWO.Middleware.Server.Services
             Log.WriteInfo(SchedulerName, $"Trigger scheduled. Start: {startTime:yyyy-MM-dd HH:mm:ss}, Interval: {globalConfig.VarianceAnalysisSleepTime}m");
         }
 
-        private DateTimeOffset CalculateStartTime(DateTime configuredStartTime, TimeSpan interval)
+        private DateTimeOffset CalculateStartTime(DateTimeOffset configuredStartTime, TimeSpan interval)
         {
-            DateTime startTime = configuredStartTime;
-            DateTime now = DateTime.Now;
+            DateTimeOffset startTime = configuredStartTime;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
             while (startTime < now)
             {
                 startTime = startTime.Add(interval);
             }
-            return new DateTimeOffset(startTime);
+            return startTime;
         }
 
         private void ApiExceptionHandler(Exception exception)

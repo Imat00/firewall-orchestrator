@@ -2,8 +2,8 @@ mutation recertifyOwner(
   $ownerId: Int!
   $userDn: String
   $recertified: Boolean
-  $recertDate: timestamp
-  $nextRecertDate: timestamp
+  $recertDate: timestamptz
+  $nextRecertDate: timestamptz
   $comment: String
 ) {
   insert_owner_recertification(

@@ -228,7 +228,7 @@ namespace FWO.Services
                             $"Added App Server {appServer.Content.Display()} to App Role: {ActAppRole.Display()}", Application.Id);
                     }
                     ActAppRole.Creator = userConfig.User.Name;
-                    ActAppRole.CreationDate = DateTime.Now;
+                    ActAppRole.CreationDate = DateTimeOffset.UtcNow;
                     AppRoles.Add(ActAppRole);
                     AvailableNwElems.Add(new KeyValuePair<int, long>((int)ModellingTypes.ModObjectType.AppRole, ActAppRole.Id));
                 }

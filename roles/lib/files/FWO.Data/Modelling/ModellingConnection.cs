@@ -68,7 +68,7 @@ namespace FWO.Data.Modelling
         public string? Creator { get; set; }
 
         [JsonProperty("creation_date"), JsonPropertyName("creation_date")]
-        public DateTime? CreationDate { get; set; }
+        public DateTimeOffset? CreationDate { get; set; }
 
         [JsonProperty("conn_prop"), JsonPropertyName("conn_prop")]
         public string? Properties { get; set; } = "";
@@ -113,7 +113,7 @@ namespace FWO.Data.Modelling
         public bool Removed { get; set; } = false;
 
         [JsonProperty("removal_date"), JsonPropertyName("removal_date")]
-        public DateTime? RemovalDate { get; set; }
+        public DateTimeOffset? RemovalDate { get; set; }
 
         
         public bool SrcFromInterface { get; set; } = false;

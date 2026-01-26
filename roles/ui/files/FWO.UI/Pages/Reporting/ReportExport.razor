@@ -199,8 +199,8 @@
                         var queryVariables = new
                         {
                             report_name = reportExportFile.Name,
-                            report_start_time = DateTime.Now, // TODO: Change to correct dates
-                            report_end_time = DateTime.Now,
+                            report_start_time = DateTimeOffset.UtcNow, // TODO: Change to correct dates
+                            report_end_time = DateTimeOffset.UtcNow,
                             report_owner_id = reportExportFile.OwningUserId,
                             report_csv = reportExportFile.Csv,
                             report_pdf = reportExportFile.Pdf,

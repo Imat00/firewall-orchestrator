@@ -161,12 +161,12 @@
     [Parameter]
     public Func<bool> DisplayTime { get; set; } = DefaultInit.DoNothingSync;
 
-    private DateTime actDate = DateTime.Now;
-    private DateTime actTime = DateTime.Now;
-    private DateTime actStartDate = DateTime.Now;
-    private DateTime actStartTime = DateTime.Now;
-    private DateTime actEndDate = DateTime.Now;
-    private DateTime actEndTime = DateTime.Now;
+    private DateTimeOffset actDate = DateTimeOffset.UtcNow;
+    private DateTimeOffset actTime = DateTimeOffset.UtcNow;
+    private DateTimeOffset actStartDate = DateTimeOffset.UtcNow;
+    private DateTimeOffset actStartTime = DateTimeOffset.UtcNow;
+    private DateTimeOffset actEndDate = DateTimeOffset.UtcNow;
+    private DateTimeOffset actEndTime = DateTimeOffset.UtcNow;
 
 
     protected override void OnParametersSet()

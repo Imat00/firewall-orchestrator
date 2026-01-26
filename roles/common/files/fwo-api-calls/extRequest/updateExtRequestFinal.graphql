@@ -1,7 +1,7 @@
 mutation updateExtRequestFinal(
   $id: bigint!
   $extRequestState: String!
-  $finishDate: timestamp
+  $finishDate: timestamptz
   ) {
   update_ext_request_by_pk(
     pk_columns: { id: $id }

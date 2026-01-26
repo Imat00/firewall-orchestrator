@@ -14,10 +14,10 @@ namespace FWO.Data.Report
         public string Name { get; set; } = "";
 
         [JsonProperty("report_start_time"), JsonPropertyName("report_start_time")]
-        public DateTime GenerationDateStart { get; set; }
+        public DateTimeOffset GenerationDateStart { get; set; }
 
         [JsonProperty("report_end_time"), JsonPropertyName("report_end_time")]
-        public DateTime GenerationDateEnd { get; set; }
+        public DateTimeOffset GenerationDateEnd { get; set; }
 
         [JsonProperty("report_template"), JsonPropertyName("report_template")]
         public ReportTemplate Template { get; set; } = new ();

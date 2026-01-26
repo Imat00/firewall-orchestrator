@@ -1,7 +1,7 @@
 ﻿mutation updateReportTemplate(
   $reportTemplateId: Int
   $reportTemplateName: String
-  $reportTemplateCreate: timestamp
+  $reportTemplateCreate: timestamptz
   $reportTemplateComment: String
   $reportFilterLine: String
   $reportTemplateOwner: Int

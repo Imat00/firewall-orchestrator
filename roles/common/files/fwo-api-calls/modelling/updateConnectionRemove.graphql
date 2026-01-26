@@ -1,6 +1,6 @@
 mutation updateConnectionRemove(
   $id: Int!
-  $removalDate: timestamp
+  $removalDate: timestamptz
   ) {
   update_modelling_connection_by_pk(
     pk_columns: { id: $id }

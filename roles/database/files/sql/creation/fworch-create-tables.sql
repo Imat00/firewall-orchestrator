@@ -443,7 +443,7 @@ Create table "uiuser"
 	"uuid" Varchar NOT NULL UNIQUE,
 	"uiuser_first_name" Varchar,
 	"uiuser_last_name" Varchar,
-	"uiuser_start_date" Date Default now(),
+	"uiuser_start_date" Date Default CURRENT_DATE,
 	"uiuser_end_date" Date,
 	"uiuser_email" Varchar,
 	"tenant_id" Integer,

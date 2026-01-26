@@ -1,7 +1,7 @@
 mutation acknowledgeAlert(
   $id: bigint!
   $ackUser: Int!
-  $ackTime: timestamp!
+  $ackTime: timestamptz!
 ) {
   update_alert_by_pk(
     pk_columns: { alert_id: $id }

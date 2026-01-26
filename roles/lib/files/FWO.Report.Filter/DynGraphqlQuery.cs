@@ -577,7 +577,7 @@ namespace FWO.Report.Filter
                             $"user_create: {{_lte: $import_id_end }}" +
                             $"_or: [{{removed: {{_gt: $import_id_start}} }}, {{removed: {{_is_null: true}} }}]";
                         query.ReportTimeString = timeFilter.IsShortcut ?
-                            DateTime.Now.ToString(fullTimeFormat) : timeFilter.ReportTime.ToString(fullTimeFormat);
+                            DateTimeOffset.UtcNow.ToString(fullTimeFormat) : timeFilter.ReportTime.ToString(fullTimeFormat);
                         break;
                     case ReportType.Changes:
                     case ReportType.ResolvedChanges:
@@ -597,8 +597,8 @@ namespace FWO.Report.Filter
                         query.NwObjWhereStatement += "{}";
                         query.SvcObjWhereStatement += "{}";
                         query.UserObjWhereStatement += "{}";
-                        query.ReportTimeString = DateTime.Now.AddDays(recertFilter.RecertificationDisplayPeriod).ToString(fullTimeFormat);
-                        query.QueryParameters.Add("$refdate1: timestamp! ");
+                        query.ReportTimeString = DateTimeOffset.UtcNow.AddDays(recertFilter.RecertificationDisplayPeriod).ToString(fullTimeFormat);
+                        query.QueryParameters.Add("$refdate1: timestamptz! ");
                         query.QueryVariables["refdate1"] = query.ReportTimeString;
                         query.RuleWhereStatement += $@" rule_metadatum: {{ recertifications: {{ next_recert_date: {{ _lte: $refdate1 }} }} }} ";
                         break;
@@ -618,9 +618,9 @@ namespace FWO.Report.Filter
         {
             string start;
             string stop;
-            DateTime startOfCurrentYear = new(DateTime.Now.Year, 1, 1);
-            DateTime startOfCurrentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
-            DateTime startOfCurrentWeek = DateTime.Now.AddDays(-(int)DateTime.Now.DayOfWeek);
+            DateTimeOffset startOfCurrentYear = new(DateTimeOffset.UtcNow.Year, 1, 1,0,0,0,TimeSpan.Zero);
+            DateTimeOffset startOfCurrentMonth = new(DateTimeOffset.UtcNow.Year, DateTimeOffset.UtcNow.Month, 1,0,0,0,TimeSpan.Zero);
+            DateTimeOffset startOfCurrentWeek = DateTimeOffset.UtcNow.Date.AddDays(-(int)DateTimeOffset.UtcNow.DayOfWeek);
 
             switch (timeFilter.TimeRangeType)
             {
@@ -645,19 +645,19 @@ namespace FWO.Report.Filter
                             break;
                         case "this week":
                             start = startOfCurrentWeek.ToString(dateFormat);
-                            stop = DateTime.Now.AddDays(1).ToString(dateFormat);
+                            stop = startOfCurrentWeek.AddDays(GlobalConst.kDaysPerWeek).ToString(dateFormat);
                             break;
                         case "last week":
                             start = startOfCurrentWeek.AddDays(-GlobalConst.kDaysPerWeek).ToString(dateFormat);
                             stop = startOfCurrentWeek.ToString(dateFormat);
                             break;
                         case "today":
-                            start = DateTime.Now.ToString(dateFormat);
-                            stop = DateTime.Now.AddDays(1).ToString(dateFormat);
+                            start = DateTimeOffset.UtcNow.Date.ToString(dateFormat);
+                            stop = DateTimeOffset.UtcNow.Date.AddDays(1).ToString(dateFormat);
                             break;
                         case "yesterday":
-                            start = DateTime.Now.AddDays(-1).ToString(dateFormat);
-                            stop = DateTime.Now.ToString(dateFormat);
+                            start = DateTimeOffset.UtcNow.Date.AddDays(-1).ToString(dateFormat);
+                            stop = DateTimeOffset.UtcNow.Date.ToString(dateFormat);
                             break;
                         default:
                             throw new NotSupportedException($"Error: wrong time range format:" + timeFilter.TimeRangeShortcut);
@@ -667,22 +667,22 @@ namespace FWO.Report.Filter
                 case TimeRangeType.Interval:
                     start = timeFilter.Interval switch
                     {
-                        SchedulerInterval.Days => DateTime.Now.AddDays(-timeFilter.Offset).ToString(fullTimeFormat),
-                        SchedulerInterval.Weeks => DateTime.Now.AddDays(-GlobalConst.kDaysPerWeek * timeFilter.Offset).ToString(fullTimeFormat),
-                        SchedulerInterval.Months => DateTime.Now.AddMonths(-timeFilter.Offset).ToString(fullTimeFormat),
-                        SchedulerInterval.Years => DateTime.Now.AddYears(-timeFilter.Offset).ToString(fullTimeFormat),
+                        SchedulerInterval.Days => DateTimeOffset.UtcNow.AddDays(-timeFilter.Offset).ToString(fullTimeFormat),
+                        SchedulerInterval.Weeks => DateTimeOffset.UtcNow.AddDays(-GlobalConst.kDaysPerWeek * timeFilter.Offset).ToString(fullTimeFormat),
+                        SchedulerInterval.Months => DateTimeOffset.UtcNow.AddMonths(-timeFilter.Offset).ToString(fullTimeFormat),
+                        SchedulerInterval.Years => DateTimeOffset.UtcNow.AddYears(-timeFilter.Offset).ToString(fullTimeFormat),
                         _ => throw new NotSupportedException($"Error: wrong time interval format:" + timeFilter.Interval.ToString()),
                     };
-                    stop = DateTime.Now.ToString(fullTimeFormat);
+                    stop = DateTimeOffset.UtcNow.ToString(fullTimeFormat);
                     break;
 
                 case TimeRangeType.Fixeddates:
                     if (timeFilter.OpenStart)
-                        start = DateTime.MinValue.ToString(fullTimeFormat);
+                        start = DateTimeOffset.MinValue.ToString(fullTimeFormat);
                     else
                         start = timeFilter.StartTime.ToString(fullTimeFormat);
                     if (timeFilter.OpenEnd)
-                        stop = DateTime.MaxValue.ToString(fullTimeFormat);
+                        stop = DateTimeOffset.MaxValue.ToString(fullTimeFormat);
                     else
                         stop = timeFilter.EndTime.ToString(fullTimeFormat);
                     break;
@@ -718,8 +718,8 @@ namespace FWO.Report.Filter
                 }
                 if (!modellingFilter.ShowAllOwners)
                 {
-                    query.QueryParameters.Add("$refDate: timestamp");
-                    query.QueryVariables["refDate"] = DateTime.Now.AddDays(recertFilter?.RecertificationDisplayPeriod ?? 0);
+                    query.QueryParameters.Add("$refDate: timestamptz");
+                    query.QueryVariables["refDate"] = DateTimeOffset.UtcNow.AddDays(recertFilter?.RecertificationDisplayPeriod ?? 0);
                     query.OwnerWhereStatement += $@"{{ next_recert_date: {{ _lte: $refDate }} }}";
                 }
             }
@@ -749,10 +749,10 @@ namespace FWO.Report.Filter
         {
             if (unusedFilter != null)
             {
-                query.QueryParameters.Add("$cut: timestamp");
-                query.QueryParameters.Add("$tolerance: timestamp");
-                query.QueryVariables["cut"] = DateTime.Now.AddDays(-unusedFilter.UnusedForDays);
-                query.QueryVariables["tolerance"] = DateTime.Now.AddDays(-unusedFilter.CreationTolerance);
+                query.QueryParameters.Add("$cut: timestamptz");
+                query.QueryParameters.Add("$tolerance: timestamptz");
+                query.QueryVariables["cut"] = DateTimeOffset.UtcNow.AddDays(-unusedFilter.UnusedForDays);
+                query.QueryVariables["tolerance"] = DateTimeOffset.UtcNow.AddDays(-unusedFilter.CreationTolerance);
                 query.RuleWhereStatement += $@"{{rule_metadatum: {{_or: [
                     {{_and: [{{rule_last_hit: {{_is_null: false}} }}, {{rule_last_hit: {{_lte: $cut}} }} ] }},
                     {{_and: [{{rule_last_hit: {{_is_null: true}} }}, {{created_import: {{ start_time: {{_lte: $tolerance}} }} }} ] }} 

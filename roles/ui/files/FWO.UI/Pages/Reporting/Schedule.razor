@@ -221,8 +221,8 @@
     private GraphQlApiSubscription<List<ReportSchedule>>? reportSchedulesSubscription;
     private List<ReportSchedule> reportSchedules = [];
     private ReportSchedule reportScheduleInEdit = new ();
-    private DateTime actDate = DateTime.Today;
-    private DateTime actTime = DateTime.Now.AddSeconds(-DateTime.Now.Second);
+    private DateTimeOffset actDate = DateTimeOffset.UtcNow.Date;
+    private DateTimeOffset actTime = DateTimeOffset.Now.AddSeconds(-DateTimeOffset.UtcNow.Second);
     private bool ShowAddReportScheduleDialog = false;
     private bool ShowEditReportScheduleDialog = false;
     private bool ShowDeleteReportScheduleDialog = false;

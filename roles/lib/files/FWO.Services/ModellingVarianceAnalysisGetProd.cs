@@ -1,4 +1,4 @@
-﻿using FWO.Api.Client.Queries;
+using FWO.Api.Client.Queries;
 using FWO.Basics;
 using FWO.Data;
 using FWO.Data.Modelling;
@@ -268,7 +268,7 @@ namespace FWO.Services
             {
                 var Variables = new
                 {
-                    time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    time = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                     mgmIds = mgtId
                 };
                 List<Management> managements = (await apiConnection.SendQueryAsync<List<Management>>(ReportQueries.getRelevantImportIdsAtTime, Variables))!;

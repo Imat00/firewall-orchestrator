@@ -76,7 +76,7 @@ namespace FWO.Config.Api.Data
         public int AutoDiscoverSleepTime { get; set; } = 24;
 
         [JsonProperty("autoDiscoverStartAt"), JsonPropertyName("autoDiscoverStartAt")]
-        public DateTime AutoDiscoverStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset AutoDiscoverStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("fwApiElementsPerFetch"), JsonPropertyName("fwApiElementsPerFetch")]
         public int FwApiElementsPerFetch { get; set; } = 150;
@@ -103,13 +103,13 @@ namespace FWO.Config.Api.Data
         public int ImpChangeNotifySleepTime { get; set; } = 60;
 
         [JsonProperty("impChangeNotifyStartAt"), JsonPropertyName("impChangeNotifyStartAt")]
-        public DateTime ImpChangeNotifyStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset ImpChangeNotifyStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("externalRequestSleepTime"), JsonPropertyName("externalRequestSleepTime")]
         public int ExternalRequestSleepTime { get; set; } = 60;
 
         [JsonProperty("externalRequestStartAt"), JsonPropertyName("externalRequestStartAt")]
-        public DateTime ExternalRequestStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset ExternalRequestStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("recertificationMode"), JsonPropertyName("recertificationMode")]
         public RecertificationMode RecertificationMode { get; set; } = RecertificationMode.RuleByRule;
@@ -223,7 +223,7 @@ namespace FWO.Config.Api.Data
         public int MessageViewTime { get; set; } = 7;
 
         [JsonProperty("dailyCheckStartAt"), JsonPropertyName("dailyCheckStartAt")]
-        public DateTime DailyCheckStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset DailyCheckStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("maxImportDuration"), JsonPropertyName("maxImportDuration")]
         public int MaxImportDuration { get; set; } = 4;
@@ -296,7 +296,7 @@ namespace FWO.Config.Api.Data
         public int ImportAppDataSleepTime { get; set; } = 24;
 
         [JsonProperty("importAppDataStartAt"), JsonPropertyName("importAppDataStartAt")]
-        public DateTime ImportAppDataStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset ImportAppDataStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("ownerLdapId"), JsonPropertyName("ownerLdapId")]
         public int OwnerLdapId { get; set; } = GlobalConst.kLdapInternalId;
@@ -317,7 +317,7 @@ namespace FWO.Config.Api.Data
         public int ImportSubnetDataSleepTime { get; set; } = 24;
 
         [JsonProperty("importSubnetDataStartAt"), JsonPropertyName("importSubnetDataStartAt")]
-        public DateTime ImportSubnetDataStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset ImportSubnetDataStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("modNamingConvention"), JsonPropertyName("modNamingConvention")]
         public string ModNamingConvention { get; set; } = "";
@@ -416,7 +416,7 @@ namespace FWO.Config.Api.Data
         public int VarianceAnalysisSleepTime { get; set; } = 0;
 
         [JsonProperty("varianceAnalysisStartAt"), JsonPropertyName("varianceAnalysisStartAt")]
-        public DateTime VarianceAnalysisStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset VarianceAnalysisStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("varianceAnalysisSync"), JsonPropertyName("varianceAnalysisSync")]
         public bool VarianceAnalysisSync { get; set; } = false;
@@ -431,7 +431,7 @@ namespace FWO.Config.Api.Data
         public int ComplianceCheckSleepTime { get; set; } = 0;
 
         [JsonProperty("complianceCheckStartAt"), JsonPropertyName("complianceCheckStartAt")]
-        public DateTime ComplianceCheckStartAt { get; set; } = DateTime.Now;
+        public DateTimeOffset ComplianceCheckStartAt { get; set; } = DateTimeOffset.UtcNow;
 
         [JsonProperty("complianceCheckPolicy"), JsonPropertyName("complianceCheckPolicy")]
         public int ComplianceCheckPolicyId { get; set; } = 0;

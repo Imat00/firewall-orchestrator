@@ -1,4 +1,4 @@
-﻿using FWO.Config.Api;
+using FWO.Config.Api;
 using FWO.Data;
 using FWO.Data.Modelling;
 using FWO.Api.Client;
@@ -184,7 +184,7 @@ namespace FWO.Services
                             $"Added Service {service.Content.Display()} to Service Group: {ActServiceGroup.Display()}", Application.Id);
                     }
                     ActServiceGroup.Creator = userConfig.User.Name;
-                    ActServiceGroup.CreationDate = DateTime.Now;
+                    ActServiceGroup.CreationDate = DateTimeOffset.UtcNow;
                     ServiceGroups.Add(ActServiceGroup);
                     AvailableSvcElems.Add(new KeyValuePair<int, int>((int)ModellingTypes.ModObjectType.ServiceGroup, ActServiceGroup.Id));
                 }

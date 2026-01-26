@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 using FWO.Api.Client;
 using FWO.Api.Client.Queries;
@@ -30,7 +30,7 @@ namespace FWO.Test
             private TestScheduler(ApiConnection apiConnection, GlobalConfig globalConfig)
                 : base(apiConnection, globalConfig, ConfigQueries.subscribeExternalRequestConfigChanges, SchedulerInterval.Seconds, "Test")
             {
-                StartScheduleTimer(1, DateTime.Now);
+                StartScheduleTimer(1, DateTimeOffset.UtcNow);
             }
 
             private readonly int Counter = 1;

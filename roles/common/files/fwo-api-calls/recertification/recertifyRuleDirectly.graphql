@@ -2,10 +2,10 @@ mutation recertifyRuleDirectly(
   $ruleMetadataId: bigint!
   $ruleId: bigint!
   $ownerId: Int!
-  $nextRecertDate: timestamp
+  $nextRecertDate: timestamptz
   $userDn: String
   $recertified: Boolean
-  $recertDate: timestamp
+  $recertDate: timestamptz
   $comment: String
   $ownerRecertId: bigint
   ) {

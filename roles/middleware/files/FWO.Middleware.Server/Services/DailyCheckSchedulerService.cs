@@ -105,15 +105,15 @@ namespace FWO.Middleware.Server.Services
             Log.WriteInfo(SchedulerName, $"Job scheduled. Start: {startTime:yyyy-MM-dd HH:mm:ss}, Interval: 1d");
         }
 
-        private static DateTimeOffset CalculateStartTime(DateTime configuredStartTime, TimeSpan interval)
+        private static DateTimeOffset CalculateStartTime(DateTimeOffset configuredStartTime, TimeSpan interval)
         {
-            DateTime startTime = configuredStartTime;
-            DateTime now = DateTime.Now;
-            while (startTime < now)
+            DateTimeOffset startTime = configuredStartTime;
+            DateTimeOffset utcnow = DateTimeOffset.UtcNow;
+            while (startTime < utcnow)
             {
                 startTime = startTime.Add(interval);
             }
-            return new DateTimeOffset(startTime);
+            return startTime;
         }
 
         private static void ApiExceptionHandler(Exception exception)

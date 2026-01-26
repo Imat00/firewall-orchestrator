@@ -3,7 +3,7 @@ mutation newApproval(
   $state: Int!
   $approverGroup: String
   $tenant: Int
-  $deadline: timestamp
+  $deadline: timestamptz
   $initialApproval: Boolean
   ) {
   insert_request_approval(objects: {

@@ -66,7 +66,7 @@ namespace FWO.Report
                 AppendNetworkObjectsHtml(ReportData.GlobalComSvc[0].AllObjects, chapterNumber, ref report);
                 AppendNetworkServicesHtml(ReportData.GlobalComSvc[0].AllServices, chapterNumber, ref report);
             }
-            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTime.Now, report);
+            return GenerateHtmlFrame(userConfig.GetText(ReportType.ToString()), Query.RawFilter, DateTimeOffset.UtcNow, report);
         }
 
         public void AppendConnDataForOwner(ref StringBuilder report, OwnerConnectionReport ownerReport, int chapterNumber)

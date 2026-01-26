@@ -10,8 +10,8 @@ mutation updateImplementationTask(
   $ruleAction: Int
   $tracking: Int
   $handler: Int
-  $validFrom: timestamp
-  $validTo: timestamp
+  $validFrom: timestamptz
+  $validTo: timestamptz
   $freeText: String
   ) {
   update_request_impltask_by_pk(

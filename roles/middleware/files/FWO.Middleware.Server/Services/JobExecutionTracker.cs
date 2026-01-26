@@ -94,7 +94,7 @@ namespace FWO.Middleware.Server.Services
         public string ErrorMessage { get; set; } = "";
 
         /// <summary>
-        /// Gets or sets the timestamp when the job was executed.
+        /// Gets or sets the timestamptz when the job was executed.
         /// </summary>
         public DateTimeOffset ExecutedAt { get; set; }
     }

@@ -392,7 +392,7 @@ namespace FWO.Middleware.Server.Controllers
                     project = "",
                     comment = "",
                     viewAllDevices = false,
-                    create = DateTime.Now
+                    create = DateTimeOffset.UtcNow
                 };
                 ReturnId[]? returnIds = (await apiConnection.SendQueryAsync<ReturnIdWrapper>(AuthQueries.addTenant, Variables)).ReturnIds;
                 if (returnIds != null)

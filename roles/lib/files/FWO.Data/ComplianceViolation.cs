@@ -74,9 +74,9 @@ namespace FWO.Data
         [JsonProperty("mgmt_uid"), JsonPropertyName("mgmt_uid")]
         public string MgmtUid { get; set; } = "";
         [JsonProperty("found_date"), JsonPropertyName("found_date")]
-        public DateTime FoundDate { get; set; } = DateTime.Now;
+        public DateTimeOffset FoundDate { get; set; } = DateTimeOffset.UtcNow;
         [JsonProperty("removed_date"), JsonPropertyName("removed_date")]
-        public DateTime? RemovedDate { get; set; } = null;
+        public DateTimeOffset? RemovedDate { get; set; } = null;
         [JsonProperty("details"), JsonPropertyName("details")]
         public string Details { get; set; } = "";
         [JsonProperty("risk_score"), JsonPropertyName("risk_score")]

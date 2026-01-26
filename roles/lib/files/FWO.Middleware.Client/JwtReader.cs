@@ -1,4 +1,4 @@
-﻿using FWO.Config.File;
+using FWO.Config.File;
 using FWO.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -123,7 +123,7 @@ namespace FWO.Middleware.Client
 			if (jwt == null)
 				throw new ArgumentException(nameof(jwt), JwtNotValidated);
 
-			return jwt.ValidTo - DateTime.UtcNow;
+			return jwt.ValidTo - DateTimeOffset.UtcNow;
 		}
 
 		public string GetRole()

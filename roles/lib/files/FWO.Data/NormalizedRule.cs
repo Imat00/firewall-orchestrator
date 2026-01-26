@@ -96,7 +96,7 @@ namespace FWO.Data
         /// <returns>A normalized Rule.</returns>
         public static NormalizedRule FromRule(Rule rule)
         {
-            DateTime? lastHit = rule.Metadata.LastHit;
+            DateTimeOffset? lastHit = rule.Metadata.LastHit;
             string? lastHitFormatted = null;
             if (lastHit.HasValue)
             {
