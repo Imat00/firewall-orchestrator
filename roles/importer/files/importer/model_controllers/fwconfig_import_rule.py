@@ -1,7 +1,7 @@
 import json
 import traceback
 from collections.abc import Callable, Generator
-from datetime import datetime
+from datetime import UTC, datetime
 from difflib import ndiff
 from enum import Enum
 from typing import Any, TypeVar
@@ -1213,7 +1213,7 @@ class FwConfigImportRule:
         """
         change_logger = ChangeLogger()
         changelog_rule_insert_objects: list[dict[str, Any]] = []
-        import_time = datetime.now().isoformat()
+        import_time = datetime.now(UTC).isoformat()
         change_typ = 3
 
         if self.import_details.state.is_initial_import or self.import_details.state.is_clearing_import:

@@ -71,7 +71,7 @@ class FwoApiCall:
 
     # this mgm field is used by mw dailycheck scheduler
     def log_import_attempt(self, mgm_id: int, successful: bool):
-        now = datetime.datetime.now().isoformat()
+        now = datetime.datetime.now(datetime.UTC).isoformat()
         query_variables: dict[str, Any] = {
             "mgmId": mgm_id,
             "timeStamp": now,
@@ -162,7 +162,7 @@ class FwoApiCall:
 
         try:
             query_variables: dict[str, Any] = {
-                "stopTime": datetime.datetime.now().isoformat(),
+                "stopTime": datetime.datetime.now(datetime.UTC).isoformat(),
                 "importId": import_id,
                 "success": success,
                 "anyChangesFound": import_stats.get_total_change_number() > 0,
@@ -335,7 +335,7 @@ class FwoApiCall:
 
             for alert in existing_unacknowledged_alerts["data"]["alert"]:
                 if "alert_id" in alert:
-                    now = datetime.datetime.now().isoformat()
+                    now = datetime.datetime.now(datetime.UTC).isoformat()
                     query_variables = {
                         "userId": 0,
                         "alertId": alert["alert_id"],

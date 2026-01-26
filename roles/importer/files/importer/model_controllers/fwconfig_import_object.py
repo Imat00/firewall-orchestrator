@@ -819,7 +819,7 @@ class FwConfigImportObject:
 
         nw_objs: list[dict[str, Any]] = []
         svc_objs: list[dict[str, Any]] = []
-        import_time = datetime.datetime.now().isoformat()
+        import_time = datetime.datetime.now(datetime.UTC).isoformat()
         change_typ = 3  # standard
         change_logger = ChangeLogger()
 
