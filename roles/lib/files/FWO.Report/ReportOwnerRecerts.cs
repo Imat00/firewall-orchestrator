@@ -49,7 +49,7 @@ namespace FWO.Report
             report.AppendLine("<hr>");
             if (furtherOwners.Count > 0)
             {
-                report.AppendLine(Headline(userConfig.GetText(!furtherOwners.Any( o => o.NextRecertDate == null) ? "U4007" : "U4008"), 3));
+                report.AppendLine(Headline(userConfig.GetText(!furtherOwners.Any(o => o.NextRecertDate == null) ? "U4007" : "U4008"), 3));
                 AppendOwnerTable(ref report, furtherOwners);
             }
            

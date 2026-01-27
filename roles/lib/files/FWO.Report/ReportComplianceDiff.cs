@@ -24,7 +24,7 @@ namespace FWO.Report
         {
             DiffReferenceInDays = reportParams.ComplianceFilter.DiffReferenceInDays;
         }
-        
+
         protected override bool ShowRule(Rule rule)
         {
             bool showRule = base.ShowRule(rule);
@@ -66,7 +66,7 @@ namespace FWO.Report
                 rule.Compliance = violations.Where(violation => violation.RemovedDate == null).ToList().Count > 0 ? ComplianceViolationType.MultipleViolations : ComplianceViolationType.None;
             }
         }
-        
+
         protected override Dictionary<string, object> CreateQueryVariables(int offset, int limit, string query)
         {
             Dictionary<string, object> queryVariables = base.CreateQueryVariables(offset, limit, query);

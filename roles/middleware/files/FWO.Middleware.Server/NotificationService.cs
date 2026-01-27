@@ -80,11 +80,11 @@ namespace FWO.Middleware.Server
         public async Task<int> SendNotification(FwoNotification notification, FwoOwner owner, DateTimeOffset? extDeadline, string content, ReportBase? report = null)
         {
             int emailsSent = 0;
-            if(SendNow(owner, extDeadline, notification))
+            if (SendNow(owner, extDeadline, notification))
             {
                 // Later: Handle other channels here when implemented
                 await SendEmail(notification, content, owner, report);
-                if(!CheckedNotificationIds.Contains(notification.Id))
+                if (!CheckedNotificationIds.Contains(notification.Id))
                 {
                     CheckedNotificationIds.Add(notification.Id);
                 }
@@ -159,7 +159,7 @@ namespace FWO.Middleware.Server
             {
                 return (DateTimeOffset)owner.NextRecertDate;
             }
-            else if(deadline == NotificationDeadline.RequestDate && extDeadline != null)
+            else if (deadline == NotificationDeadline.RequestDate && extDeadline != null)
             {
                  return (DateTimeOffset)extDeadline;
             }

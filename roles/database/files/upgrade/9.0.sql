@@ -565,8 +565,8 @@ RETURNS NUMERIC AS $$
   WHERE r.mgm_id = mgmId and active
     AND r.rule_num_numeric > (
       SELECT rule_num_numeric 
-      FROM rule 
-      WHERE rule_uid = current_rule_uid AND mgm_id = mgmId AND active
+      FROM rule r2
+      WHERE rule_uid = current_rule_uid AND r2.mgm_id = mgmId AND active
       LIMIT 1
     )
   ORDER BY r.rule_num_numeric ASC
@@ -602,6 +602,9 @@ ALTER TABLE "rule" ADD CONSTRAINT fk_rule_rulebase_id FOREIGN KEY ("rulebase_id"
 -- Alter table "rule_hit" add CONSTRAINT fk_hit_rule_id foreign key ("rule_id") references "rule" ("rule_id") on update restrict on delete cascade; 
 -- Alter table "rule_hit" add CONSTRAINT fk_hit_gw_id foreign key ("gw_id") references "device" ("dev_id") on update restrict on delete cascade; 
 -- Alter table "rule_hit" add CONSTRAINT fk_hit_metadata_id foreign key ("metadata_id") references "rule_metadata" ("dev_id") on update restrict on delete cascade; 
+
+-- removed logic for rule
+ALTER TABLE "rule" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 
 -----------------------------------------------
 -- METADATA part
@@ -664,7 +667,8 @@ BEGIN
     INTO missing_uids
     FROM rule_metadata rm
     LEFT JOIN rule r ON rm.rule_uid = r.rule_uid
-    WHERE r.rule_uid IS NULL;
+    WHERE r.rule_uid IS NULL
+      AND rm.mgm_id IS NULL;
 
     IF missing_uids IS NOT NULL THEN
         RAISE NOTICE 'Missing rule(s): %', missing_uids;
@@ -674,7 +678,9 @@ BEGIN
                 FROM rule_metadata rm
                 LEFT JOIN rule r ON rm.rule_uid = r.rule_uid
                 WHERE r.rule_uid IS NULL
-        );
+                  AND rm.mgm_id IS NULL
+        )
+          AND mgm_id IS NULL;
     END IF;
 
     -- Constraints droppen
@@ -689,6 +695,7 @@ BEGIN
             COUNT(DISTINCT r.mgm_id) AS mgm_count
         FROM rule_metadata rm
         JOIN rule r ON rm.rule_uid = r.rule_uid
+        WHERE rm.mgm_id IS NULL
         GROUP BY rm.rule_uid
         HAVING COUNT(DISTINCT r.mgm_id) >= 1
     LOOP
@@ -751,7 +758,7 @@ BEGIN
                     too_many_mgm_ids_on_uid_and_no_resolve
                 );
 				
-            END IF;                   
+            END IF;
         END IF;
     END LOOP;
 	
@@ -1325,7 +1332,7 @@ ALTER TABLE "zone" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 ALTER TABLE "usr" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 ALTER TABLE "usergrp" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 ALTER TABLE "usergrp_flat" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
-ALTER TABLE "rule" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
+-- ALTER TABLE "rule" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 ALTER TABLE "rule_from" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 ALTER TABLE "rule_to" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
 ALTER TABLE "rule_service" ADD COLUMN IF NOT EXISTS "removed" BIGINT;
@@ -3008,3 +3015,12 @@ ALTER TABLE uiuser
   ALTER COLUMN uiuser_start_date
     SET DEFAULT CURRENT_DATE;
 SET timezone = 'UTC';
+
+-- Changing primary key of *_resolved tables to include created timestamp
+-- This is necessary to store multiple resolutions for the same object/rule over time
+ALTER TABLE "rule_nwobj_resolved" DROP CONSTRAINT IF EXISTS "rule_nwobj_resolved_pkey";
+ALTER TABLE "rule_nwobj_resolved" ADD PRIMARY KEY ("mgm_id", "rule_id", "obj_id", "created");
+ALTER TABLE "rule_svc_resolved" DROP CONSTRAINT IF EXISTS "rule_svc_resolved_pkey";
+ALTER TABLE "rule_svc_resolved" ADD PRIMARY KEY ("mgm_id", "rule_id", "svc_id", "created");
+ALTER TABLE "rule_user_resolved" DROP CONSTRAINT IF EXISTS "rule_user_resolved_pkey";
+ALTER TABLE "rule_user_resolved" ADD PRIMARY KEY ("mgm_id", "rule_id", "user_id", "created");
