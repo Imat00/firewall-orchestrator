@@ -54,7 +54,7 @@ namespace FWO.Middleware.Server.Services
         /// <summary>
         /// Configured start time for this scheduler.
         /// </summary>
-        protected abstract DateTime StartAt { get; }
+        protected abstract DateTimeOffset StartAt { get; }
 
         /// <summary>
         /// Interval for this scheduler based on configuration.
@@ -177,7 +177,7 @@ namespace FWO.Middleware.Server.Services
         /// <param name="configuredStartTime">Configured start time.</param>
         /// <param name="interval">Schedule interval.</param>
         /// <returns>Next start time in the future.</returns>
-        protected static DateTimeOffset CalculateStartTime(DateTime configuredStartTime, TimeSpan interval)
+        protected static DateTimeOffset CalculateStartTime(DateTimeOffset configuredStartTime, TimeSpan interval)
         {
             return CalculateStartTime(configuredStartTime, interval, DateTime.Now);
         }
@@ -189,19 +189,19 @@ namespace FWO.Middleware.Server.Services
         /// <param name="interval">Schedule interval.</param>
         /// <param name="now">Reference time.</param>
         /// <returns>Next start time in the future.</returns>
-        protected static DateTimeOffset CalculateStartTime(DateTime configuredStartTime, TimeSpan interval, DateTime now)
+        protected static DateTimeOffset CalculateStartTime(DateTimeOffset configuredStartTime, TimeSpan interval, DateTimeOffset now)
         {
             if (interval <= TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(interval), "Interval must be greater than zero.");
             }
 
-            DateTime startTime = configuredStartTime;
+            DateTimeOffset startTime = configuredStartTime;
             while (startTime < now)
             {
                 startTime = startTime.Add(interval);
             }
-            return new DateTimeOffset(startTime);
+            return startTime;
         }
 
         private void ApiExceptionHandler(Exception exception)

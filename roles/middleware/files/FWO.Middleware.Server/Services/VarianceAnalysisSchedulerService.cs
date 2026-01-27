@@ -43,7 +43,7 @@ namespace FWO.Middleware.Server.Services
         protected override int SleepTime => globalConfig.VarianceAnalysisSleepTime;
 
         /// <inheritdoc/>
-        protected override DateTime StartAt => globalConfig.VarianceAnalysisStartAt;
+        protected override DateTimeOffset StartAt => globalConfig.VarianceAnalysisStartAt;
 
         /// <inheritdoc/>
         protected override TimeSpan Interval => TimeSpan.FromMinutes(globalConfig.VarianceAnalysisSleepTime);

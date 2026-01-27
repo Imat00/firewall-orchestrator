@@ -45,7 +45,7 @@ namespace FWO.Middleware.Server.Services
         protected override int SleepTime => globalConfig.ExternalRequestSleepTime;
 
         /// <inheritdoc/>
-        protected override DateTime StartAt => globalConfig.ExternalRequestStartAt;
+        protected override DateTimeOffset StartAt => globalConfig.ExternalRequestStartAt;
 
         /// <inheritdoc/>
         protected override TimeSpan Interval => TimeSpan.FromSeconds(globalConfig.ExternalRequestSleepTime);

@@ -43,7 +43,7 @@ namespace FWO.Middleware.Server.Services
         protected override int SleepTime => globalConfig.ImportSubnetDataSleepTime;
 
         /// <inheritdoc/>
-        protected override DateTime StartAt => globalConfig.ImportSubnetDataStartAt;
+        protected override DateTimeOffset StartAt => globalConfig.ImportSubnetDataStartAt;
 
         /// <inheritdoc/>
         protected override TimeSpan Interval => TimeSpan.FromHours(globalConfig.ImportSubnetDataSleepTime);

@@ -43,7 +43,7 @@ namespace FWO.Middleware.Server.Services
         protected override int SleepTime => globalConfig.ImportAppDataSleepTime;
 
         /// <inheritdoc/>
-        protected override DateTime StartAt => globalConfig.ImportAppDataStartAt;
+        protected override DateTimeOffset StartAt => globalConfig.ImportAppDataStartAt;
 
         /// <inheritdoc/>
         protected override TimeSpan Interval => TimeSpan.FromHours(globalConfig.ImportAppDataSleepTime);

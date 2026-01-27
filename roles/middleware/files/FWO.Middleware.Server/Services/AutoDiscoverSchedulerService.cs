@@ -43,7 +43,7 @@ namespace FWO.Middleware.Server.Services
         protected override int SleepTime => globalConfig.AutoDiscoverSleepTime;
 
         /// <inheritdoc/>
-        protected override DateTime StartAt => globalConfig.AutoDiscoverStartAt;
+        protected override DateTimeOffset StartAt => globalConfig.AutoDiscoverStartAt;
 
         /// <inheritdoc/>
         protected override TimeSpan Interval => TimeSpan.FromHours(globalConfig.AutoDiscoverSleepTime);

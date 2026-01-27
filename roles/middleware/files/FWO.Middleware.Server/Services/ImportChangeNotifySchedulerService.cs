@@ -43,7 +43,7 @@ namespace FWO.Middleware.Server.Services
         protected override int SleepTime => globalConfig.ImpChangeNotifySleepTime;
 
         /// <inheritdoc/>
-        protected override DateTime StartAt => globalConfig.ImpChangeNotifyStartAt;
+        protected override DateTimeOffset StartAt => globalConfig.ImpChangeNotifyStartAt;
 
         /// <inheritdoc/>
         protected override TimeSpan Interval => TimeSpan.FromSeconds(globalConfig.ImpChangeNotifySleepTime);

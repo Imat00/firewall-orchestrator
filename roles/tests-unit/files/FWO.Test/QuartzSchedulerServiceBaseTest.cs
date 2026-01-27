@@ -27,11 +27,11 @@ namespace FWO.Test
 
             protected override int SleepTime => 1;
 
-            protected override DateTime StartAt => DateTime.MinValue;
+            protected override DateTimeOffset StartAt => DateTime.MinValue;
 
             protected override TimeSpan Interval => TimeSpan.FromSeconds(1);
 
-            public static DateTimeOffset CalculateStartTimeForTest(DateTime configuredStartTime, TimeSpan interval, DateTime now)
+            public static DateTimeOffset CalculateStartTimeForTest(DateTimeOffset configuredStartTime, TimeSpan interval, DateTimeOffset now)
             {
                 return CalculateStartTime(configuredStartTime, interval, now);
             }
@@ -40,33 +40,33 @@ namespace FWO.Test
         [Test]
         public void CalculateStartTime_ReturnsFutureStartTime()
         {
-            DateTime now = new(2024, 1, 1, 12, 0, 0, DateTimeKind.Unspecified);
-            DateTime configuredStartTime = now.AddMinutes(-12);
+            DateTimeOffset now = new(2024, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            DateTimeOffset configuredStartTime = now.AddMinutes(-12);
             TimeSpan interval = TimeSpan.FromMinutes(5);
 
             DateTimeOffset result = TestSchedulerService.CalculateStartTimeForTest(configuredStartTime, interval, now);
 
-            DateTimeOffset expected = new(now.AddMinutes(3));
+            DateTimeOffset expected = now.AddMinutes(3);
             ClassicAssert.AreEqual(expected, result);
         }
 
         [Test]
         public void CalculateStartTime_PreservesFutureStartTime()
         {
-            DateTime now = new(2024, 1, 1, 12, 0, 0, DateTimeKind.Unspecified);
-            DateTime configuredStartTime = now.AddMinutes(10);
+            DateTimeOffset now = new(2024, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            DateTimeOffset configuredStartTime = now.AddMinutes(10);
             TimeSpan interval = TimeSpan.FromMinutes(5);
 
             DateTimeOffset result = TestSchedulerService.CalculateStartTimeForTest(configuredStartTime, interval, now);
 
-            ClassicAssert.AreEqual(new DateTimeOffset(configuredStartTime), result);
+            ClassicAssert.AreEqual(configuredStartTime, result);
         }
 
         [Test]
         public void CalculateStartTime_ThrowsOnNonPositiveInterval()
         {
-            DateTime now = new(2024, 1, 1, 12, 0, 0, DateTimeKind.Unspecified);
-            DateTime configuredStartTime = now;
+            DateTimeOffset now = new(2024, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            DateTimeOffset configuredStartTime = now;
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 TestSchedulerService.CalculateStartTimeForTest(configuredStartTime, TimeSpan.Zero, now));
