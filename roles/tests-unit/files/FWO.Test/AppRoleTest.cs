@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 using FWO.Basics;
 using FWO.Data;
@@ -23,7 +23,7 @@ namespace FWO.Test
             IP = "",
             IpEnd = "",
             Uid = "XYZ123",
-            CreateTime = new(){ Time = new(2024, 10, 13, 8, 1, 0) },
+            CreateTime = new(){ Time = new(2024, 10, 13, 8, 1, 0, TimeSpan.Zero) },
             Type = new(){ Name = ObjectType.Group },
             Comment ="Comment nw1",
             ObjectGroupFlats = 
@@ -35,7 +35,7 @@ namespace FWO.Test
                     IP = "111.222.33.44",
                     IpEnd = "111.222.33.88",
                     Uid = "XYZ1234",
-                    CreateTime = new(){ Time = new(2024, 10, 13, 8, 2, 0) },
+                    CreateTime = new(){ Time = new(2024, 10, 13, 8, 2, 0, TimeSpan.Zero) },
                     Type = new(){ Name = "Network" },
                     Comment ="Comment nw2",
                     Number = 2
@@ -47,7 +47,7 @@ namespace FWO.Test
                     IP = "111.222.33.99",
                     IpEnd = "",
                     Uid = "XYZ1234",
-                    CreateTime = new(){ Time = new(2024, 10, 13, 8, 3, 0) },
+                    CreateTime = new(){ Time = new(2024, 10, 13, 8, 3, 0, TimeSpan.Zero) },
                     Type = new(){ Name = "Network" },
                     Comment ="Comment nw3",
                     Number = 3
@@ -59,7 +59,7 @@ namespace FWO.Test
                     IP = "",
                     IpEnd = "",
                     Uid = "XYZ1234",
-                    CreateTime = new(){ Time = new(2024, 10, 13, 8, 4, 0) },
+                    CreateTime = new(){ Time = new(2024, 10, 13, 8, 4, 0, TimeSpan.Zero) },
                     Type = new(){ Name = ObjectType.Group },
                     Comment ="Comment nw4",
                     Number = 4

@@ -198,7 +198,7 @@ namespace FWO.Test
             }
             else if (responseType == typeof(WfTicket))
             {
-                GraphQLResponse<dynamic> response = new() { Data = new WfTicket() { StateId = 631, CreationDate = new(1967,1,10,8,0,0, DateTimeKind.Utc), CompletionDate = new(2025,6,26,8,0,0, DateTimeKind.Utc), Requester = new(){Name = "Walter"}} };
+                GraphQLResponse<dynamic> response = new() { Data = new WfTicket() { StateId = 631, CreationDate = new(1967,1,10,8,0,0, TimeSpan.Zero), CompletionDate = new(2025,6,26,8,0,0, TimeSpan.Zero), Requester = new(){Name = "Walter"}} };
                 return response.Data;
             }
             else if (responseType == typeof(List<DeviceReport>))
