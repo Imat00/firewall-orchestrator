@@ -1166,15 +1166,10 @@ create table rule_owner
 (
     owner_id int,
     rule_metadata_id bigint
-);
-
-create table rule_to_owner
-(
     rule_id bigint NOT NULL,
-    owner_id int NOT NULL,
     created bigint NOT NULL,
     removed bigint,
- primary key (rule_id, owner_id, created)
+    primary key (rule_id, owner_id, created)
 );
 
 create table recertification
