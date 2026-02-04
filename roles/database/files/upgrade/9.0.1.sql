@@ -174,3 +174,5 @@ BEGIN
     END LOOP;
 END
 $$;
+
+-- constraint mgm_not null

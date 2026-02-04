@@ -588,7 +588,7 @@ Create table "stm_obj_typ"
  primary key ("obj_typ_id")
 );
 
-CREATE TABLE if not EXISTS stm_owner_mapping_source
+CREATE TABLE stm_owner_mapping_source
 (
     "owner_mapping_source_type_id" Integer PRIMARY KEY,
     "owner_mapping_source_type_name" Varchar NOT NULL
@@ -624,7 +624,7 @@ Create table "stm_usr_typ"
  primary key ("usr_typ_id")
 );
 
-CREATE TABLE EXISTS stm_import
+CREATE TABLE "stm_import"
 (
     "import_type_id" Integer PRIMARY KEY,
     "import_type_name" Varchar NOT NULL
@@ -637,7 +637,7 @@ CREATE TABLE EXISTS stm_import
 Create table "import_control"
 (
 	"control_id" BIGSERIAL,
-	"import_type_id " INTEGER NOT NULL,
+	"import_type_id" INTEGER NOT NULL,
 	"start_time" Timestamp NOT NULL Default now(),
 	"stop_time" Timestamp,
 	"successful_import" Boolean NOT NULL Default FALSE,
@@ -647,7 +647,7 @@ Create table "import_control"
 	"mgm_id" Integer NOT NULL,
 	"is_initial_import" Boolean NOT NULL Default FALSE,
 	"changes_found" BOOLEAN NOT NULL DEFAULT FALSE, 		--anychanges
-	"policy_changes_found" Boolean NOT NULL Default FALSE -	--rulechanges	
+	"policy_changes_found" Boolean NOT NULL Default FALSE 	--rulechanges	
  primary key ("control_id")
 );
 
@@ -1169,14 +1169,14 @@ create table reqtask_owner
     owner_id int
 );
 
-create table rule_owner -- owner import_source auf id
+create table rule_owner
 (
     owner_id int,
-    rule_metadata_id bigint
+    rule_metadata_id bigint,
     rule_id bigint NOT NULL,
     created bigint NOT NULL,
     removed bigint,
-    owner_mapping_source_id bigint;
+    owner_mapping_source_id bigint,
     primary key (rule_id, owner_id, created)
 );
 
