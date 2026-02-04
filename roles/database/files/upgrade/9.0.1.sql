@@ -91,6 +91,22 @@ ON CONFLICT (owner_mapping_source_type_id) DO NOTHING;
 
 -- import_control 
 -- alter import_control delete unused/exported columns 
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name='import_control' 
+          AND column_name='import_type_id'
+    ) THEN
+        ALTER TABLE import_control
+        ADD COLUMN import_type_id INTEGER NOT NULL;
+    END IF;
+END
+$$;
+
+
 DO $$
 DECLARE
     col RECORD;
