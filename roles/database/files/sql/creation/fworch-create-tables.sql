@@ -588,6 +588,12 @@ Create table "stm_obj_typ"
  primary key ("obj_typ_id")
 );
 
+CREATE TABLE if not EXISTS stm_owner_source
+(
+    "owner_source_type_id" Integer PRIMARY KEY,
+    "owner_source_type_name" Varchar NOT NULL
+);
+
 Create table "stm_track"
 (
 	"track_id" Integer,
@@ -618,6 +624,12 @@ Create table "stm_usr_typ"
  primary key ("usr_typ_id")
 );
 
+CREATE TABLE EXISTS stm_import
+(
+    "import_type_id" Integer PRIMARY KEY,
+    "import_type_name" Varchar NOT NULL
+);
+
 -- only permanent import table -----------------------------------------------
 -- these tables are only filled during an import run and the import data
 -- is immediately removed afterwards
@@ -625,23 +637,35 @@ Create table "stm_usr_typ"
 Create table "import_control"
 (
 	"control_id" BIGSERIAL,
+	"import_type_id " INTEGER NOT NULL,
 	"start_time" Timestamp NOT NULL Default now(),
 	"stop_time" Timestamp,
-	"is_initial_import" Boolean NOT NULL Default FALSE,
-	"delimiter_group" Varchar(3) NOT NULL Default '|',
+	"delimiter_group" Varchar(3) NOT NULL Default '|', -- Tim?
 	"delimiter_zone" Varchar(3) Default '%',
 	"delimiter_user" Varchar(3) Default '@',
 	"delimiter_list" Varchar(3) Default '|',
-	"mgm_id" Integer NOT NULL,
-	"last_change_in_config" Timestamp,
-	"successful_import" Boolean NOT NULL Default FALSE,
-	"any_changes_found" Boolean NOT NULL Default FALSE,
-	"rule_changes_found" Boolean NOT NULL Default FALSE,
-	"import_errors" Varchar,
-	"notification_done" Boolean NOT NULL Default FALSE,
-	"security_relevant_changes_counter" INTEGER NOT NULL Default 0,
-	"is_full_import" BOOLEAN DEFAULT FALSE,
+	"successful_import" Boolean NOT NULL Default FALSE, -- beide hier oder in rule?
+	"import_errors" Varchar 
  primary key ("control_id")
+);
+
+CREATE TABLE import_rule
+(
+    control_id BIGINT PRIMARY KEY,
+    "mgm_id" Integer NOT NULL,
+    "is_initial_import" Boolean NOT NULL Default FALSE,
+    rule_changes_found BOOLEAN NOT NULL DEFAULT FALSE,
+    security_relevant_changes_counter INTEGER NOT NULL DEFAULT 0,
+    "notification_done" Boolean NOT NULL Default FALSE
+);
+
+CREATE TABLE import_owner
+(
+    control_id BIGINT PRIMARY KEY,
+    "is_initial_import" Boolean NOT NULL Default FALSE, -- vermutlich nicht
+    owner_changes_found BOOLEAN NOT NULL DEFAULT FALSE, -- kann ich mir vorstellen
+    security_relevant_changes_counter INTEGER NOT NULL DEFAULT 0, -- kann ich mir vorstellen
+    "notification_done" Boolean NOT NULL Default FALSE -- kann ich mir vorstellen
 );
 
 -- temporary table for storing the fw-relevant config during import
