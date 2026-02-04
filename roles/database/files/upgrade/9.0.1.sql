@@ -59,7 +59,7 @@ END $$;
 -- owner source table
 CREATE TABLE if not EXISTS stm_owner_mapping_source
 (
-    "owner_mapping_source_type_id" Integer PRIMARY KEY,
+    "owner_mapping_source_type_id" BIGINT PRIMARY KEY,
     "owner_mapping_source_type_name" Varchar NOT NULL
 );
 -- add owner source
