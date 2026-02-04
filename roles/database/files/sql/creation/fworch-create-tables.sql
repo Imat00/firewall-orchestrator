@@ -588,10 +588,10 @@ Create table "stm_obj_typ"
  primary key ("obj_typ_id")
 );
 
-CREATE TABLE if not EXISTS stm_owner_source
+CREATE TABLE if not EXISTS stm_owner_mapping_source
 (
-    "owner_source_type_id" Integer PRIMARY KEY,
-    "owner_source_type_name" Varchar NOT NULL
+    "owner_mapping_source_type_id" Integer PRIMARY KEY,
+    "owner_mapping_source_type_name" Varchar NOT NULL
 );
 
 Create table "stm_track"
@@ -640,32 +640,15 @@ Create table "import_control"
 	"import_type_id " INTEGER NOT NULL,
 	"start_time" Timestamp NOT NULL Default now(),
 	"stop_time" Timestamp,
-	"delimiter_group" Varchar(3) NOT NULL Default '|', -- Tim?
-	"delimiter_zone" Varchar(3) Default '%',
-	"delimiter_user" Varchar(3) Default '@',
-	"delimiter_list" Varchar(3) Default '|',
-	"successful_import" Boolean NOT NULL Default FALSE, -- beide hier oder in rule?
-	"import_errors" Varchar 
+	"successful_import" Boolean NOT NULL Default FALSE,
+	"import_errors" Varchar,
+	"security_relevant_changes_counter" INTEGER NOT NULL DEFAULT 0,
+	"notification_done" Boolean NOT NULL Default FALSE,
+	"mgm_id" Integer NOT NULL,
+	"is_initial_import" Boolean NOT NULL Default FALSE,
+	"changes_found" BOOLEAN NOT NULL DEFAULT FALSE, 		--anychanges
+	"policy_changes_found" Boolean NOT NULL Default FALSE -	--rulechanges	
  primary key ("control_id")
-);
-
-CREATE TABLE import_rule
-(
-    control_id BIGINT PRIMARY KEY,
-    "mgm_id" Integer NOT NULL,
-    "is_initial_import" Boolean NOT NULL Default FALSE,
-    rule_changes_found BOOLEAN NOT NULL DEFAULT FALSE,
-    security_relevant_changes_counter INTEGER NOT NULL DEFAULT 0,
-    "notification_done" Boolean NOT NULL Default FALSE
-);
-
-CREATE TABLE import_owner
-(
-    control_id BIGINT PRIMARY KEY,
-    "is_initial_import" Boolean NOT NULL Default FALSE, -- vermutlich nicht
-    owner_changes_found BOOLEAN NOT NULL DEFAULT FALSE, -- kann ich mir vorstellen
-    security_relevant_changes_counter INTEGER NOT NULL DEFAULT 0, -- kann ich mir vorstellen
-    "notification_done" Boolean NOT NULL Default FALSE -- kann ich mir vorstellen
 );
 
 -- temporary table for storing the fw-relevant config during import
@@ -1186,13 +1169,14 @@ create table reqtask_owner
     owner_id int
 );
 
-create table rule_owner
+create table rule_owner -- owner import_source auf id
 (
     owner_id int,
     rule_metadata_id bigint
     rule_id bigint NOT NULL,
     created bigint NOT NULL,
     removed bigint,
+    owner_mapping_source_id bigint;
     primary key (rule_id, owner_id, created)
 );
 
