@@ -64,7 +64,7 @@ namespace FWO.Config.Api
                 {
                     await Task.Delay(10);
                 }
-            }
+            } 
             else // when only simple read is needed, e.g. during scheduled report in middleware server
             {
                 ConfigItem[] configItems = await apiConnection.SendQueryAsync<ConfigItem[]>(ConfigQueries.getConfigItemsByUser, new { User = UserId });
