@@ -12,7 +12,7 @@ mutation upsertAppServer(
     ip: $ip
     ip_end: $ipEnd
     import_source: $importSource
-    is_deleted: false
+    removed: false
     nw_type: 10
     custom_type: $customType
   }
@@ -25,7 +25,7 @@ mutation upsertAppServer(
         ip
         ip_end
         import_source
-        is_deleted
+        removed
         nw_type
         custom_type
       ]

@@ -35,8 +35,8 @@ namespace FWO.Data
         [JsonProperty("import_source"), JsonPropertyName("import_source")]
         public string ImportSource { get; set; } = "";
 
-        [JsonProperty("is_deleted"), JsonPropertyName("is_deleted")]
-        public bool IsDeleted { get; set; }
+        [JsonProperty("removed"), JsonPropertyName("removed")]
+        public bool Removed { get; set; }
 
         [JsonProperty("custom_type"), JsonPropertyName("custom_type")]
         public int CustomType { get; set; }

@@ -83,7 +83,7 @@ namespace FWO.Services.Modelling
                 {
                     if (await CheckAppServerInUse(actAppServer))
                     {
-                        await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.setAppServerDeletedState, new { id = actAppServer.Id, deleted = true });
+                        await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.setAppServerRemovedState, new { id = actAppServer.Id, removed = true });
                         await LogChange(ModellingTypes.ChangeType.MarkDeleted, ModellingTypes.ModObjectType.AppServer, actAppServer.Id,
                             $"Mark App Server as deleted: {actAppServer.Display()}", Application.Id);
                     }
@@ -116,9 +116,9 @@ namespace FWO.Services.Modelling
             {
                 await apiConnection.RunWithRole(Roles.Admin, async () =>
                 {
-                    if (actAppServer.IsDeleted)
+                    if (actAppServer.Removed)
                     {
-                        await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.setAppServerDeletedState, new { id = actAppServer.Id, deleted = false });
+                        await apiConnection.SendQueryAsync<ReturnId>(ModellingQueries.setAppServerRemovedState, new { id = actAppServer.Id, removed = false });
                         await LogChange(ModellingTypes.ChangeType.Reactivate, ModellingTypes.ModObjectType.AppServer, actAppServer.Id,
                             $"Reactivate App Server: {actAppServer.Display()}", Application.Id);
                         await AppServerHelper.DeactivateOtherSources(apiConnection, userConfig, actAppServer);

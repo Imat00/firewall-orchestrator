@@ -234,7 +234,7 @@
             }
             else
             {
-                AppRoleHandler.AppServersInArea = AppRoleHandler.AvailableAppServers.Where(x => !x.IsDeleted).ToList();
+                AppRoleHandler.AppServersInArea = AppRoleHandler.AvailableAppServers.Where(x => !x.Removed).ToList();
             }
         }
     }

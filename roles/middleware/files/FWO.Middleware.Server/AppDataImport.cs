@@ -325,7 +325,7 @@ namespace FWO.Middleware.Server
         private static HashSet<string> BuildAppServerKeys(IEnumerable<ModellingAppServer> appServers)
         {
             HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase);
-            foreach (ModellingAppServer appServer in appServers.Where(appServer => !appServer.IsDeleted))
+            foreach (ModellingAppServer appServer in appServers.Where(appServer => !appServer.Removed))
             {
                 string ip = string.IsNullOrWhiteSpace(appServer.Ip) ? "" : appServer.Ip.Trim().IpAsCidr();
                 string ipEnd = string.IsNullOrWhiteSpace(appServer.IpEnd) ? ip : appServer.IpEnd.Trim().IpAsCidr();
@@ -1037,7 +1037,7 @@ namespace FWO.Middleware.Server
                     ++failCounter;
                 }
             }
-            foreach (var existingAppServer in ExistingAppServers.Where(e => !e.IsDeleted).ToList())
+            foreach (var existingAppServer in ExistingAppServers.Where(e => !e.Removed).ToList())
             {
                 if (incomingApp.AppServers.FirstOrDefault(x => x.Ip.IpAsCidr() == existingAppServer.Ip.IpAsCidr() && x.IpEnd.IpAsCidr() == existingAppServer.IpEnd.IpAsCidr()) == null)
                 {
@@ -1072,7 +1072,7 @@ namespace FWO.Middleware.Server
                     return await NewAppServer(incomingAppServer, appID, impSource);
                 }
 
-                if (existingAppServer.IsDeleted)
+                if (existingAppServer.Removed)
                 {
                     if (!await ReactivateAppServer(existingAppServer))
                     {
@@ -1173,9 +1173,9 @@ namespace FWO.Middleware.Server
                 var Variables = new
                 {
                     id = appServer.Id,
-                    deleted = false
+                    removed = false
                 };
-                await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerDeletedState, Variables);
+                await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerRemovedState, Variables);
                 await ModellingHandlerBase.LogChange(new LogChangeRequest
                 {
                     ChangeType = ModellingTypes.ChangeType.Reactivate,
@@ -1277,9 +1277,9 @@ namespace FWO.Middleware.Server
                 var Variables = new
                 {
                     id = appServer.Id,
-                    deleted = true
+                    removed = true
                 };
-                await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerDeletedState, Variables);
+                await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerRemovedState, Variables);
                 await ModellingHandlerBase.LogChange(new LogChangeRequest
                 {
                     ChangeType = ModellingTypes.ChangeType.Update,

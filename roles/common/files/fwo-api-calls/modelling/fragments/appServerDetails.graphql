@@ -4,7 +4,7 @@ fragment appServerDetails on owner_network {
   ip
   ip_end
   import_source
-  is_deleted
+  removed
   custom_type
   app_id: owner_id
 }

@@ -9,7 +9,7 @@ mutation newAreaIpData(
     ip: $ip
     ip_end: $ipEnd
     import_source: $importSource
-    is_deleted: false
+    removed: false
     nw_type: 11
   }) {
     returning {

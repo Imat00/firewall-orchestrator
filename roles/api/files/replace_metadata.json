@@ -14848,7 +14848,7 @@
                       "ip",
                       "ip_end",
                       "ip_proto_id",
-                      "is_deleted",
+                      "removed",
                       "name",
                       "nw_type",
                       "owner_id",
@@ -14864,7 +14864,7 @@
                   "permission": {
                     "columns": [
                       "id",
-                      "is_deleted",
+                      "removed",
                       "import_source",
                       "name",
                       "ip",
@@ -14889,7 +14889,7 @@
                       "ip",
                       "ip_end",
                       "ip_proto_id",
-                      "is_deleted",
+                      "removed",
                       "name",
                       "nw_type",
                       "owner_id",
@@ -14904,7 +14904,7 @@
                   "permission": {
                     "columns": [
                       "id",
-                      "is_deleted",
+                      "removed",
                       "import_source",
                       "name",
                       "ip",
@@ -14924,7 +14924,7 @@
                   "permission": {
                     "columns": [
                       "id",
-                      "is_deleted",
+                      "removed",
                       "import_source",
                       "name",
                       "ip",
@@ -14950,7 +14950,7 @@
                       "ip",
                       "ip_end",
                       "ip_proto_id",
-                      "is_deleted",
+                      "removed",
                       "name",
                       "nw_type",
                       "owner_id",

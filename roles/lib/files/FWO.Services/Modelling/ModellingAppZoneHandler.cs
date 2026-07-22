@@ -78,7 +78,7 @@ namespace FWO.Services.Modelling
         {
             List<ModellingAppServer> tempAppServers = await apiConnection.SendQueryAsync<List<ModellingAppServer>>(ModellingQueries.getAppServersForOwner, new { appId = owner.Id });
             List<ModellingAppServerWrapper> allModelledAppServers = [];
-            foreach (ModellingAppServer appServer in tempAppServers.Where(a => !a.IsDeleted))
+            foreach (ModellingAppServer appServer in tempAppServers.Where(a => !a.Removed))
             {
                 allModelledAppServers.Add(new ModellingAppServerWrapper() { Content = appServer });
             }

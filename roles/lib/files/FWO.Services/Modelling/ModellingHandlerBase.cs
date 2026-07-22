@@ -395,7 +395,7 @@ namespace FWO.Services.Modelling
 
             foreach (ModellingAppRole appRole in ModellingAppRoleWrapper.Resolve(conn.SourceAppRoles))
             {
-                if (appRole.AppServers.Count > 0 && !appRole.AppServers.Any(_ => _.Content.IsDeleted))
+                if (appRole.AppServers.Count > 0 && !appRole.AppServers.Any(_ => _.Content.Removed))
                 {
                     names.Add(appRole.DisplayWithIcon(conn.SrcFromInterface, conn.InterfaceIsDecommissioned));
                 }
@@ -438,7 +438,7 @@ namespace FWO.Services.Modelling
 
             foreach (ModellingAppRole appRole in ModellingAppRoleWrapper.Resolve(conn.DestinationAppRoles))
             {
-                if (appRole.AppServers.Count > 0 && !appRole.AppServers.Any(_ => _.Content.IsDeleted))
+                if (appRole.AppServers.Count > 0 && !appRole.AppServers.Any(_ => _.Content.Removed))
                 {
                     names.Add(appRole.DisplayWithIcon(conn.DstFromInterface, conn.InterfaceIsDecommissioned));
                 }

@@ -569,7 +569,7 @@
 
         ModellingNwObject? resolvedNwObject = ResolveNwObject(ConnHandler!.AvailableNwElems[index]);
 
-        if((resolvedNwObject is not null && resolvedNwObject is ModellingAppRole) && (!((ModellingAppRole)resolvedNwObject).AppServers.Any() || ((ModellingAppRole)resolvedNwObject).AppServers.Any(_ => _.Content.IsDeleted)))
+        if((resolvedNwObject is not null && resolvedNwObject is ModellingAppRole) && (!((ModellingAppRole)resolvedNwObject).AppServers.Any() || ((ModellingAppRole)resolvedNwObject).AppServers.Any(_ => _.Content.Removed)))
         {
             return resolvedNwObject.DisplayProblematicWithIcon();
         }

@@ -61,7 +61,7 @@ create table owner_network
     ip_proto_id int,
 	nw_type int,
 	import_source Varchar default 'manual', 
-	is_deleted boolean default false,
+	removed boolean default false,
 	custom_type int
 );
 
