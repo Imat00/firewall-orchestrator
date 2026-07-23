@@ -59,8 +59,8 @@ namespace FWO.Api.Client.Queries
         public static readonly string getChangedOwnersForRuleOwnerMappingCustomField;
         public static readonly string getChangedOwnersForRuleOwnerMappingNameField;
         public static readonly string getChangedOwnersForRuleOwnerMappingIpBased;
-        public static readonly string getRemovedNetworkOwnership;
-        public static readonly string setNetworkOwnershipRemoved;
+        public static readonly string getDeletedNetworkOwnership;
+        public static readonly string setNetworkOwnershipDeleted;
 
 
         static OwnerQueries()
@@ -121,8 +121,8 @@ namespace FWO.Api.Client.Queries
                 getChangedOwnersForRuleOwnerMappingNameField = GetQueryText("owner/getChangedOwnersForRuleOwnerMappingNameField.graphql");
                 getChangedOwnersForRuleOwnerMappingIpBased = GetQueryText("owner/getChangedOwnersForRuleOwnerMappingIpBased.graphql");
                 getRuleOwnerToRemoveByOwner = GetQueryText("owner/getRuleOwnerToRemoveByOwner.graphql");
-                getRemovedNetworkOwnership = GetQueryText("owner/getRemovedNetworkOwnership.graphql");
-                setNetworkOwnershipRemoved = GetQueryText("owner/setNetworkOwnershipRemoved.graphql");
+                getDeletedNetworkOwnership = GetQueryText("owner/getDeletedNetworkOwnership.graphql");
+                setNetworkOwnershipDeleted = GetQueryText("owner/setNetworkOwnershipDeleted.graphql");
             }
             catch (Exception exception)
             {

@@ -18,9 +18,6 @@ namespace FWO.Data.Modelling
         [JsonProperty("custom_type"), JsonPropertyName("custom_type")]
         public int? CustomType { get; set; }
 
-        [JsonProperty("removed"), JsonPropertyName("removed")]
-        public bool Removed { get; set; }
-
         public bool InUse { get; set; } = true;
         public bool HighestPrio { get; set; } = true;
         public bool NotImplemented { get; set; } = false;
@@ -28,14 +25,14 @@ namespace FWO.Data.Modelling
 
         public override string Display()
         {
-            return (Removed ? "!" : "") + (InUse ? "" : "*") + DisplayBase.DisplayIpWithName(ToNetworkObject(this));
+            return (IsDeleted ? "!" : "") + (InUse ? "" : "*") + DisplayBase.DisplayIpWithName(ToNetworkObject(this));
         }
 
         public override string DisplayHtml()
         {
             string tooltip = $"data-toggle=\"tooltip\" title=\"{TooltipText}\"";
-            string cssClass = Removed ? "text-danger" : (InUse ? "" : "text-success");
-            return $"<span class=\"{cssClass}\" {((Removed || !InUse) && TooltipText != "" ? tooltip : "")}>{(Removed ? "<i>" : "")}{Display()}{(Removed ? "</i>" : "")}</span>";
+            string cssClass = IsDeleted ? "text-danger" : (InUse ? "" : "text-success");
+            return $"<span class=\"{cssClass}\" {((IsDeleted || !InUse) && TooltipText != "" ? tooltip : "")}>{(IsDeleted ? "<i>" : "")}{Display()}{(IsDeleted ? "</i>" : "")}</span>";
         }
 
         public override string DisplayWithIcon()
@@ -72,7 +69,6 @@ namespace FWO.Data.Modelling
             Ip = appServer.Ip;
             IpEnd = appServer.IpEnd;
             ImportSource = appServer.ImportSource;
-            Removed = appServer.Removed;
             InUse = appServer.InUse;
             CustomType = appServer.CustomType;
             HighestPrio = appServer.HighestPrio;
@@ -90,7 +86,7 @@ namespace FWO.Data.Modelling
         {
             return obj switch
             {
-                ModellingAppServer apps => Id == apps.Id && AppId == apps.AppId && Name == apps.Name && Removed == apps.Removed
+                ModellingAppServer apps => Id == apps.Id && AppId == apps.AppId && Name == apps.Name && IsDeleted == apps.IsDeleted
                     && Ip == apps.Ip && IpEnd == apps.IpEnd && ImportSource == apps.ImportSource && InUse == apps.InUse && CustomType == apps.CustomType,
                 _ => base.Equals(obj),
             };

@@ -1,7 +1,7 @@
 query getOwnersWithNetworks {
   owner_list: owner(order_by: { name: asc }) {
     ...ownerDetails
-    owner_networks(where: { removed : { _eq: false } }) {
+    owner_networks(where: { is_deleted : { _eq: false } }) {
       id
       ip
       ip_end

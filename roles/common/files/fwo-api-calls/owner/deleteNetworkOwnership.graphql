@@ -3,7 +3,7 @@ mutation deleteNetworkOwnership(
   $id: bigint!
   ) {
   update_owner_network(where: {owner_id: {_eq: $ownerId}, id: {_eq: $id}}
-    _set: {removed: true}) {
+    _set: {is_deleted: true}) {
     affected_rows
   }
 }

@@ -25,7 +25,7 @@ namespace FWO.Api.Client.Queries
         public static readonly string getAllAppServers;
         public static readonly string newAppServer;
         public static readonly string updateAppServer;
-        public static readonly string setAppServerRemovedState;
+        public static readonly string setAppServerDeletedState;
         public static readonly string setAppServerType;
         public static readonly string setAppServerName;
         public static readonly string deleteAppServer;
@@ -156,7 +156,7 @@ namespace FWO.Api.Client.Queries
                 getAllAppServers = appServerDetailsFragment + GetQueryText("modelling/getAllAppServers.graphql");
                 newAppServer = GetQueryText("modelling/newAppServer.graphql");
                 updateAppServer = GetQueryText("modelling/updateAppServer.graphql");
-                setAppServerRemovedState = GetQueryText("modelling/setAppServerRemovedState.graphql");
+                setAppServerDeletedState = GetQueryText("modelling/setAppServerDeletedState.graphql");
                 setAppServerName = GetQueryText("modelling/setAppServerName.graphql");
                 setAppServerType = GetQueryText("modelling/setAppServerType.graphql");
                 deleteAppServer = GetQueryText("modelling/deleteAppServer.graphql");

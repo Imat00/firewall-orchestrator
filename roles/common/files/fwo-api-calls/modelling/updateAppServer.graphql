@@ -15,7 +15,7 @@ mutation updateAppServer(
       ip: $ip
       ip_end: $ipEnd
       import_source: $importSource
-      removed: false
+      is_deleted: false
       custom_type: $customType
   }) {
     updatedIdLong: id

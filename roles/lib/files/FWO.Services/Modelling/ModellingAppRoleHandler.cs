@@ -67,7 +67,7 @@ namespace FWO.Services.Modelling
         {
             foreach (ModellingAppServer appServer in appServers)
             {
-                if (!appServer.Removed && ActAppRole.AppServers.FirstOrDefault(w => w.Content.Id == appServer.Id) == null && !AppServerToAdd.Contains(appServer))
+                if (!appServer.IsDeleted && ActAppRole.AppServers.FirstOrDefault(w => w.Content.Id == appServer.Id) == null && !AppServerToAdd.Contains(appServer))
                 {
                     AppServerToAdd.Add(appServer);
                 }
@@ -291,7 +291,7 @@ namespace FWO.Services.Modelling
             AppServersInArea = [];
             if (area != null)
             {
-                foreach (ModellingAppServer? server in AvailableAppServers.Where(x => !x.Removed))
+                foreach (ModellingAppServer? server in AvailableAppServers.Where(x => !x.IsDeleted))
                 {
                     if (IsInArea(server, area))
                     {
@@ -306,7 +306,7 @@ namespace FWO.Services.Modelling
         public void CountMembers(ModellingNetworkArea area)
         {
             area.MemberCount = 0;
-            foreach (ModellingAppServer? server in AvailableAppServers.Where(x => !x.Removed))
+            foreach (ModellingAppServer? server in AvailableAppServers.Where(x => !x.IsDeleted))
             {
                 if (IsInArea(server, area))
                 {

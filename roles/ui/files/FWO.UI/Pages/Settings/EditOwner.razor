@@ -821,11 +821,11 @@
                 ip_end = (ipAdd.IpEndString != null && ipAdd.Cidr != null && ipAdd.Cidr.Valid && ipAdd.IpEndString != "" ? ipAdd.IpEndString : null)
             };
 
-            var existingRemoved = await apiConnection.SendQueryAsync<List<ReturnId>>(OwnerQueries.getRemovedNetworkOwnership, variables);
+            var existingDeleted = await apiConnection.SendQueryAsync<List<ReturnId>>(OwnerQueries.getDeletedNetworkOwnership, variables);
 
-            if (existingRemoved.Count > 0)
+            if (existingDeleted.Count > 0)
             {
-                await apiConnection.SendQueryAsync<ReturnId>(OwnerQueries.setNetworkOwnershipRemoved, new { ownerId = ActOwner.Id, id = existingRemoved[0].Id, removed = false });
+                await apiConnection.SendQueryAsync<ReturnId>(OwnerQueries.setNetworkOwnershipDeleted, new { ownerId = ActOwner.Id, id = existingDeleted[0].Id, deleted = false });
             }
             else
             {

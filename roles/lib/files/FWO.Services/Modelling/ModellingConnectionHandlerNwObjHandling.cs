@@ -73,7 +73,7 @@ namespace FWO.Services.Modelling
             }
             if (userConfig.AllowServerInConn)
             {
-                foreach (var appServer in AvailableAppServers.Where(x => !x.Removed))
+                foreach (var appServer in AvailableAppServers.Where(x => !x.IsDeleted))
                 {
                     AvailableNwElems.Add(new KeyValuePair<int, long>((int)ModellingTypes.ModObjectType.AppServer, appServer.Id));
                 }
@@ -369,7 +369,7 @@ namespace FWO.Services.Modelling
             {
                 foreach (var srcAppServer in srcAppServers)
                 {
-                    if (!srcAppServer.Removed && ActConn.SourceAppServers.FirstOrDefault(w => w.Content.Id == srcAppServer.Id) == null && !SrcAppServerToAdd.Contains(srcAppServer))
+                    if (!srcAppServer.IsDeleted && ActConn.SourceAppServers.FirstOrDefault(w => w.Content.Id == srcAppServer.Id) == null && !SrcAppServerToAdd.Contains(srcAppServer))
                     {
                         SrcAppServerToAdd.Add(srcAppServer);
                     }
@@ -384,7 +384,7 @@ namespace FWO.Services.Modelling
             {
                 foreach (var dstAppServer in dstAppServers)
                 {
-                    if (!dstAppServer.Removed && ActConn.DestinationAppServers.FirstOrDefault(w => w.Content.Id == dstAppServer.Id) == null && !DstAppServerToAdd.Contains(dstAppServer))
+                    if (!dstAppServer.IsDeleted && ActConn.DestinationAppServers.FirstOrDefault(w => w.Content.Id == dstAppServer.Id) == null && !DstAppServerToAdd.Contains(dstAppServer))
                     {
                         DstAppServerToAdd.Add(dstAppServer);
                     }

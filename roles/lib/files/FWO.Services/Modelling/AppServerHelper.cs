@@ -84,7 +84,7 @@ namespace FWO.Services.Modelling
             try
             {
                 List<ModellingAppServer> ExistingAppServersSameIp = await GetExistingSameIp(apiConnection, incomingAppServer);
-                return ExistingAppServersSameIp.FirstOrDefault(x => Prio(x.ImportSource) > Prio(incomingAppServer.ImportSource) && !x.Removed) == null;
+                return ExistingAppServersSameIp.FirstOrDefault(x => Prio(x.ImportSource) > Prio(incomingAppServer.ImportSource) && !x.IsDeleted) == null;
             }
             catch (Exception exception)
             {
@@ -107,9 +107,9 @@ namespace FWO.Services.Modelling
                     var Variables = new
                     {
                         id = reactivatedId,
-                        removed = false
+                        deleted = false
                     };
-                    await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerRemovedState, Variables);
+                    await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerDeletedState, Variables);
                     await ModellingHandlerBase.LogChange(new LogChangeRequest
                     {
                         ChangeType = ModellingTypes.ChangeType.Reactivate,
@@ -138,7 +138,7 @@ namespace FWO.Services.Modelling
         {
             try
             {
-                List<ModellingAppServer> ExistingActiveAppServersSameIp = [.. (await GetExistingSameIp(apiConnection, incomingAppServer)).Where(x => x.Id != incomingAppServer.Id && !x.Removed)];
+                List<ModellingAppServer> ExistingActiveAppServersSameIp = [.. (await GetExistingSameIp(apiConnection, incomingAppServer)).Where(x => x.Id != incomingAppServer.Id && !x.IsDeleted)];
                 if (ExistingActiveAppServersSameIp.Count > 0)
                 {
                     foreach (var activeAppServer in ExistingActiveAppServersSameIp)
@@ -172,7 +172,7 @@ namespace FWO.Services.Modelling
                     return (AppServerId, null);
                 }
 
-                ModellingAppServer? higherPrioAppServer = ExistingAppServersSameIp.FirstOrDefault(x => Prio(x.ImportSource) > Prio(incomingAppServer.ImportSource) && !x.Removed);
+                ModellingAppServer? higherPrioAppServer = ExistingAppServersSameIp.FirstOrDefault(x => Prio(x.ImportSource) > Prio(incomingAppServer.ImportSource) && !x.IsDeleted);
                 if (higherPrioAppServer != null)
                 {
                     return (null, higherPrioAppServer.Name);
@@ -180,7 +180,7 @@ namespace FWO.Services.Modelling
 
                 if (manual)
                 {
-                    ModellingAppServer? otherAppServerSameIp = ExistingAppServersSameIp.FirstOrDefault(x => x.Id != incomingAppServer.Id && !x.Removed);
+                    ModellingAppServer? otherAppServerSameIp = ExistingAppServersSameIp.FirstOrDefault(x => x.Id != incomingAppServer.Id && !x.IsDeleted);
                     if (otherAppServerSameIp != null)
                     {
                         return (null, otherAppServerSameIp.Name);
@@ -234,7 +234,7 @@ namespace FWO.Services.Modelling
 
             foreach (var existAppServerOtherSource in existingAppServersSameIp.Where(x => x.ImportSource != incomingAppServer.ImportSource))
             {
-                if (!existAppServerOtherSource.Removed)
+                if (!existAppServerOtherSource.IsDeleted)
                 {
                     await DeactivateAppServer(apiConnection, userConfig, existAppServerOtherSource, incomingAppServer);
                 }
@@ -246,7 +246,7 @@ namespace FWO.Services.Modelling
         {
             try
             {
-                await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerRemovedState, new { id = appServerToDeactivate.Id, removed = true });
+                await apiConnection.SendQueryAsync<ReturnIdWrapper>(ModellingQueries.setAppServerDeletedState, new { id = appServerToDeactivate.Id, deleted = true });
                 await ModellingHandlerBase.LogChange(new LogChangeRequest
                 {
                     ChangeType = ModellingTypes.ChangeType.MarkDeleted,
@@ -293,7 +293,7 @@ namespace FWO.Services.Modelling
                     name = incomingAppServer.Name
                 };
                 List<ModellingAppServer> ExistingAppServersSameIp = await apiConnection.SendQueryAsync<List<ModellingAppServer>>(ModellingQueries.getAppServersByName, Variables);
-                return ExistingAppServersSameIp != null && ExistingAppServersSameIp.Count > 0 && ExistingAppServersSameIp.FirstOrDefault(x => x.Id == incomingAppServer.Id && !x.Removed) == null;
+                return ExistingAppServersSameIp != null && ExistingAppServersSameIp.Count > 0 && ExistingAppServersSameIp.FirstOrDefault(x => x.Id == incomingAppServer.Id && !x.IsDeleted) == null;
             }
             catch (Exception exception)
             {

@@ -12,7 +12,7 @@ mutation newAppServer(
     ip: $ip
     ip_end: $ipEnd
     import_source: $importSource
-    removed: false
+    is_deleted: false
     nw_type: 10
     custom_type: $customType
   }
