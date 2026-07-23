@@ -1,4 +1,3 @@
-
 @using System
 @using System.Linq
 @using FWO.Basics
@@ -33,7 +32,7 @@
                 </div>
                 <div class="form-group row me-2 mt-2" data-toggle="tooltip" title="@(userConfig.PureLine("H5582"))">
                     <label class="col-sm-3 col-form-label col-form-label-sm">@(userConfig.GetText("name"))*:</label>
-                    @if(Readonly)
+                    @if (Readonly)
                     {
                         <label class="col-sm-9 col-form-label col-form-label-sm">@ActOwner.Name</label>
                     }
@@ -64,7 +63,7 @@
                 <div class="form-group row mt-2">
                     <label class="col-sm-3 col-form-label col-form-label-sm">@(userConfig.GetText("criticality")):</label>
                     <div class="col-sm-5">
-                        @if(Readonly)
+                        @if (Readonly)
                         {
                             <label>@ActOwner.Criticality</label>
                         }
@@ -91,7 +90,7 @@
                 {
                     <div class="form-group row mt-2" data-toggle="tooltip" title="@(GetResponsibleTypeTooltip(type))">
                         <label class="col-sm-3 col-form-label col-form-label-sm">@GetResponsibleTypeEditLabel(type):</label>
-                        @if(Readonly)
+                        @if (Readonly)
                         {
                             <label class="col-sm-9 me-auto">@FormatOwnerResponsibles(ActOwner.GetOwnerResponsiblesByType(type.Id))</label>
                         }
@@ -119,9 +118,9 @@
                 }
                 <div class="form-group row mt-2">
                     <label class="col-sm-3 col-form-label col-form-label-sm" data-toggle="tooltip" title="@(userConfig.PureLine("H5585"))">@(userConfig.GetText("tenant")):</label>
-                    @if(Readonly)
+                    @if (Readonly)
                     {
-                        <label class="col-sm-5">@(ActOwner.TenantId != null ? Tenants.FirstOrDefault(x => x.Id == ActOwner.TenantId)?.Name ?? "" : "" )</label>
+                        <label class="col-sm-5">@(ActOwner.TenantId != null ? Tenants.FirstOrDefault(x => x.Id == ActOwner.TenantId)?.Name ?? "" : "")</label>
                     }
                     else
                     {
@@ -134,7 +133,7 @@
                         </div>
                     }
                     <div class="form-check form-check-inline col-sm-3" data-toggle="tooltip" title="@(userConfig.PureLine("H5591"))">
-                        @if(Readonly && userConfig.AllowManualOwnerAdmin)
+                        @if (Readonly && userConfig.AllowManualOwnerAdmin)
                         {
                             <input id="cbx_comm_svc_possible" disabled class="form-check-input" type="checkbox" @bind="ActOwner.CommSvcPossible">
                         }
@@ -148,7 +147,7 @@
                 <div class="form-group row mt-2">
                     <label class="col-sm-3 col-form-label col-form-label-sm" data-toggle="tooltip" title="@(userConfig.PureLine("H5586"))">@(userConfig.GetText("ext_app_id")):</label>
                     <div class="col-sm-5">
-                        @if(Readonly)
+                        @if (Readonly)
                         {
                             <label>@ActOwner.ExtAppId</label>
                         }
@@ -165,7 +164,7 @@
                         <div class="form-group row">
                             <label class="col-sm-6 col-form-label col-form-label-sm">@(userConfig.GetText("recert_interval")):</label>
                             <div class="col-sm-6">
-                                @if(Readonly)
+                                @if (Readonly)
                                 {
                                     <label>@ActOwner.RecertInterval</label>
                                 }
@@ -177,7 +176,7 @@
                         </div>
                     </div>
                     <div class="form-check form-check-inline col-sm-3" data-toggle="tooltip" title="@(userConfig.PureLine("H5591a"))">
-                        @if(Readonly)
+                        @if (Readonly)
                         {
                             <input id="cbx_recert_activated" disabled class="form-check-input" type="checkbox" @bind="ActOwner.RecertActive">
                         }
@@ -192,7 +191,7 @@
                     <label class="col-sm-3 col-form-label col-form-label-sm">@(userConfig.GetText("recert_check_every")):</label>
                     <div class="form-group row col-sm-9">
                         <div class="col-sm-2">
-                            @if(Readonly)
+                            @if (Readonly)
                             {
                                 <label>@ActRecCheckParams.RecertCheckOffset</label>
                             }
@@ -202,25 +201,25 @@
                             }
                         </div>
                         <div class="col-sm-4">
-                            @if(Readonly)
+                            @if (Readonly)
                             {
                                 <label>@userConfig.GetText(ActRecCheckParams.RecertCheckInterval.ToString())</label>
                             }
                             else
                             {
                                 <Dropdown ElementType="SchedulerInterval" @bind-SelectedElement="ActRecCheckParams.RecertCheckInterval" ElementToString="@(i => userConfig.GetText(i.ToString()))"
-                                          Elements="Enum.GetValues(typeof(SchedulerInterval)).Cast<SchedulerInterval>().Where(x => x.OfferedForRecert())" >
+                                          Elements="Enum.GetValues(typeof(SchedulerInterval)).Cast<SchedulerInterval>().Where(x => x.OfferedForRecert())">
                                     <ElementTemplate Context="interval">
                                         @(userConfig.GetText(interval.ToString()))
                                     </ElementTemplate>
                                 </Dropdown>
                             }
                         </div>
-                        @if(ActRecCheckParams.RecertCheckInterval == SchedulerInterval.Weeks)
+                        @if (ActRecCheckParams.RecertCheckInterval == SchedulerInterval.Weeks)
                         {
                             <label class="col-sm-2 col-form-label col-form-label-sm">@(userConfig.GetText("each_on")):</label>
                             <div class="col-sm-4">
-                                @if(Readonly)
+                                @if (Readonly)
                                 {
                                     <label>@userConfig.GetText(((DayOfWeek?)ActRecCheckParams.RecertCheckWeekday)?.ToString() ?? "undefined")</label>
                                 }
@@ -234,17 +233,17 @@
                                 }
                             </div>
                         }
-                        else if(ActRecCheckParams.RecertCheckInterval == SchedulerInterval.Months)
+                        else if (ActRecCheckParams.RecertCheckInterval == SchedulerInterval.Months)
                         {
                             <label class="col-sm-2 col-form-label col-form-label-sm">@(userConfig.GetText("each_on")):</label>
                             <div class="col-sm-4">
-                                @if(Readonly)
+                                @if (Readonly)
                                 {
                                     <label>@ActRecCheckParams.RecertCheckDayOfMonth</label>
                                 }
                                 else
                                 {
-                                    <input type="number" min="0" max ="31" class="form-control form-control-sm" @bind="ActRecCheckParams.RecertCheckDayOfMonth" />
+                                    <input type="number" min="0" max="31" class="form-control form-control-sm" @bind="ActRecCheckParams.RecertCheckDayOfMonth" />
                                 }
                             </div>
                         }
@@ -253,10 +252,10 @@
                 @if (!ActOwner.IsDefault)
                 {
                     <div class="col-sm-12 mt-2" data-toggle="tooltip" title="@(userConfig.PureLine("H5589"))">
-                        <RuleSelector SelectedRules="ActRules" @bind-RulesToAdd="RulesToAdd" @bind-RulesToDelete="RulesToDelete" Readonly="Readonly"/>
+                        <RuleSelector SelectedRules="ActRules" @bind-RulesToAdd="RulesToAdd" @bind-RulesToDelete="RulesToDelete" Readonly="Readonly" />
                     </div>
                     <div class="col-sm-12 mt-2" data-toggle="tooltip" title="@(userConfig.PureLine("H5590"))">
-                        <IpSelector IpAddresses="ActIpAddresses" @bind-IpsToAdd="IpsToAdd" @bind-IpsToDelete="IpsToDelete" Readonly="Readonly"/>
+                        <IpSelector IpAddresses="ActIpAddresses" @bind-IpsToAdd="IpsToAdd" @bind-IpsToDelete="IpsToDelete" Readonly="Readonly" />
                     </div>
                 }
             </div>
@@ -264,7 +263,7 @@
     </Body>
     <Footer>
         <div class="btn-group">
-            @if(!Readonly || !userConfig.AllowManualOwnerAdmin)
+            @if (!Readonly || !userConfig.AllowManualOwnerAdmin)
             {
                 <ExecutionModeAuthorizeView Roles="@Roles.Admin">
                     <Authorized>
@@ -280,7 +279,7 @@
     </Footer>
 </PopUp>
 
-<SearchUser @bind-Display="SearchMode" AddUser="AddUser" AddGroup="AddGroup" UserSearchMode="UserSearchMode" GroupSearchMode="@(!UserSearchMode)" Title="@(ActOwner.Name)" OwnerGroupsOnly="true"/>
+<SearchUser @bind-Display="SearchMode" AddUser="AddUser" AddGroup="AddGroup" UserSearchMode="UserSearchMode" GroupSearchMode="@(!UserSearchMode)" Title="@(ActOwner.Name)" OwnerGroupsOnly="true" />
 
 @code {
     [CascadingParameter]
@@ -735,7 +734,7 @@
         }
         return true;
     }
-    
+
     private async Task AddRoleToLdap(string dn, string roleDn, string roleName)
     {
         RoleAddDeleteUserParameters parameters = new() { Role = roleDn, UserDn = dn };
@@ -821,7 +820,18 @@
                 ip = (ipAdd.Cidr != null && ipAdd.Cidr.Valid ? ipAdd.IpString : null),
                 ip_end = (ipAdd.IpEndString != null && ipAdd.Cidr != null && ipAdd.Cidr.Valid && ipAdd.IpEndString != "" ? ipAdd.IpEndString : null)
             };
-            await apiConnection.SendQueryAsync<ReturnIdWrapper>(OwnerQueries.newNetworkOwnership, variables);
+
+            var existingRemoved = await apiConnection.SendQueryAsync<List<ReturnId>>(OwnerQueries.getRemovedNetworkOwnership, variables);
+
+            if (existingRemoved.Count > 0)
+            {
+                await apiConnection.SendQueryAsync<ReturnId>(OwnerQueries.setNetworkOwnershipRemoved, new { ownerId = ActOwner.Id, id = existingRemoved[0].Id, removed = false });
+            }
+            else
+            {
+                await apiConnection.SendQueryAsync<ReturnIdWrapper>(OwnerQueries.newNetworkOwnership, variables);
+            }
+
             ActIpAddresses.Add(ipAdd);
         }
     }

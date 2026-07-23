@@ -1,0 +1,12 @@
+mutation setNetworkOwnershipRemoved(
+  $ownerId: Int!
+  $id: bigint!
+  $removed: Boolean!
+) {
+  update_owner_network(
+    where: { owner_id: { _eq: $ownerId }, id: { _eq: $id } }
+    _set: { removed: $removed }
+  ) {
+    affected_rows
+  }
+}

@@ -1,6 +1,8 @@
-
-query getNetworkOwnerships ($ownerId: Int!) {
-  owner_network (where: {owner_id: {_eq: $ownerId}} order_by: { id: asc }){
+query getNetworkOwnerships($ownerId: Int!) {
+  owner_network(
+    where: { owner_id: { _eq: $ownerId }, removed: { _eq: false }, import_source: { _eq: "manual" }, nw_type: { _eq: 10 } }
+    order_by: { id: asc }
+  ) {
     id
     ip
     ip_end

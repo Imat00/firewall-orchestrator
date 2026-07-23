@@ -1,10 +1,15 @@
 mutation newRuleOwnership(
   $ownerId: Int!
+  $ruleId: bigint!
   $ruleMetadataId: bigint!
+  $created: bigint!
   ) {
   insert_rule_owner(objects: {
     owner_id: $ownerId
+    rule_id: $ruleId
     rule_metadata_id: $ruleMetadataId
+    created: $created
+    owner_mapping_source_id: 4
   }) {
     returning {
       insertedIdLong: rule_metadata_id

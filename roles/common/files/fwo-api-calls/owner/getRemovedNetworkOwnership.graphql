@@ -1,0 +1,20 @@
+query getRemovedNetworkOwnership(
+  $ownerId: Int!
+  $ip: cidr
+  $ip_end: cidr
+) {
+  owner_network(
+    where: {
+      owner_id: { _eq: $ownerId }
+      ip: { _eq: $ip }
+      ip_end: { _eq: $ip_end }
+      import_source: { _eq: "manual" }
+      nw_type: { _eq: 10 }
+      removed: { _eq: true }
+    }
+    order_by: { id: desc }
+    limit: 1
+  ) {
+    id
+  }
+}
