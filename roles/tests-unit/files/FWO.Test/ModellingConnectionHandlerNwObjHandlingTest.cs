@@ -41,8 +41,8 @@ namespace FWO.Test
             ];
             handler.AvailableAppServers =
             [
-                new ModellingAppServer { Id = 40, Name = "Srv1", Removed = false },
-                new ModellingAppServer { Id = 41, Name = "Srv2", Removed = true }
+                new ModellingAppServer { Id = 40, Name = "Srv1", IsDeleted = false },
+                new ModellingAppServer { Id = 41, Name = "Srv2", IsDeleted = true }
             ];
 
             bool result = handler.RefreshSelectableNwObjects();
@@ -216,9 +216,9 @@ namespace FWO.Test
 
             handler.AppServerToSource(
             [
-                new ModellingAppServer { Id = 1, Name = "SrvExisting", Removed = false },
-                new ModellingAppServer { Id = 2, Name = "SrvNew", Removed = false },
-                new ModellingAppServer { Id = 3, Name = "SrvDeleted", Removed = true }
+                new ModellingAppServer { Id = 1, Name = "SrvExisting", IsDeleted = false },
+                new ModellingAppServer { Id = 2, Name = "SrvNew", IsDeleted = false },
+                new ModellingAppServer { Id = 3, Name = "SrvDeleted", IsDeleted = true }
             ]);
 
             ClassicAssert.AreEqual(1, handler.SrcAppServerToAdd.Count);
@@ -238,9 +238,9 @@ namespace FWO.Test
 
             handler.AppServerToDestination(
             [
-                new ModellingAppServer { Id = 1, Name = "SrvExisting", Removed = false },
-                new ModellingAppServer { Id = 2, Name = "SrvNew", Removed = false },
-                new ModellingAppServer { Id = 3, Name = "SrvDeleted", Removed = true }
+                new ModellingAppServer { Id = 1, Name = "SrvExisting", IsDeleted = false },
+                new ModellingAppServer { Id = 2, Name = "SrvNew", IsDeleted = false },
+                new ModellingAppServer { Id = 3, Name = "SrvDeleted", IsDeleted = true }
             ]);
 
             ClassicAssert.AreEqual(1, handler.DstAppServerToAdd.Count);

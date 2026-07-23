@@ -173,7 +173,7 @@ namespace FWO.Test
                 Ip = "10.0.0.1",
                 IpEnd = "",
                 ImportSource = GlobalConst.kManual,
-                Removed = false
+                IsDeleted = false
             };
 
             AppServerHelperTestApiConn apiConn = new([sameSource, otherSource]);
@@ -209,7 +209,7 @@ namespace FWO.Test
                 Ip = "10.0.0.1",
                 IpEnd = "",
                 ImportSource = "import",
-                Removed = true
+                IsDeleted = true
             };
 
             AppServerHelperTestApiConn apiConn = new([deleted, reactivatable]);
@@ -258,7 +258,7 @@ namespace FWO.Test
 
             if (typeof(QueryResponseType) == typeof(ReturnIdWrapper))
             {
-                if (query == ModellingQueries.setAppServerRemovedState)
+                if (query == ModellingQueries.setAppServerDeletedState)
                 {
                     SetDeletedCalls++;
                     return Task.FromResult((QueryResponseType)(object)new ReturnIdWrapper { ReturnIds = [new ReturnId()] });

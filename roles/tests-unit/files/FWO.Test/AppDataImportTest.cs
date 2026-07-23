@@ -836,7 +836,7 @@ namespace FWO.Test
                     IpEnd = "10.0.0.9/32",
                     ImportSource = "SRC-SRV",
                     CustomType = 0,
-                    Removed = false
+                    IsDeleted = false
                 }
             ];
             ModellingImportAppData incomingApp = new()
@@ -874,7 +874,7 @@ namespace FWO.Test
                     IpEnd = "10.0.0.1/32",
                     ImportSource = "SRC-SRV",
                     CustomType = 0,
-                    Removed = true
+                    IsDeleted = true
                 }
             ];
             ModellingImportAppData incomingApp = new()
@@ -911,7 +911,7 @@ namespace FWO.Test
                     IpEnd = "10.0.0.1/32",
                     ImportSource = "SRC-SRV",
                     CustomType = null,
-                    Removed = false
+                    IsDeleted = false
                 }
             ];
             ModellingImportAppData incomingApp = new()
@@ -1666,7 +1666,7 @@ namespace FWO.Test
                     Ip = "10.0.0.1/32",
                     IpEnd = "10.0.0.1/32",
                     ImportSource = "SRC-19",
-                    Removed = false
+                    IsDeleted = false
                 }
             ]);
             FwoOwner existingApp = new() { Id = 19, Name = "App-19", ExtAppId = "APP-19" };
@@ -1742,7 +1742,7 @@ namespace FWO.Test
                     Ip = "10.0.0.1/32",
                     IpEnd = "10.0.0.1/32",
                     ImportSource = "SRC-20",
-                    Removed = false
+                    IsDeleted = false
                 }
             ];
             ModellingImportAppData incomingApp = new()
@@ -2403,9 +2403,9 @@ namespace FWO.Test
                     });
                 }
 
-                if (query == ModellingQueries.setAppServerRemovedState)
+                if (query == ModellingQueries.setAppServerDeletedState)
                 {
-                    SetAppServerDeletedStates.Add((GetAnonymousLong(variables, "id"), GetAnonymousBool(variables, "removed") ?? false));
+                    SetAppServerDeletedStates.Add((GetAnonymousLong(variables, "id"), GetAnonymousBool(variables, "deleted") ?? false));
                     return Task.FromResult((QueryResponseType)(object)new ReturnIdWrapper
                     {
                         ReturnIds = [new ReturnId { NewIdLong = GetAnonymousLong(variables, "id") }]

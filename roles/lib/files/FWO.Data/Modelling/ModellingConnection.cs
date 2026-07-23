@@ -460,10 +460,10 @@ namespace FWO.Data.Modelling
             }
             return SourceAreas.Any(a => a.Content.IsDeleted) ||
                 DestinationAreas.Any(a => a.Content.IsDeleted) ||
-                SourceAppRoles.Any(aR => aR.Content.AppServers.Any(a => a.Content.Removed)) ||
-                DestinationAppRoles.Any(aR => aR.Content.AppServers.Any(a => a.Content.Removed)) ||
-                SourceAppServers.Any(a => a.Content.Removed) ||
-                DestinationAppServers.Any(a => a.Content.Removed);
+                SourceAppRoles.Any(aR => aR.Content.AppServers.Any(a => a.Content.IsDeleted)) ||
+                DestinationAppRoles.Any(aR => aR.Content.AppServers.Any(a => a.Content.IsDeleted)) ||
+                SourceAppServers.Any(a => a.Content.IsDeleted) ||
+                DestinationAppServers.Any(a => a.Content.IsDeleted);
         }
 
         public Rule ToRule()

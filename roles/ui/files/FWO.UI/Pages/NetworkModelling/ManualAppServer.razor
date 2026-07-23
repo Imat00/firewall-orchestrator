@@ -24,7 +24,7 @@
                         <Column TableItem="ModellingAppServer" Title="@(userConfig.GetText("actions"))" Field="(x => x.Id)" Sortable="false" Filterable="false">
                             <Template>
                                 <div class="btn-group">
-                                    @if (context.Removed)
+                                    @if (context.IsDeleted)
                                     {
                                         @if(context.HighestPrio)
                                         {
