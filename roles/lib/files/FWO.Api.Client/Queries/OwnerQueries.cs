@@ -42,7 +42,7 @@ namespace FWO.Api.Client.Queries
         public static readonly string deleteAreaIpData;
         public static readonly string getRuleOwnerships;
         public static readonly string newRuleOwnership;
-        public static readonly string deleteRuleOwnership;
+        public static readonly string updateRuleOwnership;
         public static readonly string getOwnerId;
         public static readonly string newOwnerResponsibles;
         public static readonly string deleteOwnerResponsibles;
@@ -61,7 +61,7 @@ namespace FWO.Api.Client.Queries
         public static readonly string getChangedOwnersForRuleOwnerMappingIpBased;
         public static readonly string getDeletedNetworkOwnership;
         public static readonly string setNetworkOwnershipDeleted;
-
+        public static readonly string getActiveManualRuleOwners;
 
         static OwnerQueries()
         {
@@ -104,7 +104,7 @@ namespace FWO.Api.Client.Queries
                 deleteAreaIpData = GetQueryText("owner/deleteAreaIpData.graphql");
                 getRuleOwnerships = GetQueryText("owner/getRuleOwnerships.graphql");
                 newRuleOwnership = ownerDetailsFragment + GetQueryText("owner/newRuleOwnership.graphql");
-                deleteRuleOwnership = ownerDetailsFragment + GetQueryText("owner/deleteRuleOwnership.graphql");
+                updateRuleOwnership = ownerDetailsFragment + GetQueryText("owner/updateRuleOwnership.graphql");
                 getOwnerId = GetQueryText("owner/getOwnerId.graphql");
                 newOwnerResponsibles = GetQueryText("owner/newOwnerResponsibles.graphql");
                 deleteOwnerResponsibles = GetQueryText("owner/deleteOwnerResponsibles.graphql");
@@ -123,6 +123,7 @@ namespace FWO.Api.Client.Queries
                 getRuleOwnerToRemoveByOwner = GetQueryText("owner/getRuleOwnerToRemoveByOwner.graphql");
                 getDeletedNetworkOwnership = GetQueryText("owner/getDeletedNetworkOwnership.graphql");
                 setNetworkOwnershipDeleted = GetQueryText("owner/setNetworkOwnershipDeleted.graphql");
+                getActiveManualRuleOwners = GetQueryText("owner/getActiveManualRuleOwners.graphql");
             }
             catch (Exception exception)
             {

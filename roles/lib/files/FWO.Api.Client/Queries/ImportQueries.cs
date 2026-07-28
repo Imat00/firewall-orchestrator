@@ -15,6 +15,7 @@ namespace FWO.Api.Client.Queries
         public static readonly string updateImportControlForRuleOwnerFull;
         public static readonly string updateImportControlForRuleOwnerInc;
         public static readonly string getPendingRuleOwnerImports;
+        public static readonly string getManualOwnerMappingImportControl;
 
         static ImportQueries()
         {
@@ -30,6 +31,7 @@ namespace FWO.Api.Client.Queries
                 updateImportControlForRuleOwnerFull = GetQueryText("import/updateImportControlForRuleOwnerFull.graphql");
                 getPendingRuleOwnerImports = GetQueryText("import/getPendingRuleOwnerImports.graphql");
                 updateImportControlForRuleOwnerInc = GetQueryText("import/updateImportControlForRuleOwnerInc.graphql");
+                getManualOwnerMappingImportControl = GetQueryText("import/getManualOwnerMappingImportControl.graphql");
             }
             catch (Exception exception)
             {

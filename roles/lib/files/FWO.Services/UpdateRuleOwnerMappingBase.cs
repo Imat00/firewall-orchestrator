@@ -69,6 +69,7 @@ namespace FWO.Services
             }
 
             await SetAllActiveRuleOwnersRemoved(importControlId);
+            newRuleOwners = await FilterMappingsWithActiveManualOwner(newRuleOwners);
             await InsertNewRuleOwners(newRuleOwners);
             await CompleteImportControlFullReInit(importControlId);
 
@@ -149,6 +150,7 @@ namespace FWO.Services
             }
 
             await SetAffectedRuleOwnersRemoved(ruleOwnersToRemove, importControlId);
+            newRuleOwners = await FilterMappingsWithActiveManualOwner(newRuleOwners);
             await InsertNewRuleOwners(newRuleOwners);
             await CompleteImportControl(importControlId);
         }
@@ -421,6 +423,35 @@ namespace FWO.Services
             }
 
             return true;
+        }
+
+        private async Task<List<RuleOwner>> FilterMappingsWithActiveManualOwner(List<RuleOwner> newRuleOwners)
+        {
+            if (!newRuleOwners.Any())
+            {
+                return newRuleOwners;
+            }
+
+            var ruleOwnerPairs = newRuleOwners
+                .Select(ruleOwner => new
+                {
+                    rule_id = new { _eq = ruleOwner.RuleId },
+                    owner_id = new { _eq = ruleOwner.OwnerId }
+                })
+                .ToList();
+
+            List<RuleOwner> activeManualRuleOwners =
+                await apiConnection.SendQueryAsync<List<RuleOwner>>(
+                    OwnerQueries.getActiveManualRuleOwners,
+                    new { objects = ruleOwnerPairs });
+
+            HashSet<string> activeManualPairs = activeManualRuleOwners
+                .Select(ruleOwner => $"{ruleOwner.RuleId}|{ruleOwner.OwnerId}")
+                .ToHashSet();
+
+            return newRuleOwners
+                .Where(ruleOwner => !activeManualPairs.Contains($"{ruleOwner.RuleId}|{ruleOwner.OwnerId}"))
+                .ToList();
         }
     }
 }

@@ -1,6 +1,6 @@
 mutation setAllActiveRuleOwnersRemoved($controlId: bigint!) {
   update_rule_owner(
-    where: { removed: { _is_null: true } },
+    where: { removed: { _is_null: true }, owner_mapping_source_id: { _neq: 4 } }
     _set: { removed: $controlId }
   ) {
     affected_rows

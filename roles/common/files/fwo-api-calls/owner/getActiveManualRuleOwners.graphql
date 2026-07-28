@@ -1,0 +1,12 @@
+query getActiveManualRuleOwners($objects: [rule_owner_bool_exp!]!) {
+  rule_owner(
+    where: {
+      _or: $objects
+      owner_mapping_source_id: { _eq: 4 }
+      removed: { _is_null: true }
+    }
+  ) {
+    rule_id
+    owner_id
+  }
+}

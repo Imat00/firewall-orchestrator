@@ -3,14 +3,21 @@ mutation newRuleOwnership(
   $ruleId: bigint!
   $ruleMetadataId: bigint!
   $created: bigint!
+) {
+  insert_rule_owner(
+    objects: {
+      owner_id: $ownerId
+      rule_id: $ruleId
+      rule_metadata_id: $ruleMetadataId
+      created: $created
+      removed: null
+      owner_mapping_source_id: 4
+    }
+    on_conflict: {
+      constraint: pk_rule_owner
+      update_columns: [removed, rule_metadata_id]
+    }
   ) {
-  insert_rule_owner(objects: {
-    owner_id: $ownerId
-    rule_id: $ruleId
-    rule_metadata_id: $ruleMetadataId
-    created: $created
-    owner_mapping_source_id: 4
-  }) {
     returning {
       insertedIdLong: rule_metadata_id
     }

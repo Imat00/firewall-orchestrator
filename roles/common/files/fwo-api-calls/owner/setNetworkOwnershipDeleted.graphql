@@ -4,7 +4,7 @@ mutation setNetworkOwnershipDeleted(
   $deleted: Boolean!
 ) {
   update_owner_network(
-    where: { owner_id: { _eq: $ownerId }, id: { _eq: $id } }
+    where: { owner_id: { _eq: $ownerId }, id: { _eq: $id }, import_source: { _eq: "manual" }, nw_type: { _eq: 10 } }
     _set: { is_deleted: $deleted }
   ) {
     affected_rows

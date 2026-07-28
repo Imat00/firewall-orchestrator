@@ -1,8 +1,9 @@
 query getRuleOwnerToRemoveByRule($ruleIds: [bigint!]!) {
   rule_owner(
-    where: { 
-      rule_id: { _in: $ruleIds },
-      removed: { _is_null: true } 
+    where: {
+      rule_id: { _in: $ruleIds }
+      removed: { _is_null: true }
+      owner_mapping_source_id: { _neq: 4 }
     }
   ) {
     rule_id

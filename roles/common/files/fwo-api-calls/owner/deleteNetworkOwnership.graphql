@@ -1,9 +1,8 @@
-mutation deleteNetworkOwnership(
-  $ownerId: Int!
-  $id: bigint!
+mutation deleteNetworkOwnership($ownerId: Int!, $id: bigint!) {
+  update_owner_network(
+    where: { owner_id: { _eq: $ownerId }, id: { _eq: $id }, import_source: { _eq: "manual" }, nw_type: { _eq: 10 } }
+    _set: { is_deleted: true }
   ) {
-  update_owner_network(where: {owner_id: {_eq: $ownerId}, id: {_eq: $id}}
-    _set: {is_deleted: true}) {
     affected_rows
   }
 }

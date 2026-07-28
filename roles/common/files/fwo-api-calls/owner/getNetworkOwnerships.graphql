@@ -1,10 +1,18 @@
 query getNetworkOwnerships($ownerId: Int!) {
   owner_network(
-    where: { owner_id: { _eq: $ownerId }, is_deleted: { _eq: false }, import_source: { _eq: "manual" }, nw_type: { _eq: 10 } }
+    where: {
+      owner_id: { _eq: $ownerId }
+      is_deleted: { _eq: false }
+      nw_type: { _eq: 10 }
+    }
     order_by: { id: asc }
   ) {
     id
     ip
     ip_end
+    name
+    import_source
+    is_deleted
+    nw_type
   }
 }

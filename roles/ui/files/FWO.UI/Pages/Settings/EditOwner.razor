@@ -254,8 +254,14 @@
                     <div class="col-sm-12 mt-2" data-toggle="tooltip" title="@(userConfig.PureLine("H5589"))">
                         <RuleSelector SelectedRules="ActRules" @bind-RulesToAdd="RulesToAdd" @bind-RulesToDelete="RulesToDelete" Readonly="Readonly" />
                     </div>
+                    @if (ImportedIpAddresses.Count > 0)
+                    {
+                        <div class="col-sm-12 mt-2" data-toggle="tooltip" title="@(userConfig.PureLine("H5590"))">
+                            <IpSelector IpAddresses="ImportedIpAddresses" Readonly="true" LabelKey="imported_ip_addresses" ReadonlyListLayout="true" />
+                        </div>
+                    }
                     <div class="col-sm-12 mt-2" data-toggle="tooltip" title="@(userConfig.PureLine("H5590"))">
-                        <IpSelector IpAddresses="ActIpAddresses" @bind-IpsToAdd="IpsToAdd" @bind-IpsToDelete="IpsToDelete" Readonly="Readonly" />
+                        <IpSelector IpAddresses="ActIpAddresses" @bind-IpsToAdd="IpsToAdd" @bind-IpsToDelete="IpsToDelete" Readonly="Readonly" LabelKey="manual_ip_addresses" />
                     </div>
                 }
             </div>
@@ -317,9 +323,12 @@
     private List<Rule> ActRules = [];
     private List<Rule> RulesToAdd = [];
     private List<Rule> RulesToDelete = [];
+    private List<NwObjectElement> ImportedIpAddresses = [];
 
     private Dictionary<string, string> RoleDnByName = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, HashSet<string>> RoleUsersByName = new(StringComparer.OrdinalIgnoreCase);
+
+    private long manualRuleOwnerControlId;
 
     private class RuleHelper : Rule
     {
@@ -362,13 +371,19 @@
         if (ActOwner.Id <= 0)
         {
             ActIpAddresses = [];
+            ImportedIpAddresses = [];
             ActRules = [];
         }
         else
         {
-            ActIpAddresses = await apiConnection.SendQueryAsync<List<NwObjectElement>>(OwnerQueries.getNetworkOwnerships, new { ownerId = ActOwner.Id });
+            List<NwObjectElement> ownerNetworks = await apiConnection.SendQueryAsync<List<NwObjectElement>>(OwnerQueries.getNetworkOwnerships, new { ownerId = ActOwner.Id });
+
+            ActIpAddresses = ownerNetworks.Where(IsManualOwnerNetwork).ToList();
+            ImportedIpAddresses = ownerNetworks.Where(ip => !IsManualOwnerNetwork(ip)).ToList();
+
             ActRules = (await apiConnection.SendQueryAsync<List<RuleHelper>>(OwnerQueries.getRuleOwnerships, new { ownerId = ActOwner.Id })).ConvertAll(r => r.ToRule());
         }
+
         OriginalOwnedIpKeys = BuildOwnedIpKeys(ActIpAddresses);
 
         IpsToAdd = [];
@@ -404,10 +419,12 @@
             bool addOwnerMode = ActOwner.IsNew;
             if (addOwnerMode)
             {
+                await EnsureManualRuleOwnerControlIdIfNeeded();
                 await AddOwnerInDb();
             }
             else
             {
+                await EnsureManualRuleOwnerControlIdIfNeeded();
                 await UpdateOwnerInDb();
             }
 
@@ -640,7 +657,7 @@
         ActOwner.DecommDate = decommDate;
         await UpdateOwnerResponsiblesInDb(ActOwner);
         await EnsureOwnerResponsibleRolesFromConfig(ActOwner);
-        await DeleteRuleOwners();
+        await UpdateRuleOwners();
         await AddRuleOwners();
         await DeleteNetworkOwners();
         await AddNetworkOwners();
@@ -789,23 +806,27 @@
             var variables = new
             {
                 ownerId = ActOwner.Id,
-                ruleMetadataId = rule.Metadata.Id
+                ruleMetadataId = rule.Metadata.Id,
+                ruleId = rule.Id,
+                created = manualRuleOwnerControlId
             };
             await apiConnection.SendQueryAsync<ReturnIdWrapper>(OwnerQueries.newRuleOwnership, variables);
             ActRules.Add(rule);
         }
     }
 
-    private async Task DeleteRuleOwners()
+    private async Task UpdateRuleOwners()
     {
         foreach (var rule in RulesToDelete)
         {
             var variables = new
             {
                 ownerId = ActOwner.Id,
-                ruleMetadataId = rule.Metadata.Id
+                ruleMetadataId = rule.Metadata.Id,
+                ruleId = rule.Id,
+                removed = manualRuleOwnerControlId
             };
-            await apiConnection.SendQueryAsync<ReturnIdWrapper>(OwnerQueries.deleteRuleOwnership, variables);
+            await apiConnection.SendQueryAsync<ReturnIdWrapper>(OwnerQueries.updateRuleOwnership, variables);
             ActRules.Remove(rule);
         }
     }
@@ -921,5 +942,36 @@
             keys.Add($"{ip}|{ipEnd}");
         }
         return keys;
+    }
+
+    private static bool IsManualOwnerNetwork(NwObjectElement ipAddress)
+    {
+        return string.Equals(ipAddress.ImportSource, "manual", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task EnsureManualRuleOwnerControlId()
+    {
+        if (manualRuleOwnerControlId > 0)
+        {
+            return;
+        }
+
+        List<ImportControl> controls =
+            await apiConnection.SendQueryAsync<List<ImportControl>>(ImportQueries.getManualOwnerMappingImportControl);
+
+        manualRuleOwnerControlId = controls.FirstOrDefault()?.ControlId ?? 0;
+
+        if (manualRuleOwnerControlId <= 0)
+        {
+            throw new InvalidOperationException("Manual owner mapping import control marker is missing.");
+        }
+    }
+
+    private async Task EnsureManualRuleOwnerControlIdIfNeeded()
+    {
+        if (RulesToAdd.Count > 0 || RulesToDelete.Count > 0)
+        {
+            await EnsureManualRuleOwnerControlId();
+        }
     }
 }

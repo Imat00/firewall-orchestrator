@@ -515,7 +515,7 @@ namespace FWO.Test
                 || query == OwnerQueries.newOwnerResponsibles
                 || query == OwnerQueries.newRuleOwnership
                 || query == OwnerQueries.newNetworkOwnership
-                || query == OwnerQueries.deleteRuleOwnership
+                || query == OwnerQueries.updateRuleOwnership
                 || query == OwnerQueries.deleteNetworkOwnership)
             {
                 return Task.FromResult(Activator.CreateInstance<QueryResponseType>());

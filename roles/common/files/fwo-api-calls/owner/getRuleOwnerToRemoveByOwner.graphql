@@ -1,8 +1,9 @@
 query getRuleOwnerToRemoveByOwner($ownerIds: [Int!]!) {
   rule_owner(
-    where: { 
-      owner_id: { _in: $ownerIds },
-      removed: { _is_null: true } 
+    where: {
+      owner_id: { _in: $ownerIds }
+      removed: { _is_null: true }
+      owner_mapping_source_id: { _neq: 4 }
     }
   ) {
     rule_id

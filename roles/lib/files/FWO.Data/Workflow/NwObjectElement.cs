@@ -23,6 +23,16 @@ namespace FWO.Data.Workflow
             get { return CidrEnd.CidrString; } // ?? Cidr.CidrString; }
             set { CidrEnd = new Cidr(value ?? Cidr.CidrString); }   // if End value is not set, asume host and set start ip as end ip
         }
+
+        [JsonProperty("import_source"), JsonPropertyName("import_source")]
+        public string ImportSource { get; set; } = "";
+
+        [JsonProperty("is_deleted"), JsonPropertyName("is_deleted")]
+        public bool IsDeleted { get; set; }
+
+        [JsonProperty("nw_type"), JsonPropertyName("nw_type")]
+        public int? NwType { get; set; }
+
         public Cidr CidrEnd { get; set; } = new();
 
         [JsonProperty("name"), JsonPropertyName("name")]

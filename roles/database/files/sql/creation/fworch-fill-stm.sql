@@ -768,6 +768,7 @@ insert into stm_link_type (id, name) VALUES (5, 'domain');
 INSERT INTO stm_import (import_type_id, import_type_name) VALUES (1, 'rule');
 INSERT INTO stm_import (import_type_id, import_type_name) VALUES (2, 'owner');
 INSERT INTO stm_import (import_type_id, import_type_name) VALUES (3, 'admin via reinitialize button');
+INSERT INTO stm_import (import_type_id, import_type_name) VALUES (4, 'manual owner mapping marker');
 
 INSERT INTO config (config_key, config_value, config_user) VALUES ('accessTokenLifetime', '1', 0);
 INSERT INTO config (config_key, config_value, config_user) VALUES ('accessTokenLifetimeUnit', 'Hours', 0);

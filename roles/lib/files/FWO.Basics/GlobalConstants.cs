@@ -194,6 +194,7 @@ namespace FWO.Basics
         public const int RULE = 1;
         public const int OWNER = 2;
         public const int ADMIN_VIA_REINITIALIZE_BTN = 3;
+        public const int MANUAL_OWNER_MAPPING = 4;
     }
 
     public struct ChangelogActionType

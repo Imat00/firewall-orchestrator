@@ -1,20 +1,36 @@
-﻿@using NetTools
+@using NetTools
 @using FWO.Ui.Display
 @using FWO.Data.Workflow
 
 @inject UserConfig userConfig
 
 <div class="form-group row">
-    @if(WithLabel)
+    @if (WithLabel)
     {
-        <label class="col-sm-3 col-form-label col-form-label-sm">@(userConfig.GetText("ip_addresses")):</label>
+        <label class="col-sm-3 col-form-label col-form-label-sm">@(userConfig.GetText(LabelKey)):</label>
     }
     <div class="@(WithLabel ? "col-sm-9" : "col-sm-12") me-auto">
-        @if(Readonly)
+        @if (Readonly)
         {
-            @foreach(var adr in IpAddresses)
+            @if (ReadonlyListLayout)
             {
-                <div class="col-sm-10 border bg-transparent">@DisplayIpAddress(adr)</div>
+                <ul class="list-group">
+                    @foreach (var adr in IpAddresses)
+                    {
+                        <li class="draggable-selected pb-0 pt-0 d-flex">
+                            <div class="mh-13 flex-grow-1 px-2">
+                                @DisplayIpAddress(adr)
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                @foreach (var adr in IpAddresses)
+                {
+                    <div class="col-sm-10 border bg-transparent">@DisplayIpAddress(adr)</div>
+                }
             }
         }
         else
@@ -61,6 +77,12 @@
     [Parameter]
     public bool WithLabel { get; set; } = true;
 
+    [Parameter]
+    public string LabelKey { get; set; } = "ip_addresses";
+
+    [Parameter]
+    public bool ReadonlyListLayout { get; set; } = false;
+
 
     private IPAddressRange? ipRangeToAdd;
 
@@ -90,7 +112,7 @@
             {
                 IpsToAdd.Add(obj);
             }
-			ipRangeToAdd = null;
-		}
-	}    
+            ipRangeToAdd = null;
+        }
+    }
 }

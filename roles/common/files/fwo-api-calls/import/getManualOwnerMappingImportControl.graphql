@@ -1,0 +1,9 @@
+query getManualOwnerMappingImportControl {
+  import_control(
+    where: { import_type_id: { _eq: 4 } }
+    order_by: { control_id: asc }
+    limit: 1
+  ) {
+    control_id
+  }
+}
