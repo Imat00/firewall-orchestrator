@@ -398,6 +398,30 @@ namespace FWO.Test
 
         [Test]
         [Parallelizable]
+        public void AppRulesRebuildIncludesLateRuleOwnerPrefilter()
+        {
+            ReportTemplate template = new("", new()
+            {
+                ReportType = (int)ReportType.AppRules
+            });
+            template.ReportParams.ModellingFilter.SelectedOwner = new FwoOwner { Id = 17 };
+            DynGraphqlQuery query = Compiler.Compile(template);
+
+            query.QueryParameters.Add("$appRulesRuleOwnerPrefilterMarker: String! ");
+            query.QueryVariables["appRulesRuleOwnerPrefilterMarker"] = "%FWOC%";
+            short ownerMappingSourceId = (short)(int)OwnerMappingSourceStm.NameField;
+            query.AddRuleWhereAndFilter("{ rule_name: { _ilike: $appRulesRuleOwnerPrefilterMarker } }");
+            query.AddRuleWhereAndFilter($"{{ rule_metadatum: {{ rule_owners: {{ owner_id: {{ _eq: 17 }}, owner_mapping_source_id: {{ _eq: {ownerMappingSourceId} }}, removed: {{ _is_null: true }} }} }} }}");
+            query.RebuildLegacyRulesQuery(template);
+
+            StringAssert.Contains("get_rules_for_owner(args: {ownerid: 17 ", query.FullQuery);
+            StringAssert.Contains("$appRulesRuleOwnerPrefilterMarker: String!", query.FullQuery);
+            StringAssert.Contains("rule_name: { _ilike: $appRulesRuleOwnerPrefilterMarker }", query.FullQuery);
+            StringAssert.Contains($"rule_metadatum: {{ rule_owners: {{ owner_id: {{ _eq: 17 }}, owner_mapping_source_id: {{ _eq: {ownerMappingSourceId} }}, removed: {{ _is_null: true }} }} }}", query.FullQuery);
+        }
+
+        [Test]
+        [Parallelizable]
         public void StandardRulesQueryBuildsSplitStructureAndRulePageQueries()
         {
             ReportTemplate t = new();
