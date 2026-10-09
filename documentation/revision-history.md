@@ -1,5 +1,16 @@
 # Firewall Orchestrator Revision History
 
+## 9.6.3 - 07.10.2026
+
+- implementation tasks of object tasks are created per target management
+  (group create/modify/delete, object create/modify). The target management follows the provisioning settings
+  address/service object creation (super- or sub-management); request.impltask gets the new column mgm_id
+- new workflow action "create implementation tasks" creates the missing implementation tasks of a ticket, also
+  with an active planning phase; existing implementation tasks are kept
+- the path analysis algorithm moved to the workflow customizing settings; "after path analysis" requires an algorithm
+- the workflow roles and the modeller may read the provisioning settings (read only), so the implementation tasks
+  created in the ui resolve their target managements; the ui only finds the sub-managements visible to the user
+
 ## 9.6.2 - 02.10.2026
 
 - add workflow task types object_create and object_modify for a single network object (host, network,

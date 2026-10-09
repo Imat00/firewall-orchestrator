@@ -7100,6 +7100,21 @@
               ],
               "select_permissions": [
                 {
+                  "role": "approver",
+                  "permission": {
+                    "columns": [
+                      "display_name",
+                      "id",
+                      "node_type",
+                      "object_key",
+                      "parent_id",
+                      "sort_order"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
                   "role": "auditor",
                   "permission": {
                     "columns": [
@@ -7115,7 +7130,82 @@
                   "comment": ""
                 },
                 {
+                  "role": "implementer",
+                  "permission": {
+                    "columns": [
+                      "display_name",
+                      "id",
+                      "node_type",
+                      "object_key",
+                      "parent_id",
+                      "sort_order"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
                   "role": "middleware-server",
+                  "permission": {
+                    "columns": [
+                      "display_name",
+                      "id",
+                      "node_type",
+                      "object_key",
+                      "parent_id",
+                      "sort_order"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "modeller",
+                  "permission": {
+                    "columns": [
+                      "display_name",
+                      "id",
+                      "node_type",
+                      "object_key",
+                      "parent_id",
+                      "sort_order"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "planner",
+                  "permission": {
+                    "columns": [
+                      "display_name",
+                      "id",
+                      "node_type",
+                      "object_key",
+                      "parent_id",
+                      "sort_order"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "requester",
+                  "permission": {
+                    "columns": [
+                      "display_name",
+                      "id",
+                      "node_type",
+                      "object_key",
+                      "parent_id",
+                      "sort_order"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "reviewer",
                   "permission": {
                     "columns": [
                       "display_name",
@@ -7188,6 +7278,18 @@
               ],
               "select_permissions": [
                 {
+                  "role": "approver",
+                  "permission": {
+                    "columns": [
+                      "config_key",
+                      "config_value",
+                      "node_id"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
                   "role": "auditor",
                   "permission": {
                     "columns": [
@@ -7200,7 +7302,67 @@
                   "comment": ""
                 },
                 {
+                  "role": "implementer",
+                  "permission": {
+                    "columns": [
+                      "config_key",
+                      "config_value",
+                      "node_id"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
                   "role": "middleware-server",
+                  "permission": {
+                    "columns": [
+                      "config_key",
+                      "config_value",
+                      "node_id"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "modeller",
+                  "permission": {
+                    "columns": [
+                      "config_key",
+                      "config_value",
+                      "node_id"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "planner",
+                  "permission": {
+                    "columns": [
+                      "config_key",
+                      "config_value",
+                      "node_id"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "requester",
+                  "permission": {
+                    "columns": [
+                      "config_key",
+                      "config_value",
+                      "node_id"
+                    ],
+                    "filter": {}
+                  },
+                  "comment": ""
+                },
+                {
+                  "role": "reviewer",
                   "permission": {
                     "columns": [
                       "config_key",
@@ -31273,6 +31435,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31302,6 +31465,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31332,6 +31496,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31362,6 +31527,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31391,6 +31557,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31421,6 +31588,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31450,6 +31618,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31479,6 +31648,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31508,6 +31678,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31538,6 +31709,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31568,6 +31740,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31597,6 +31770,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31627,6 +31801,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31657,6 +31832,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31686,6 +31862,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",
@@ -31777,6 +31954,7 @@
                       "title",
                       "current_handler",
                       "device_id",
+                      "mgm_id",
                       "nw_obj_grp_id",
                       "recent_handler",
                       "rule_action",

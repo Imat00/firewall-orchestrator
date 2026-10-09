@@ -21,6 +21,10 @@ namespace FWO.Test
     [TestFixture]
     internal class UiWorkflowCustomizingTest
     {
+        private const string kNoneAlgorithmName = "None";
+        private const string kNetworkZoneTreeAlgorithmName = "Network Zone Tree";
+        private static readonly object[] kNoArguments = [];
+
         private static MethodInfo GetPrivateMethod(Type type, string name)
         {
             return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance)
@@ -172,6 +176,105 @@ namespace FWO.Test
             Assert.That(apiConnection.UpsertConfigCallCount, Is.EqualTo(1));
             ConfigItem stateConfig = FindConfigItem(apiConnection.LastConfigItems, "reqApiTicketInitialStateId");
             Assert.That(stateConfig.Value, Is.EqualTo("17"));
+        }
+
+        [Test]
+        public async Task SettingsCustomizing_RendersPathAnalysisAlgorithmOptions()
+        {
+            await using BunitContext context = new();
+            SimulatedGlobalConfig globalConfig = new()
+            {
+                ReqAvailableTaskTypes = "[]",
+                ReqPriorities = "[]",
+                PathAnalysisAlgorithm = GlobalConst.kPathAnalysisAlgorithmNetworkZoneTree
+            };
+            IRenderedComponent<CascadingAuthenticationState> wrapper = RenderCustomizing(context, globalConfig);
+
+            wrapper.WaitForAssertion(() =>
+            {
+                List<AngleSharp.Dom.IElement> options = [.. wrapper.FindAll("#pathAnalysisAlgorithm option")];
+                Assert.That(options, Has.Count.EqualTo(2));
+                Assert.That(options[1].TextContent, Is.EqualTo(kNetworkZoneTreeAlgorithmName));
+                Assert.That(wrapper.Find("#pathAnalysisAlgorithm").GetAttribute("value"),
+                    Is.EqualTo(GlobalConst.kPathAnalysisAlgorithmNetworkZoneTree.ToString()));
+                Assert.That(wrapper.FindAll(".text-danger"), Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task SettingsCustomizing_AfterPathAnalysisWithoutAlgorithmWarnsAndDisablesSave()
+        {
+            await using BunitContext context = new();
+            SimulatedGlobalConfig globalConfig = new()
+            {
+                ReqAvailableTaskTypes = "[]",
+                ReqPriorities = "[]",
+                ReqAutoCreateImplTasks = AutoCreateImplTaskOptions.afterPathAnalysis,
+                PathAnalysisAlgorithm = GlobalConst.kPathAnalysisAlgorithmNone
+            };
+            IRenderedComponent<CascadingAuthenticationState> wrapper = RenderCustomizing(context, globalConfig);
+
+            wrapper.WaitForAssertion(() =>
+            {
+                Assert.That(wrapper.FindAll(".text-danger"), Is.Not.Empty);
+                Assert.That(wrapper.FindAll("button.btn-primary").Last().HasAttribute("disabled"), Is.True);
+            });
+        }
+
+        [Test]
+        public async Task Save_RejectsAfterPathAnalysisWithoutAlgorithm()
+        {
+            WorkflowCustomizingApiConn apiConnection = new();
+            SimulatedGlobalConfig globalConfig = new() { ReqAvailableTaskTypes = "[]", ReqPriorities = "[]" };
+            ConfigData editableConfig = await globalConfig.GetEditableConfig();
+            editableConfig.ReqAutoCreateImplTasks = AutoCreateImplTaskOptions.afterPathAnalysis;
+            editableConfig.PathAnalysisAlgorithm = GlobalConst.kPathAnalysisAlgorithmNone;
+            SettingsCustomizing component = CreateSavableComponent(apiConnection, globalConfig, editableConfig);
+
+            await (Task)GetPrivateMethod(typeof(SettingsCustomizing), "Save").Invoke(component, kNoArguments)!;
+
+            Assert.That(apiConnection.UpsertConfigCallCount, Is.Zero);
+        }
+
+        [Test]
+        public async Task Save_PersistsPathAnalysisAlgorithm()
+        {
+            WorkflowCustomizingApiConn apiConnection = new();
+            SimulatedGlobalConfig globalConfig = new() { ReqAvailableTaskTypes = "[]", ReqPriorities = "[]" };
+            ConfigData editableConfig = await globalConfig.GetEditableConfig();
+            editableConfig.ReqAutoCreateImplTasks = AutoCreateImplTaskOptions.afterPathAnalysis;
+            editableConfig.PathAnalysisAlgorithm = GlobalConst.kPathAnalysisAlgorithmNetworkZoneTree;
+            SettingsCustomizing component = CreateSavableComponent(apiConnection, globalConfig, editableConfig);
+
+            await (Task)GetPrivateMethod(typeof(SettingsCustomizing), "Save").Invoke(component, kNoArguments)!;
+
+            Assert.That(apiConnection.UpsertConfigCallCount, Is.EqualTo(1));
+            ConfigItem algorithmConfig = FindConfigItem(apiConnection.LastConfigItems, "pathAnalysisAlgorithm");
+            Assert.That(algorithmConfig.Value, Is.EqualTo(GlobalConst.kPathAnalysisAlgorithmNetworkZoneTree.ToString()));
+        }
+
+        private static SettingsCustomizing CreateSavableComponent(WorkflowCustomizingApiConn apiConnection, SimulatedGlobalConfig globalConfig, ConfigData editableConfig)
+        {
+            SettingsCustomizing component = new();
+            SetMember(component, "apiConnection", apiConnection);
+            SetMember(component, "globalConfig", globalConfig);
+            SetMember(component, "userConfig", new SimulatedUserConfig());
+            SetMember(component, "configData", editableConfig);
+            SetMember(component, "taskTypesActiveDict", Enum.GetValues<WfTaskType>().ToDictionary(type => type, _ => false));
+            SetMember(component, "prioList", new List<WfPriority>());
+            return component;
+        }
+
+        private static IRenderedComponent<CascadingAuthenticationState> RenderCustomizing(BunitContext context, SimulatedGlobalConfig globalConfig)
+        {
+            context.Services.AddSingleton<ApiConnection>(new WorkflowCustomizingApiConn());
+            context.Services.AddSingleton<GlobalConfig>(globalConfig);
+            context.Services.AddSingleton<UserConfig>(new SimulatedUserConfig());
+            context.Services.AddSingleton<DomEventService>();
+            context.Services.AddLocalization();
+            context.Services.AddAuthorizationCore();
+            context.Services.AddSingleton<AuthenticationStateProvider>(new WorkflowCustomizingAuthStateProvider(Roles.Admin));
+            return context.Render<CascadingAuthenticationState>(parameters => parameters.AddChildContent<SettingsCustomizing>());
         }
 
         [Test]
@@ -913,6 +1016,11 @@ namespace FWO.Test
             public List<ConfigItem> LastConfigItems { get; private set; } = [];
             public List<WfState> States { get; set; } = [new WfState { Id = 0, Name = "draft" }];
             public bool ThrowOnUpsertConfig { get; set; } = false;
+            public List<PathAnalysisAlgorithm> PathAnalysisAlgorithms { get; set; } = new List<PathAnalysisAlgorithm>
+            {
+                new() { Id = GlobalConst.kPathAnalysisAlgorithmNone, Name = kNoneAlgorithmName },
+                new() { Id = GlobalConst.kPathAnalysisAlgorithmNetworkZoneTree, Name = kNetworkZoneTreeAlgorithmName }
+            };
             public List<WorkflowConfiguration> WorkflowConfigurations { get; set; } = new List<WorkflowConfiguration>
             {
                 new()
@@ -950,6 +1058,11 @@ namespace FWO.Test
                 if (query == RequestQueries.getActiveStateMatrixConfiguration && typeof(QueryResponseType) == typeof(List<WorkflowConfiguration>))
                 {
                     return Task.FromResult((QueryResponseType)(object)WorkflowConfigurations);
+                }
+
+                if (query == PathAnalysisAlgorithmQueries.getPathAnalysisAlgorithms && typeof(QueryResponseType) == typeof(List<PathAnalysisAlgorithm>))
+                {
+                    return Task.FromResult((QueryResponseType)(object)PathAnalysisAlgorithms);
                 }
 
                 if (query == ConfigQueries.upsertConfigItems)

@@ -496,11 +496,19 @@ namespace FWO.Services.Workflow
         {
             if (reqTask.TaskType == WfTaskType.access.ToString())
             {
+                await EnsureDevicesLoaded();
                 await AutoCreateAccessImplTasks(reqTask);
                 return;
             }
-
-            await CreateGenericImplTask(reqTask);
+            if (WfObjectTaskHelper.IsManagementObjectTask(reqTask.TaskType))
+            {
+                await AutoCreateObjectImplTasks(reqTask);
+                return;
+            }
+            if (reqTask.ImplementationTasks.Count == 0)
+            {
+                await CreateGenericImplTask(reqTask);
+            }
         }
 
         private async Task AutoCreateAccessImplTasks(WfReqTask reqTask)
@@ -569,6 +577,10 @@ namespace FWO.Services.Workflow
 
         private async Task CreateAccessImplTask(WfReqTask reqTask, int? deviceId, bool adaptTitle = true, WfTicket? previousTicket = null)
         {
+            if (reqTask.ImplementationTasks.Any(implTask => implTask.DeviceId == deviceId))
+            {
+                return;
+            }
             WfImplTask newImplTask;
             newImplTask = new WfImplTask(reqTask)
             { TaskNumber = reqTask.HighestImplTaskNumber() + 1, DeviceId = deviceId, StateId = reqTask.StateId };
