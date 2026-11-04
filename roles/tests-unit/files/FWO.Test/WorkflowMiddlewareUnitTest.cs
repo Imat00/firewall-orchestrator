@@ -1929,47 +1929,6 @@ namespace FWO.Test
         }
 
         [Test]
-        public void WorkflowController_ResolveAffectedReqTask_ResolvesPerScope()
-        {
-            WfReqTask reqTask = new() { Id = 5, TicketId = 1 };
-            WfImplTask implTask = new() { Id = 9, ReqTaskId = 5 };
-            WfTicket ticket = new() { Id = 1, Tasks = [reqTask] };
-
-            WfReqTask? direct = InvokePrivateStatic<WfReqTask?>(typeof(WorkflowController), "ResolveAffectedReqTask",
-                ticket, WfObjectScopes.RequestTask, reqTask, 5L);
-            WfReqTask? byId = InvokePrivateStatic<WfReqTask?>(typeof(WorkflowController), "ResolveAffectedReqTask",
-                ticket, WfObjectScopes.RequestTask, new WfTicket(), 5L);
-            WfReqTask? viaImplTask = InvokePrivateStatic<WfReqTask?>(typeof(WorkflowController), "ResolveAffectedReqTask",
-                ticket, WfObjectScopes.ImplementationTask, implTask, 0L);
-            WfReqTask? unsupported = InvokePrivateStatic<WfReqTask?>(typeof(WorkflowController), "ResolveAffectedReqTask",
-                ticket, WfObjectScopes.Approval, reqTask, 5L);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(direct, Is.SameAs(reqTask));
-                Assert.That(byId, Is.SameAs(reqTask));
-                Assert.That(viaImplTask, Is.SameAs(reqTask));
-                Assert.That(unsupported, Is.Null);
-            });
-        }
-
-        [Test]
-        public void WorkflowController_IsInternalWorkTask_DetectsInternalWorkTarget()
-        {
-            WfReqTask internalWork = new();
-            internalWork.SetAddInfo(AdditionalInfoKeys.FwConfigChangeTarget, ManagementFwConfigChangeTargets.InternalWork);
-            WfReqTask other = new();
-            other.SetAddInfo(AdditionalInfoKeys.FwConfigChangeTarget, "something-else");
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(InvokePrivateStatic<bool>(typeof(WorkflowController), "IsInternalWorkTask", internalWork), Is.True);
-                Assert.That(InvokePrivateStatic<bool>(typeof(WorkflowController), "IsInternalWorkTask", other), Is.False);
-                Assert.That(InvokePrivateStatic<bool>(typeof(WorkflowController), "IsInternalWorkTask", (WfReqTask?)null), Is.False);
-            });
-        }
-
-        [Test]
         public void WorkflowController_ValidatePersistedStateTransition_RejectsNonTransitions()
         {
             WorkflowActionResult noChangeResult = new();

@@ -85,7 +85,7 @@ namespace FWO.Middleware.Server
             }
             else
             {
-                await CreateExternalTicketSystemRequest(ticket, next.ReqTask, next.ExternalTicketSystemId, previousRequest);
+                await CreateExternalTicketSystemRequest(ticket, workList, next, previousRequest);
             }
             Log.WriteInfo(kProvisioningLogTitle, $"Created the external request for request task {next.ReqTask.TaskNumber}" +
                 $"{(next.ImplTask == null ? "" : $", implementation task {next.ImplTask.TaskNumber}")} of ticket {ticket.Id}.");
@@ -129,18 +129,78 @@ namespace FWO.Middleware.Server
         }
 
         /// <summary>
-        /// Hands a request task to the external ticket system selected for its management in the device specific settings.
+        /// Hands a request task to the external ticket system selected for its management in the device specific
+        /// settings, together with the request tasks it is bundled with.
         /// </summary>
-        private async Task CreateExternalTicketSystemRequest(WfTicket ticket, WfReqTask reqTask, int? externalTicketSystemId, ExternalRequest? previousRequest)
+        private async Task CreateExternalTicketSystemRequest(WfTicket ticket, ProvisioningWorkList workList, ProvisioningWorkItem start, ExternalRequest? previousRequest)
         {
             List<ExternalTicketSystem> extTicketSystems = JsonSerializer.Deserialize<List<ExternalTicketSystem>>(UserConfig.ExtTicketSystems) ?? [];
-            actSystem = extTicketSystems.FirstOrDefault(system => system.Id == externalTicketSystemId)
-                ?? throw new InvalidOperationException($"No matching external ticket system found for id {externalTicketSystemId}.");
-            actInternalWork = false;
-            await ApplySecureChangeTemplates(ticket, reqTask);
-            // a request task handed over alone is both the content and the only handled task of the request
-            List<WfReqTask> handedOverTasks = [reqTask];
-            await CreateExtRequest(ticket, handedOverTasks, handedOverTasks, GetWaitCycles(reqTask.TaskType, previousRequest, actSystem));
+            actSystem = extTicketSystems.FirstOrDefault(system => system.Id == start.ExternalTicketSystemId)
+                ?? throw new InvalidOperationException($"No matching external ticket system found for id {start.ExternalTicketSystemId}.");
+            await ApplySecureChangeTemplates(ticket, start.ReqTask);
+            (List<WfReqTask> contentTasks, List<WfReqTask> handledTasks) = BundleRequestTasks(workList, start);
+            await CreateExtRequest(ticket, contentTasks, handledTasks, GetWaitCycles(start.ReqTask.TaskType, previousRequest, actSystem));
+        }
+
+        /// <summary>
+        /// Bundles the open entries directly following the start entry into one request, as long as they are handed to
+        /// the same external ticket system, have the same task type and, for SecureChange, the same ticket templates.
+        /// Only rule tasks are bundled. A rule change of the same connection on another gateway of the same management
+        /// is merged into the task before (if the system bundles gateways); other tasks join as tasks of their own if
+        /// bundling is switched on, up to the maximum number of tasks of the system. The first entry that does not fit
+        /// ends the bundle; finished entries and implementation tasks left to a person do not interrupt it.
+        /// </summary>
+        /// <returns>The tasks forming the content of the request and all request tasks it handles.</returns>
+        private (List<WfReqTask> ContentTasks, List<WfReqTask> HandledTasks) BundleRequestTasks(ProvisioningWorkList workList, ProvisioningWorkItem start)
+        {
+            List<WfReqTask> contentTasks = [];
+            List<WfReqTask> handledTasks = [start.ReqTask];
+            WfReqTask currentTask = start.ReqTask;
+            if (IsBundledTaskType(start.ReqTask.TaskType))
+            {
+                foreach (ProvisioningWorkItem further in OpenEntriesAfter(workList, start))
+                {
+                    if (!CanBundle(further, start))
+                    {
+                        break;
+                    }
+                    if (actSystem.BundleGateways() && actSystem.TaskTypesToBundleGateways().Contains(start.ReqTask.TaskType)
+                        && IsSameRuleOnDiffGw(currentTask, further.ReqTask))
+                    {
+                        currentTask.Elements.AddRange(further.ReqTask.GetRuleElements().ConvertAll(element => element.ToReqElement()));
+                        handledTasks.Add(further.ReqTask);
+                        continue;
+                    }
+                    // the current task and the further one must fit into the request
+                    if (!UserConfig.ModRolloutBundleTasks || contentTasks.Count + 2 > actSystem.MaxBundledTasks())
+                    {
+                        break;
+                    }
+                    contentTasks.Add(currentTask);
+                    currentTask = new(further.ReqTask);
+                    handledTasks.Add(further.ReqTask);
+                }
+            }
+            contentTasks.Add(currentTask);
+            return (contentTasks, handledTasks);
+        }
+
+        private static IEnumerable<ProvisioningWorkItem> OpenEntriesAfter(ProvisioningWorkList workList, ProvisioningWorkItem start)
+        {
+            return workList.Items.SkipWhile(item => item != start).Skip(1).Where(item => !item.IsFinished);
+        }
+
+        private bool CanBundle(ProvisioningWorkItem further, ProvisioningWorkItem start)
+        {
+            return further.Way == ProvisioningWay.ExternalTicketSystem
+                && further.ExternalTicketSystemId == start.ExternalTicketSystemId
+                && further.ReqTask.TaskType == start.ReqTask.TaskType
+                && (!actSystem.IsTufinSecureChange() || scTemplates.HaveSameTemplates(further.ReqTask.ManagementId, start.ReqTask.ManagementId));
+        }
+
+        private static bool IsBundledTaskType(string taskType)
+        {
+            return taskType == WfTaskType.access.ToString() || IsRuleChangeOrDelete(taskType);
         }
     }
 }

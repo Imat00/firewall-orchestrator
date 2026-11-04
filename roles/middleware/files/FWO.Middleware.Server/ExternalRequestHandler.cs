@@ -8,7 +8,6 @@ using FWO.Data;
 using FWO.Data.Modelling;
 using FWO.Data.Workflow;
 using FWO.ExternalSystems;
-using FWO.ExternalSystems.CheckPoint;
 using FWO.ExternalSystems.Tufin.SecureChange;
 using FWO.Logging;
 using FWO.Services;
@@ -33,7 +32,6 @@ namespace FWO.Middleware.Server
         private string actTaskType = "";
         private List<IpProtocol> ipProtos = [];
         private List<UserGroup>? ownerGroups = [];
-        private bool actInternalWork = false;
         private SCTemplateLookup scTemplates = new(kNoSCTemplates);
 
         /// <summary>
@@ -56,22 +54,6 @@ namespace FWO.Middleware.Server
             ExtStates.ExtReqAcknowledged.ToString(),
             ExtStates.ExtReqDiscarded.ToString()
         ];
-
-        private enum CreateNextRequestResult
-        {
-            Continue,
-            ReturnTrue,
-            ReturnHandledTask
-        }
-
-        private sealed class CreateNextRequestState
-        {
-            public WfTicket Ticket { get; set; } = new();
-            public ExternalRequest? OldRequest { get; set; }
-            public int LastTaskNumber { get; set; }
-            public bool HandledTask { get; set; }
-            public bool HandledInternalWork { get; set; }
-        }
 
         /// <summary>
         /// constructor for object with all data necessary for request handling
@@ -103,69 +85,9 @@ namespace FWO.Middleware.Server
         }
 
         /// <summary>
-        /// send the first request from ticket (called by UI via middleware client)
-        /// may also be a higher task number in case of a reinit
-        /// </summary>
-        public async Task<bool> SendFirstRequest(long ticketId)
-        {
-            try
-            {
-                WfTicket? intTicket = await InitAndResolve(ticketId);
-                if (intTicket == null || intTicket.Tasks.Count == 0)
-                {
-                    return false;
-                }
-
-                int lastFinishedTask = 0;
-                List<WfReqTask> orderedTasks = [.. intTicket.Tasks.OrderBy(t => t.TaskNumber)];
-
-                int taskIndex = 0;
-                while (taskIndex < orderedTasks.Count)
-                {
-                    WfReqTask task = orderedTasks[taskIndex];
-
-                    if (IsInternalWorkTask(task))
-                    {
-                        List<WfReqTask> batch = GetInternalWorkBatch(intTicket, task);
-                        if (batch.Count == 0)
-                        {
-                            break;
-                        }
-
-                        if (!await InternalWorkBatchIsCompleted(batch))
-                        {
-                            Log.WriteInfo("SendFirstRequest",
-                                $"Ticket {ticketId}: internal work batch starting at task {batch.Min(t => t.TaskNumber)} is not completed yet. Reinit stops here.");
-                            return true;
-                        }
-
-                        lastFinishedTask = batch.Max(t => t.TaskNumber);
-                        taskIndex += batch.Count;
-                        continue;
-                    }
-
-                    if (task.StateId > wfHandler.StateMatrix(task.TaskType).LowestEndState)
-                    {
-                        lastFinishedTask = task.TaskNumber;
-                        taskIndex++;
-                        continue;
-                    }
-
-                    break;
-                }
-
-                return await CreateNextRequest(intTicket, lastFinishedTask);
-            }
-            catch (Exception exception)
-            {
-                Log.WriteError("External Request Creation", $"Runs into exception: ", exception);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// send the next request from ticket if last is done and not rejected
-        /// (called by scheduler after state change)
+        /// Takes over the state of a request into the ticket. A finished request is acknowledged; a rejected one rejects
+        /// the following request tasks, otherwise the provisioning continues with the next entry of the work list
+        /// (called by scheduler after state change).
         /// </summary>
         public async Task HandleStateChange(ExternalRequest externalRequest)
         {
@@ -193,7 +115,7 @@ namespace FWO.Middleware.Server
                     }
                     else
                     {
-                        await CreateNextRequest(intTicket, externalRequest.TaskNumber, externalRequest);
+                        await StartProvisioning(intTicket.Id, null, externalRequest);
                     }
                 }
             }
@@ -261,162 +183,6 @@ namespace FWO.Middleware.Server
         }
 
         /// <summary>
-        /// get number of last processed request task (public only for unit testing)
-        /// </summary>
-        /// <param name="extQueryVars"></param>
-        /// <param name="oldTaskNumber"></param>
-        /// <returns></returns>
-        public static int GetLastTaskNumber(string extQueryVars, int oldTaskNumber)
-        {
-            List<int>? taskNumbers = null;
-            Dictionary<string, List<int>>? extQueryVarDict = JsonSerializer.Deserialize<Dictionary<string, List<int>>?>(extQueryVars);
-            extQueryVarDict?.TryGetValue(ExternalVarKeys.BundledTasks, out taskNumbers);
-            if (taskNumbers != null && taskNumbers.Count > 0)
-            {
-                return taskNumbers[^1];
-            }
-            else
-            {
-                return oldTaskNumber;
-            }
-        }
-
-        /// <summary>
-        /// create next external request from internal ticket task list (public only for unit testing)
-        /// </summary>
-        /// <param name="ticket"></param>
-        /// <param name="oldTaskNumber"></param>
-        /// <param name="oldRequest"></param>
-        /// <returns></returns>
-
-        public async Task<bool> CreateNextRequest(WfTicket ticket, int oldTaskNumber, ExternalRequest? oldRequest = null)
-        {
-            int lastTaskNumber = UserConfig.ModRolloutBundleTasks && oldRequest != null && oldRequest.ExtQueryVariables != "" ?
-                GetLastTaskNumber(oldRequest.ExtQueryVariables, oldTaskNumber) : oldTaskNumber;
-            WorkflowEmailBundleCollector emailBundleCollector = new();
-            CreateNextRequestState state = new()
-            {
-                Ticket = ticket,
-                OldRequest = oldRequest,
-                LastTaskNumber = lastTaskNumber
-            };
-
-            try
-            {
-                while (true)
-                {
-                    CreateNextRequestResult result = await ProcessNextRequestTask(state, emailBundleCollector);
-                    if (result == CreateNextRequestResult.Continue)
-                    {
-                        continue;
-                    }
-                    return result switch
-                    {
-                        CreateNextRequestResult.ReturnHandledTask => state.HandledTask,
-                        _ => true
-                    };
-                }
-            }
-            catch (Exception exception)
-            {
-                Log.WriteError("CreateNextRequest",
-                    $"Create next request failed for ticket {state.Ticket.Id}. Trying to flush pending internal work emails before rethrowing.",
-                    exception);
-                try
-                {
-                    await RunInternalWorkStateChangeActionsSafe(state.Ticket.Id, emailBundleCollector);
-                }
-                catch (Exception flushException)
-                {
-                    Log.WriteError("CreateNextRequest",
-                        $"Flush of pending internal work emails also failed for ticket {state.Ticket.Id}.",
-                        flushException);
-                }
-
-                throw;
-            }
-        }
-
-        private async Task<CreateNextRequestResult> ProcessNextRequestTask(CreateNextRequestState state, WorkflowEmailBundleCollector emailBundleCollector)
-        {
-            WfReqTask? nextTask = state.Ticket.Tasks.FirstOrDefault(ta => ta.TaskNumber == state.LastTaskNumber + 1);
-            if (nextTask is null)
-            {
-                Log.WriteDebug("CreateNextRequest", "No more task found.");
-                await RunInternalWorkStateChangeActionsSafe(state.Ticket.Id, emailBundleCollector);
-                return CreateNextRequestResult.ReturnHandledTask;
-            }
-
-            if (state.HandledInternalWork && !IsInternalWorkConfiguredForTask(nextTask))
-            {
-                Log.WriteInfo("CreateNextRequest", $"Internal work batch for ticket {state.Ticket.Id} created. Waiting for completion before task {nextTask.TaskNumber}.");
-                await RunInternalWorkStateChangeActionsSafe(state.Ticket.Id, emailBundleCollector);
-                return CreateNextRequestResult.ReturnTrue;
-            }
-
-            List<ManagementFwConfigChangeState> managementSettings = JsonSerializer.Deserialize<List<ManagementFwConfigChangeState>>(UserConfig.FwConfigChangeMgmSettings) ?? new();
-            List<ExternalTicketSystem> extTicketSystems = JsonSerializer.Deserialize<List<ExternalTicketSystem>>(UserConfig.ExtTicketSystems) ?? new();
-            GetExtSystemFromTask(nextTask, managementSettings, extTicketSystems);
-
-            if (actInternalWork)
-            {
-                WorkflowPhases internalWorkPhase = await PromoteInternalWorkTaskToApproval(state.Ticket, nextTask, emailBundleCollector);
-                Log.WriteInfo("CreateNextRequest", $"Promoted internal work task {nextTask.TaskNumber} for ticket {state.Ticket.Id} to {internalWorkPhase}.");
-                state.HandledTask = true;
-                state.HandledInternalWork = true;
-                state.LastTaskNumber = nextTask.TaskNumber;
-                state.OldRequest = null;
-                state.Ticket = await wfHandler.ResolveTicket(state.Ticket.Id) ?? state.Ticket;
-                return CreateNextRequestResult.Continue;
-            }
-
-            await ApplySecureChangeTemplates(state.Ticket, nextTask);
-            int waitCycles = GetWaitCycles(nextTask.TaskType, state.OldRequest, actSystem);
-            if (nextTask.TaskType == WfTaskType.access.ToString() || IsRuleChangeOrDelete(nextTask.TaskType))
-            {
-                List<WfReqTask> bundledTasks = [];
-                List<WfReqTask> handledTasks = [nextTask];
-                BundleTasks(state.Ticket, state.LastTaskNumber, nextTask, bundledTasks, handledTasks, managementSettings, extTicketSystems);
-                await CreateExtRequest(state.Ticket, bundledTasks, handledTasks, waitCycles);
-            }
-            else
-            {
-                await CreateExtRequest(state.Ticket, [nextTask], [nextTask], waitCycles);
-            }
-
-            Log.WriteInfo("CreateNextRequest", $"Created Request for ticket {state.Ticket.Id}.");
-            await RunInternalWorkStateChangeActionsSafe(state.Ticket.Id, emailBundleCollector);
-            return CreateNextRequestResult.ReturnTrue;
-        }
-
-
-        private void BundleTasks(WfTicket ticket, int lastTaskNumber, WfReqTask nextTask, List<WfReqTask> bundledTasks, List<WfReqTask> handledTasks, List<ManagementFwConfigChangeState> managementSettings, List<ExternalTicketSystem> extTicketSystems)
-        {
-            int actTaskNumber = lastTaskNumber + 2;
-            bool taskFound = true;
-            WfReqTask actBundledTask = nextTask;
-
-            int startSystemId = actSystem.Id;
-
-            while (taskFound && bundledTasks.Count < actSystem.MaxBundledTasks())
-            {
-                WfReqTask? furtherTask = ticket.Tasks.FirstOrDefault(ta => ta.TaskNumber == actTaskNumber);
-                if (furtherTask != null && furtherTask.TaskType == nextTask.TaskType && CanBundleWithStartTask(furtherTask, nextTask, startSystemId, managementSettings, extTicketSystems))
-                {
-                    taskFound = HandleFurtherTask(furtherTask, nextTask.TaskType, ref actBundledTask, bundledTasks, handledTasks);
-
-                    actTaskNumber++;
-                }
-                else
-                {
-                    bundledTasks.Add(actBundledTask);
-                    taskFound = false;
-                }
-            }
-        }
-
-
-        /// <summary>
         /// Gives a SecureChange system the ticket templates in effect for the management of the task. The templates of all
         /// managements of the ticket are resolved at once, so bundling can compare them.
         /// </summary>
@@ -429,93 +195,6 @@ namespace FWO.Middleware.Server
             List<int> managementIds = [.. ticket.Tasks.Select(t => t.ManagementId).OfType<int>().Distinct()];
             scTemplates = await SCTemplateSource.Load(managementIds);
             actSystem.Templates = scTemplates.For(task.ManagementId);
-        }
-
-        /// <summary>
-        /// A further task joins the request of the start task if both are handled by the same external system and, for
-        /// SecureChange, their managements use the same ticket templates.
-        /// </summary>
-        private bool CanBundleWithStartTask(WfReqTask furtherTask, WfReqTask startTask, int startSystemId, List<ManagementFwConfigChangeState> managementSettings, List<ExternalTicketSystem> extTicketSystems)
-        {
-            if (GetChangeCategory(furtherTask) != GetChangeCategory(startTask))
-            {
-                return false;
-            }
-
-            return TryResolveExtSystemForTask(furtherTask, managementSettings, extTicketSystems, out ExternalTicketSystem? furtherSystem)
-                   && furtherSystem != null
-                   && furtherSystem.Id == startSystemId
-                   && (!furtherSystem.IsTufinSecureChange() || scTemplates.HaveSameTemplates(furtherTask.ManagementId, startTask.ManagementId));
-        }
-
-        private static bool TryResolveExtSystemForTask(WfReqTask task, List<ManagementFwConfigChangeState> managementSettings, List<ExternalTicketSystem> extTicketSystems, out ExternalTicketSystem? system)
-        {
-            system = null;
-
-            try
-            {
-                system = ResolveExtSystemForTask(task, managementSettings, extTicketSystems);
-
-                return true;
-            }
-            catch (InvalidOperationException)
-            {
-                return false;
-            }
-        }
-
-        private static ExternalTicketSystem ResolveExtSystemForTask(WfReqTask task, List<ManagementFwConfigChangeState> managementSettings, List<ExternalTicketSystem> extTicketSystems)
-        {
-            ArgumentNullException.ThrowIfNull(task);
-
-            ManagementFwConfigChangeState managementSetting =
-                managementSettings.FirstOrDefault(m => m.Id == task.ManagementId)
-                ?? throw new InvalidOperationException($"No matching config item found for management {task.ManagementId}.");
-
-            if (!managementSetting.Enabled)
-            {
-                throw new InvalidOperationException($"External workflow is disabled for management {task.ManagementId}.");
-            }
-
-            string changeCategory = GetChangeCategory(task);
-
-            if (!managementSetting.SelectedChanges.TryGetValue(changeCategory, out string? selectedSystemValue) || string.IsNullOrWhiteSpace(selectedSystemValue) || selectedSystemValue == ManagementFwConfigChangeTargets.Disabled)
-            {
-                throw new InvalidOperationException(
-                    $"No external ticket system configured for management {task.ManagementId} and category '{changeCategory}'.");
-            }
-
-            if (!int.TryParse(selectedSystemValue, out int externalTicketSystemId))
-            {
-                throw new InvalidOperationException(
-                    $"Configured external ticket system id '{selectedSystemValue}' for management {task.ManagementId} and category '{changeCategory}' is invalid.");
-            }
-
-            return extTicketSystems.FirstOrDefault(s => s.Id == externalTicketSystemId)
-                ?? throw new InvalidOperationException($"No matching external ticket system found for id {externalTicketSystemId}.");
-        }
-
-        private bool HandleFurtherTask(WfReqTask furtherTask, string actTaskType, ref WfReqTask actBundledTask, List<WfReqTask> bundledTasks, List<WfReqTask> handledTasks)
-        {
-            if (actSystem.BundleGateways() && actSystem.TaskTypesToBundleGateways().Contains(actTaskType) && IsSameRuleOnDiffGw(actBundledTask, furtherTask))
-            {
-                actBundledTask.Elements.AddRange(furtherTask.GetRuleElements().ConvertAll(e => e.ToReqElement()));
-                handledTasks.Add(furtherTask);
-            }
-            else
-            {
-                bundledTasks.Add(actBundledTask);
-                if (UserConfig.ModRolloutBundleTasks)
-                {
-                    actBundledTask = new(furtherTask);
-                    handledTasks.Add(furtherTask);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            return true;
         }
 
         /// <summary>
@@ -652,59 +331,6 @@ namespace FWO.Middleware.Server
                     taskFound = false;
                 }
             }
-        }
-
-        private void GetExtSystemFromTask(WfReqTask task, List<ManagementFwConfigChangeState> managementSettings, List<ExternalTicketSystem> extTicketSystems)
-        {
-            actInternalWork = false;
-
-            ArgumentNullException.ThrowIfNull(task);
-
-            ManagementFwConfigChangeState managementSetting = managementSettings.FirstOrDefault(m => m.Id == task.ManagementId)
-                ?? throw new InvalidOperationException($"No matching config item found for management {task.ManagementId}.");
-
-            if (!managementSetting.Enabled)
-            {
-                throw new InvalidOperationException($"External workflow is disabled for management {task.ManagementId}.");
-            }
-
-            string changeCategory = GetChangeCategory(task);
-
-            if (!managementSetting.SelectedChanges.TryGetValue(changeCategory, out string? selectedSystemValue)
-                || string.IsNullOrWhiteSpace(selectedSystemValue)
-                || selectedSystemValue == ManagementFwConfigChangeTargets.Disabled)
-            {
-                throw new InvalidOperationException(
-                    $"No external ticket system configured for management {task.ManagementId} and category '{changeCategory}'.");
-            }
-
-            if (selectedSystemValue == ManagementFwConfigChangeTargets.InternalWork)
-            {
-                if (changeCategory != ManagementFwConfigChangeCategories.RuleChanges)
-                {
-                    throw new InvalidOperationException("Internal work is only supported for rule changes.");
-                }
-
-                actInternalWork = true;
-                actTaskType = "";
-                actSystem = new ExternalTicketSystem
-                {
-                    Name = "Internal work",
-                    TypeId = BuiltInExternalTicketSystemTypes.GenericId
-                };
-                return;
-            }
-
-            if (!int.TryParse(selectedSystemValue, out int externalTicketSystemId))
-            {
-                throw new InvalidOperationException(
-                    $"Configured external ticket system id '{selectedSystemValue}' for management {task.ManagementId} and category '{changeCategory}' is invalid.");
-            }
-
-            ExternalTicketSystem system = extTicketSystems.FirstOrDefault(s => s.Id == externalTicketSystemId)
-                ?? throw new InvalidOperationException($"No matching external ticket system found for id {externalTicketSystemId}.");
-
-            actSystem = system;
         }
 
         private async Task<string> ConstructContent(List<WfReqTask> reqTasks, UiUser? requester)
@@ -851,22 +477,6 @@ namespace FWO.Middleware.Server
                 return (task.GetAddInfoIntValue(AdditionalInfoKeys.SvcGrpId) ?? 0, ModellingTypes.ModObjectType.ServiceGroup);
             }
             return (0, ModellingTypes.ModObjectType.Connection);
-        }
-
-        private static string GetChangeCategory(WfReqTask task)
-        {
-            return task.TaskType switch
-            {
-                nameof(WfTaskType.group_create) => ManagementFwConfigChangeCategories.ObjectChanges,
-                nameof(WfTaskType.group_modify) => ManagementFwConfigChangeCategories.ObjectChanges,
-                nameof(WfTaskType.group_delete) => ManagementFwConfigChangeCategories.ObjectChanges,
-
-                nameof(WfTaskType.access) => ManagementFwConfigChangeCategories.RuleChanges,
-                nameof(WfTaskType.rule_modify) => ManagementFwConfigChangeCategories.RuleChanges,
-                nameof(WfTaskType.rule_delete) => ManagementFwConfigChangeCategories.RuleChanges,
-
-                _ => throw new InvalidOperationException($"Unsupported workflow task type '{task.TaskType}'.")
-            };
         }
 
         private static string ConstructLogMessageText(ModellingTypes.ChangeType changeType)

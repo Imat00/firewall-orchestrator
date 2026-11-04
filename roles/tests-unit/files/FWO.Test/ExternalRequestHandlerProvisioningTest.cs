@@ -6,7 +6,6 @@ using FWO.Data.Workflow;
 using FWO.Middleware.Server;
 using FWO.Services.Workflow;
 using NUnit.Framework;
-using System.Reflection;
 
 namespace FWO.Test
 {
@@ -99,14 +98,10 @@ namespace FWO.Test
                 ReqPriorities = ExtTicketHandlerTest.reqPrios,
                 ModNamingConvention = ExtTicketHandlerTest.namingConvention
             };
-            ExternalRequestHandler handler = new(userConfig, apiConnection, null)
+            return new ExternalRequestHandler(userConfig, apiConnection, null)
             {
                 SCTemplateSource = new FixedSCTemplateSource(ExtTicketHandlerTest.ticketSystem.Templates)
-            };
-            FieldInfo field = typeof(ExternalRequestHandler).GetField("wfHandler", BindingFlags.NonPublic | BindingFlags.Instance)
-                ?? throw new MissingFieldException(nameof(ExternalRequestHandler), "wfHandler");
-            ((WfHandler)field.GetValue(handler)!).AutoPlanSettingsOverride = settings;
-            return handler;
+            }.WithProvisioningSettings(settings);
         }
 
         private static GlobalDeviceSpecificSettings ExternalTicketSystemSettings()

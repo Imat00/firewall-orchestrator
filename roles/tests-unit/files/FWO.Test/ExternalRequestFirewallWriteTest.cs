@@ -8,7 +8,6 @@ using FWO.ExternalSystems.FirewallWrite;
 using FWO.Middleware.Server;
 using FWO.Services.Workflow;
 using NUnit.Framework;
-using System.Reflection;
 
 namespace FWO.Test
 {
@@ -170,11 +169,7 @@ namespace FWO.Test
 
         private static ExternalRequestHandler CreateHandler(FirewallWriteApiConn apiConnection)
         {
-            ExternalRequestHandler handler = new(new SimulatedUserConfig(), apiConnection, null);
-            FieldInfo field = typeof(ExternalRequestHandler).GetField("wfHandler", BindingFlags.NonPublic | BindingFlags.Instance)
-                ?? throw new MissingFieldException(nameof(ExternalRequestHandler), "wfHandler");
-            ((WfHandler)field.GetValue(handler)!).AutoPlanSettingsOverride = new GlobalDeviceSpecificSettings();
-            return handler;
+            return new ExternalRequestHandler(new SimulatedUserConfig(), apiConnection, null).WithProvisioningSettings(new GlobalDeviceSpecificSettings());
         }
 
         private sealed class RecordingWriter(ModifyFirewallResult result)
