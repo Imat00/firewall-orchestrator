@@ -1,0 +1,20 @@
+using FWO.Api.Client;
+using FWO.Config.Api;
+using FWO.Services.Workflow;
+
+namespace FWO.Middleware.Server
+{
+    /// <summary>
+    /// Starts the provisioning of a ticket for the state action "Create external requests" through the external
+    /// request handler of the middleware server.
+    /// </summary>
+    public sealed class ExternalRequestProvisioning : IExternalRequestProvisioning
+    {
+        /// <inheritdoc/>
+        public async Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId)
+        {
+            using ExternalRequestHandler extRequestHandler = new(userConfig, apiConnection);
+            return await extRequestHandler.StartProvisioning(ticketId, scopeReqTaskId);
+        }
+    }
+}

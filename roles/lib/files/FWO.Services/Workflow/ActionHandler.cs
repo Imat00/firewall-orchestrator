@@ -316,6 +316,9 @@ namespace FWO.Services.Workflow
                 case nameof(StateActionTypes.CreateImplTasks):
                     await CreateImplTasks(action, statefulObject, scope);
                     break;
+                case nameof(StateActionTypes.CreateExtRequests):
+                    await CreateExtRequests(action, statefulObject, scope);
+                    break;
                 case nameof(StateActionTypes.UpdateConnectionOwner):
                     await UpdateConnectionOwner(owner, ticketId);
                     break;

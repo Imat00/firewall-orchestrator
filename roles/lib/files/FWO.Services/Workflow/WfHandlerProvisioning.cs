@@ -1,0 +1,89 @@
+using FWO.Data;
+using FWO.Data.DeviceSpecificSettings;
+using FWO.Data.Workflow;
+using FWO.Logging;
+
+namespace FWO.Services.Workflow
+{
+    /// <summary>
+    /// Builds the provisioning work list of a ticket from the current implementation modes of the device specific
+    /// settings, see <see cref="ProvisioningWorkList"/>.
+    /// </summary>
+    public partial class WfHandler
+    {
+        private const string kProvisioningLogTitle = "Provisioning";
+
+        /// <summary>
+        /// Builds the provisioning work list of a ticket with the device specific settings in effect now. Tasks nobody
+        /// implements are reported with an alert. If the settings cannot be resolved, nothing is provisioned, as the
+        /// defaults would write to firewalls that are left to an external ticket system or to a person.
+        /// </summary>
+        /// <param name="ticket">Ticket with its request and implementation tasks.</param>
+        /// <param name="scopeTask">Request task in the request task scope: only this task, a bundled task together with
+        /// its bundle once every member has reached the state of this task. Null in the ticket scope, where every
+        /// request task of the ticket is provisioned.</param>
+        /// <exception cref="InvalidOperationException">The device specific settings could not be resolved.</exception>
+        public async Task<ProvisioningWorkList> BuildProvisioningWorkList(WfTicket ticket, WfReqTask? scopeTask = null)
+        {
+            SetTicketEnv(ticket);
+            List<WfReqTask> ticketTasks = [.. ActTicket.Tasks];
+            List<WfReqTask> reqTasks = scopeTask == null ? ticketTasks : TasksOfRequestTaskScope(ticketTasks, scopeTask);
+            ResetAutoPlanCache();
+            await EnsureAutoPlanSettings(kNoIds, ProvisioningManagementIds(reqTasks));
+            if (AutoPlanSettingsOverride == null && (autoPlanResolveFailed || !autoPlanCache.ContainsKey((DeviceSpecificScopeType.Global, null))))
+            {
+                throw new InvalidOperationException($"The device specific settings could not be resolved; nothing of ticket {ticket.Id} is provisioned.");
+            }
+            ProvisioningWorkList workList = ProvisioningWorkList.Build(reqTasks, new ResolvedProvisioningModes(this));
+            foreach (ProvisioningGap gap in workList.Gaps)
+            {
+                await ReportProvisioningGap(gap);
+            }
+            return workList;
+        }
+
+        private static List<int> ProvisioningManagementIds(List<WfReqTask> reqTasks)
+        {
+            IEnumerable<int?> reqTaskManagementIds = reqTasks.Select(task => task.ManagementId);
+            IEnumerable<int?> implTaskManagementIds = reqTasks.SelectMany(task => task.ImplementationTasks).Select(implTask => implTask.ManagementId);
+            return [.. reqTaskManagementIds.Concat(implTaskManagementIds).OfType<int>().Where(id => id > 0).Distinct()];
+        }
+
+        /// <summary>
+        /// Logs a task nobody implements and raises a workflow alert for it.
+        /// </summary>
+        private async Task ReportProvisioningGap(ProvisioningGap gap)
+        {
+            string implTaskText = gap.ImplTask == null ? "" : $", implementation task {gap.ImplTask.Id}";
+            string description = $"Ticket {gap.ReqTask.TicketId}, request task {gap.ReqTask.Id}{implTaskText}: not provisioned, {gap.Reason}";
+            Log.WriteWarning(kProvisioningLogTitle, description);
+            if (apiConnection == null)
+            {
+                return;
+            }
+            await AlertHelper.SetAlert(apiConnection, kProvisioningLogTitle, description, kAlertSource, AlertCode.WorkflowAlert,
+                new AlertHelper.AdditionalAlertData { MgmtId = gap.ManagementId, CompareDesc = true });
+        }
+
+        /// <summary>
+        /// Gives the work list the settings resolved for the current run and the end states of the state matrices.
+        /// </summary>
+        private sealed class ResolvedProvisioningModes(WfHandler handler) : IProvisioningModeSource
+        {
+            public ProvisioningImplementationMode GetImplementationMode(int managementId, bool isRuleTask)
+            {
+                return handler.GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).GetImplementationMode(isRuleTask);
+            }
+
+            public int? GetExternalTicketSystemId(int managementId)
+            {
+                return handler.GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).RerouteToExternalTicketSystem;
+            }
+
+            public int GetImplementationEndState(string taskType)
+            {
+                return handler.StateMatrix(taskType).ImplementationLowestEndState;
+            }
+        }
+    }
+}
