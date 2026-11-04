@@ -62,6 +62,14 @@ namespace FWO.Data
         [JsonProperty("locked"), JsonPropertyName("locked")]
         public bool Locked { get; set; } = false;
 
+        /// <summary>
+        /// Implementation task written directly to the firewall by this request; null for a request based on request
+        /// tasks, e.g. handed to Tufin SecureChange. Set when the request is created, so the way of a waiting or
+        /// retried request does not change.
+        /// </summary>
+        [JsonProperty("impltask_id"), JsonPropertyName("impltask_id")]
+        public long? ImplTaskId { get; set; }
+
         public string? LastMessage { get; set; }
     }
 

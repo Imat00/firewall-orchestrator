@@ -54,6 +54,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS request_workflow_configuration_single_active O
 -- at most one active (not yet finished) external request per ticket, so concurrent calls cannot start the request chain
 -- of a ticket twice; the middleware sets finish_date when closing a request, before it creates the next one
 CREATE UNIQUE INDEX IF NOT EXISTS uidx_ext_request_one_active_per_ticket ON ext_request (ticket_id) WHERE finish_date IS NULL;
+CREATE INDEX IF NOT EXISTS idx_ext_request_impltask_id ON ext_request (impltask_id);
 
 Create index "IX_Relationship68" on "changelog_object" ("control_id");
 Create index "IX_Relationship76" on "changelog_service" ("control_id");

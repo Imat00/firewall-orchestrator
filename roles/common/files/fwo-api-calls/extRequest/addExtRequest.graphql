@@ -8,6 +8,7 @@ mutation addExtRequest(
   $extQueryVariables: String
   $extRequestState: String!
   $waitCycles: Int
+  $implTaskId: bigint
   ) {
   insert_ext_request(objects: {
     owner_id: $ownerId
@@ -19,6 +20,7 @@ mutation addExtRequest(
   	ext_query_variables: $extQueryVariables
   	ext_request_state: $extRequestState
     wait_cycles: $waitCycles
+    impltask_id: $implTaskId
   }) {
     returning {
       newIdLong: id
