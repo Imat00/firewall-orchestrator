@@ -9,7 +9,8 @@ namespace FWO.ExternalSystems.FirewallWrite
     /// <summary>
     /// Check Point management API session: login (into the domain of an MDS management), session id header, discard on
     /// error and logout. Object creation that fails only because of a duplicate address warning is retried with
-    /// ignore-warnings, like the existing Check Point ticket handling does.
+    /// ignore-warnings, and an object that already exists as requested counts as created, like the existing Check Point
+    /// ticket handling does.
     /// </summary>
     public class CheckPointWriteClient : FirewallWriteClient
     {
@@ -23,6 +24,18 @@ namespace FWO.ExternalSystems.FirewallWrite
             "multiple IP", "same IP address", "same IPv4 address", "same IPv6 address", "More than one object has the same",
             "More than one network has the same", "More than one host has the same", "More than one address range has the same"
         ];
+
+        /// <summary>Command reading the object of a create operation, to check whether it is already present as requested.</summary>
+        private static readonly Dictionary<FirewallWriteOperation, string> ShowCommands = new()
+        {
+            [FirewallWriteOperation.HostCreate] = "show-host",
+            [FirewallWriteOperation.Ipv6HostCreate] = "show-host",
+            [FirewallWriteOperation.NetworkCreate] = "show-network",
+            [FirewallWriteOperation.Ipv6NetworkCreate] = "show-network",
+            [FirewallWriteOperation.AddressRangeCreate] = "show-address-range",
+            [FirewallWriteOperation.Ipv6AddressRangeCreate] = "show-address-range",
+            [FirewallWriteOperation.GroupCreate] = "show-group"
+        };
 
         private const string kDuplicateNameMessage = "More than one object named";
         private const string kInternalErrorPrefix = "generic_internal";
@@ -118,6 +131,40 @@ namespace FWO.ExternalSystems.FirewallWrite
                 _ => null
             };
             return (kind, code);
+        }
+
+        /// <summary>
+        /// Reads the object of the same name and compares it with the requested one, see <see cref="CheckPointObjectComparison"/>:
+        /// hosts, networks and address ranges must have the requested addresses, a group only has to exist, as in the
+        /// existing Check Point ticket handling. Other operations are never treated as present.
+        /// </summary>
+        protected override async Task<bool> IsDesiredStatePresent(RenderedFirewallRequest request)
+        {
+            if (!ShowCommands.TryGetValue(request.Operation, out string? showCommand))
+            {
+                return false;
+            }
+            JsonNode? requested = ParseJson(request.Body);
+            string? name = requested?["name"] is JsonValue nameValue && nameValue.TryGetValue(out string? text) ? text : null;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+            RestRequest showRequest = new(showCommand, Method.Post);
+            showRequest.AddStringBody(new JsonObject { ["name"] = name }.ToJsonString(), ContentType.Json);
+            RestResponse response = await SendAuthenticated(showRequest);
+            JsonNode? existing = response.IsSuccessful ? ParseJson(response.Content) : null;
+            if (existing == null)
+            {
+                return false;
+            }
+            return request.Operation switch
+            {
+                FirewallWriteOperation.HostCreate or FirewallWriteOperation.Ipv6HostCreate => CheckPointObjectComparison.HostMatches(requested, existing),
+                FirewallWriteOperation.NetworkCreate or FirewallWriteOperation.Ipv6NetworkCreate => CheckPointObjectComparison.NetworkMatches(requested, existing),
+                FirewallWriteOperation.AddressRangeCreate or FirewallWriteOperation.Ipv6AddressRangeCreate => CheckPointObjectComparison.AddressRangeMatches(requested, existing),
+                _ => true
+            };
         }
 
         private static bool IsDuplicateAddressWarning(string content) =>

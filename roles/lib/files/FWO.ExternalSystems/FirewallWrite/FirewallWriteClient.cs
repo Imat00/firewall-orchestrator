@@ -56,8 +56,21 @@ namespace FWO.ExternalSystems.FirewallWrite
             await ResolveRuntimeValues(request);
             FirewallTemplateRenderer.EnsureResolved(request);
             RestResponse response = await SendRendered(request);
-            return ToResult(request, response, IsSuccess(response));
+            FirewallStepResult result = ToResult(request, response, IsSuccess(response));
+            if (result.Error?.Kind == FirewallWriteErrorKind.AlreadyExists && await IsDesiredStatePresent(request))
+            {
+                Log.WriteInfo(kLogCategory, $"{request.Operation} on '{request.Step.TargetName}': the object already exists as requested.");
+                return result with { Success = true, Error = null, Message = $"Already present as requested. {result.Message}" };
+            }
+            return result;
         }
+
+        /// <summary>
+        /// Whether the object a create call failed for, because it already exists, is already present on the firewall as
+        /// requested, e.g. created by a previous attempt whose answer was lost. The call then counts as successful.
+        /// Vendors that cannot read and compare the object keep the default: false, the call fails.
+        /// </summary>
+        protected virtual Task<bool> IsDesiredStatePresent(RenderedFirewallRequest request) => Task.FromResult(false);
 
         /// <summary>
         /// Resolves the runtime placeholders the vendor supports. Fails for runtime placeholders the vendor cannot resolve.
