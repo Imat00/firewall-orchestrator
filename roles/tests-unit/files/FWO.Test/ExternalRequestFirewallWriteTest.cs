@@ -1,0 +1,416 @@
+using FWO.Api.Client;
+using FWO.Api.Client.Queries;
+using FWO.Config.Api.Data;
+using FWO.Data;
+using FWO.Data.DeviceSpecificSettings;
+using FWO.Data.Workflow;
+using FWO.ExternalSystems.FirewallWrite;
+using FWO.Middleware.Server;
+using FWO.Services.Workflow;
+using NUnit.Framework;
+using System.Reflection;
+
+namespace FWO.Test
+{
+    /// <summary>
+    /// Tests the external requests writing an implementation task to the firewall: the sender writes the task with the
+    /// write library and sets the request state from the result, the handler takes the result over into the
+    /// implementation task and its history, and continues with the next entry of the provisioning work list.
+    /// </summary>
+    [TestFixture]
+    [NonParallelizable]
+    internal class ExternalRequestFirewallWriteTest
+    {
+        private const long kTicketId = 50;
+        private const long kRequestId = 3;
+        private const long kFirstReqTaskId = 101;
+        private const long kSecondReqTaskId = 102;
+        private const long kImplTaskId = 10;
+        private const long kNextImplTaskId = 11;
+        private const long kSecondReqTaskImplTaskId = 20;
+        private const int kManagementId = 1;
+        private const int kOpenStateId = 210;
+        private const int kDoneStateId = 631;
+        private const int kRejectedStateId = 700;
+        private const int kMaxAttempts = 3;
+        private const int kCyclesBetweenAttempts = 5;
+
+        private static readonly List<WfExtState> kExtStates =
+        [
+            new() { Id = 1, Name = ExtStates.ExtReqInitialized.ToString(), StateId = 1 },
+            new() { Id = 2, Name = ExtStates.ExtReqRequested.ToString(), StateId = 3 },
+            new() { Id = 3, Name = ExtStates.ExtReqDone.ToString(), StateId = kDoneStateId },
+            new() { Id = 4, Name = ExtStates.ExtReqRejected.ToString(), StateId = kRejectedStateId }
+        ];
+        private static readonly List<long> kFirstImplTaskOnly = [kImplTaskId];
+        private static readonly List<string?> kDoneOnly = [ExtStates.ExtReqDone.ToString()];
+        private static readonly List<string?> kRejectedOnly = [ExtStates.ExtReqRejected.ToString()];
+        private static readonly List<string?> kDiscardedOnly = [ExtStates.ExtReqDiscarded.ToString()];
+
+        /// <summary>
+        /// Returns the ticket of the test and the open requests, keeps the task states written in the ticket, and
+        /// records all calls.
+        /// </summary>
+        private sealed class FirewallWriteApiConn(WfTicket ticket) : ExtTicketHandlerTestApiConn
+        {
+            public List<ExternalRequest> OpenRequests { get; } = [];
+
+            public List<(string Query, object? Variables)> Calls { get; } = [];
+
+            public override async Task<QueryResponseType> SendQueryAsync<QueryResponseType>(string query, object? variables = null, string? operationName = null, QueryChunkingOptions? chunkingOptions = null)
+            {
+                Calls.Add((query, variables));
+                if (query == ExtRequestQueries.getAndLockOpenRequests)
+                {
+                    return (QueryResponseType)(object)new ExternalRequestDataHelper { ExternalRequests = OpenRequests };
+                }
+                if (query == ExtRequestQueries.getUnfinishedRequestsOfTicket)
+                {
+                    return (QueryResponseType)(object)new List<ExternalRequest>();
+                }
+                if (typeof(QueryResponseType) == typeof(WfTicket))
+                {
+                    return (QueryResponseType)(object)ticket;
+                }
+                if (typeof(QueryResponseType) == typeof(List<WfExtState>))
+                {
+                    return (QueryResponseType)(object)kExtStates;
+                }
+                if (typeof(QueryResponseType) == typeof(ConfigItem[]))
+                {
+                    return (QueryResponseType)(object)SimulatedUserConfig.GetAsConfigs();
+                }
+                if (typeof(QueryResponseType) == typeof(List<UiText>))
+                {
+                    return (QueryResponseType)(object)new List<UiText>();
+                }
+                if (query == RequestQueries.updateImplementationTaskState || query == RequestQueries.updateRequestTaskState)
+                {
+                    return (QueryResponseType)(object)new ReturnId { UpdatedIdLong = ApplyState(query, variables) };
+                }
+                return await base.SendQueryAsync<QueryResponseType>(query, variables, operationName, chunkingOptions);
+            }
+
+            public List<object> VariablesOf(string query)
+            {
+                return [.. Calls.Where(call => call.Query == query && call.Variables != null).Select(call => call.Variables!)];
+            }
+
+            private long ApplyState(string query, object? variables)
+            {
+                long id = Convert.ToInt64(Variable(variables, "id") ?? 0L);
+                int stateId = Convert.ToInt32(Variable(variables, "state") ?? 0);
+                WfStatefulObject? task = query == RequestQueries.updateImplementationTaskState
+                    ? ticket.Tasks.SelectMany(reqTask => reqTask.ImplementationTasks).FirstOrDefault(implTask => implTask.Id == id)
+                    : ticket.Tasks.FirstOrDefault(reqTask => reqTask.Id == id);
+                if (task != null)
+                {
+                    task.StateId = stateId;
+                }
+                return id;
+            }
+        }
+
+        private static WfTicket Ticket(int firstImplTaskStateId = kOpenStateId)
+        {
+            WfReqTask first = ReqTask(kFirstReqTaskId, 1);
+            AddImplTask(first, kImplTaskId, 1, firstImplTaskStateId);
+            AddImplTask(first, kNextImplTaskId, 2, kOpenStateId);
+            WfReqTask second = ReqTask(kSecondReqTaskId, 2);
+            AddImplTask(second, kSecondReqTaskImplTaskId, 1, kOpenStateId);
+            return new WfTicket { Id = kTicketId, Title = "Ticket", StateId = kOpenStateId, Tasks = [first, second] };
+        }
+
+        private static WfReqTask ReqTask(long id, int taskNumber)
+        {
+            return new WfReqTask
+            {
+                Id = id,
+                Title = $"Group {taskNumber}",
+                TicketId = kTicketId,
+                TaskNumber = taskNumber,
+                TaskType = WfTaskType.group_create.ToString(),
+                ManagementId = kManagementId,
+                StateId = kOpenStateId,
+                AdditionalInfo = "{\"ConnId\":\"1\",\"GrpName\":\"ARxx12345-100\"}"
+            };
+        }
+
+        private static void AddImplTask(WfReqTask reqTask, long id, int taskNumber, int stateId)
+        {
+            reqTask.ImplementationTasks.Add(new WfImplTask
+            {
+                Id = id,
+                Title = $"Implementation {id}",
+                ReqTaskId = reqTask.Id,
+                TicketId = kTicketId,
+                TaskNumber = taskNumber,
+                TaskType = reqTask.TaskType,
+                ManagementId = kManagementId,
+                StateId = stateId
+            });
+        }
+
+        private static ExternalRequest Request(long? implTaskId = kImplTaskId, string? state = null, int attempts = 0, int waitCycles = 0)
+        {
+            return new ExternalRequest
+            {
+                Id = kRequestId,
+                TicketId = kTicketId,
+                TaskNumber = 1,
+                ImplTaskId = implTaskId,
+                ExtRequestType = WfTaskType.group_create.ToString(),
+                ExtRequestState = state ?? ExtStates.ExtReqInitialized.ToString(),
+                ExtQueryVariables = "{\"ManagementId\":[1]}",
+                Attempts = attempts,
+                WaitCycles = waitCycles,
+                Locked = true
+            };
+        }
+
+        private static ExternalRequestHandler CreateHandler(FirewallWriteApiConn apiConnection)
+        {
+            ExternalRequestHandler handler = new(new SimulatedUserConfig(), apiConnection, null);
+            FieldInfo field = typeof(ExternalRequestHandler).GetField("wfHandler", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new MissingFieldException(nameof(ExternalRequestHandler), "wfHandler");
+            ((WfHandler)field.GetValue(handler)!).AutoPlanSettingsOverride = new GlobalDeviceSpecificSettings();
+            return handler;
+        }
+
+        private sealed class RecordingWriter(ModifyFirewallResult result)
+        {
+            public List<long> WrittenImplTaskIds { get; } = [];
+
+            public Task<ModifyFirewallResult> Write(WfImplTask implTask)
+            {
+                WrittenImplTaskIds.Add(implTask.Id);
+                return Task.FromResult(result);
+            }
+        }
+
+        private static async Task<RecordingWriter> RunSender(FirewallWriteApiConn apiConnection, ExternalRequest request, ModifyFirewallResult result)
+        {
+            apiConnection.OpenRequests.Add(request);
+            RecordingWriter writer = new(result);
+            using ExternalRequestSender sender = new(apiConnection, new SimulatedGlobalConfig(), null, writer.Write)
+            {
+                HandlerFactory = () => CreateHandler(apiConnection)
+            };
+            List<string> failedRequests = await sender.Run();
+            Assert.That(failedRequests, Is.Empty);
+            return writer;
+        }
+
+        private static ModifyFirewallResult Success()
+        {
+            List<FirewallStepResult> steps = [new(FirewallWriteOperation.GroupCreate, "ARxx12345-100", true, 200, "ok", null)];
+            return ModifyFirewallResult.Succeeded("written", steps);
+        }
+
+        private static ModifyFirewallResult Failure(FirewallWriteErrorKind kind)
+        {
+            return ModifyFirewallResult.Failed("write failed", new FirewallWriteError(kind, "native message"));
+        }
+
+        private static object? Variable(object? variables, string name)
+        {
+            return variables?.GetType().GetProperty(name)?.GetValue(variables);
+        }
+
+        private static List<string?> States(FirewallWriteApiConn apiConnection, string query)
+        {
+            return [.. apiConnection.VariablesOf(query).Select(variables => Variable(variables, "extRequestState")?.ToString())];
+        }
+
+        private static WfImplTask ImplTask(WfTicket ticket, long implTaskId)
+        {
+            return ticket.Tasks.SelectMany(reqTask => reqTask.ImplementationTasks).First(implTask => implTask.Id == implTaskId);
+        }
+
+        [Test]
+        public async Task Run_SuccessfulWrite_SetsTheImplementationTaskDoneAndContinuesWithTheNextOne()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(), Success());
+
+            List<object> createdRequests = apiConnection.VariablesOf(ExtRequestQueries.addExtRequest);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.EqualTo(kFirstImplTaskOnly));
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestCreation), Is.EqualTo(kDoneOnly));
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kDoneStateId));
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestFinal), Does.Contain(ExtStates.ExtReqAcknowledged.ToString()));
+                Assert.That(apiConnection.History, Has.Some.Contains("Implemented Implementation 10 on"));
+                Assert.That(createdRequests, Has.Count.EqualTo(1));
+                Assert.That(Variable(createdRequests[0], "implTaskId"), Is.EqualTo(kNextImplTaskId));
+                Assert.That(Variable(createdRequests[0], "waitCycles"), Is.EqualTo(0));
+            }
+        }
+
+        [Test]
+        public async Task Run_RetryableError_IsRetriedAfterSomeCycles()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+
+            await RunSender(apiConnection, Request(), Failure(FirewallWriteErrorKind.Unreachable));
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).Single();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Variable(creation, "extRequestState"), Is.EqualTo(ExtStates.ExtReqFailed.ToString()));
+                Assert.That(Variable(creation, "attempts"), Is.EqualTo(1));
+                Assert.That(Variable(creation, "waitCycles"), Is.EqualTo(kCyclesBetweenAttempts));
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kOpenStateId));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestFinal), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task Run_RetryableErrorInTheLastAttempt_RejectsTheTaskAndTheFollowingRequestTasks()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+
+            await RunSender(apiConnection, Request(attempts: kMaxAttempts - 1), Failure(FirewallWriteErrorKind.Unreachable));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestCreation), Is.EqualTo(kRejectedOnly));
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(ticket.Tasks.Single(task => task.Id == kSecondReqTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestFinal), Does.Contain(ExtStates.ExtReqAckRejected.ToString()));
+                Assert.That(apiConnection.History, Has.Some.Contains("Rejected Implementation 10 on"));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task Run_ErrorThatDoesNotPass_RejectsAtOnce()
+        {
+            FirewallWriteApiConn apiConnection = new(Ticket());
+
+            await RunSender(apiConnection, Request(), Failure(FirewallWriteErrorKind.Rejected));
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).Single();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Variable(creation, "extRequestState"), Is.EqualTo(ExtStates.ExtReqRejected.ToString()));
+                Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.StartWith("write failed"));
+            }
+        }
+
+        [Test]
+        public async Task Run_ImplementationTaskAlreadyFinished_IsNotWrittenAgain()
+        {
+            WfTicket ticket = Ticket(kDoneStateId);
+            FirewallWriteApiConn apiConnection = new(ticket);
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestCreation), Is.EqualTo(kDoneOnly));
+                Assert.That(apiConnection.VariablesOf(RequestQueries.updateImplementationTaskState), Is.Empty);
+                Assert.That(apiConnection.History, Is.Empty);
+                Assert.That(Variable(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest).Single(), "implTaskId"), Is.EqualTo(kNextImplTaskId));
+            }
+        }
+
+        [Test]
+        public async Task Run_WaitingRequest_CountsDownWithoutWriting()
+        {
+            FirewallWriteApiConn apiConnection = new(Ticket());
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(waitCycles: 2), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(Variable(apiConnection.VariablesOf(ExtRequestQueries.updateExternalRequestWaitCycles).Single(), "waitCycles"), Is.EqualTo(1));
+            }
+        }
+
+        [Test]
+        public async Task Run_RequestWhoseImplementationTaskWasDeleted_IsDiscarded()
+        {
+            FirewallWriteApiConn apiConnection = new(Ticket(kDoneStateId));
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(implTaskId: null), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestFinal), Is.EqualTo(kDiscardedOnly));
+                Assert.That(Variable(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest).Single(), "implTaskId"), Is.EqualTo(kNextImplTaskId));
+            }
+        }
+
+        [Test]
+        public async Task Run_RequestInAStateWithoutWrite_IsLeftAsItIs()
+        {
+            FirewallWriteApiConn apiConnection = new(Ticket());
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(state: ExtStates.ExtReqRequested.ToString()), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_PatchedToDone_TakesTheStateOverIntoTheImplementationTask()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            bool result = await handler.PatchState(Request(state: ExtStates.ExtReqDone.ToString()));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(result, Is.True);
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kDoneStateId));
+                Assert.That(ticket.Tasks.Single(task => task.Id == kFirstReqTaskId).StateId, Is.Not.EqualTo(kDoneStateId));
+                Assert.That(Variable(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest).Single(), "implTaskId"), Is.EqualTo(kNextImplTaskId));
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_UnfinishedState_ChangesNothing()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.HandleStateChange(Request(state: ExtStates.ExtReqFailed.ToString()));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kOpenStateId));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestFinal), Is.Empty);
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_UnknownImplementationTask_IsAcknowledgedAndContinues()
+        {
+            FirewallWriteApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.HandleStateChange(Request(implTaskId: 99, state: ExtStates.ExtReqDone.ToString()));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestFinal), Does.Contain(ExtStates.ExtReqAcknowledged.ToString()));
+                Assert.That(Variable(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest).Single(), "implTaskId"), Is.EqualTo(kImplTaskId));
+            }
+        }
+    }
+}

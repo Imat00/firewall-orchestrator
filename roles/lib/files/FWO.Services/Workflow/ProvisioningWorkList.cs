@@ -26,7 +26,10 @@ namespace FWO.Services.Workflow
     /// <param name="ExternalTicketSystemId">External ticket system the request task is handed to; null for a firewall write.</param>
     /// <param name="IsFinished">Whether the task has reached the end state of the implementation phase, e.g. implemented,
     /// set to done by hand or rejected; a finished entry is not provisioned again.</param>
-    public sealed record ProvisioningWorkItem(ProvisioningWay Way, WfReqTask ReqTask, WfImplTask? ImplTask, int? ExternalTicketSystemId, bool IsFinished);
+    /// <param name="WaitsForPlanning">Whether the request task of a firewall write is still being planned. Such an entry is
+    /// not written yet and holds back the entries behind it, until the request task reaches the end of the planning phase.</param>
+    public sealed record ProvisioningWorkItem(ProvisioningWay Way, WfReqTask ReqTask, WfImplTask? ImplTask, int? ExternalTicketSystemId, bool IsFinished,
+        bool WaitsForPlanning = false);
 
     /// <summary>
     /// A request or implementation task nobody implements, as its implementation mode hands it to an external ticket
@@ -51,6 +54,9 @@ namespace FWO.Services.Workflow
 
         /// <summary>Lowest end state of the implementation phase for a task type.</summary>
         int GetImplementationEndState(string taskType);
+
+        /// <summary>Lowest end state of the planning phase for a task type; null if the planning phase is not active.</summary>
+        int? GetPlanningEndState(string taskType);
     }
 
     /// <summary>
@@ -58,7 +64,9 @@ namespace FWO.Services.Workflow
     /// never stored: a request task whose management hands it to an external ticket system as a whole, otherwise each
     /// implementation task whose target management is Automatic. Manual targets are left to a person and do not block
     /// the entries behind them. The entries are ordered by request task number, then implementation task number; they
-    /// are provisioned one after another, the next one is the first entry not finished.
+    /// are provisioned one after another, the next one is the first entry not finished. With an active planning phase an
+    /// implementation task is only written once its request task is planned; a request task handed to an external ticket
+    /// system is handed over in any state, as the external ticket system approves and plans it itself.
     /// Rules are not provisioned by firewall writes yet, only objects.
     /// </summary>
     public sealed class ProvisioningWorkList
@@ -148,7 +156,7 @@ namespace FWO.Services.Workflow
             switch (modes.GetImplementationMode(managementId, false))
             {
                 case ProvisioningImplementationMode.Automatic:
-                    Items.Add(new(ProvisioningWay.FirewallWrite, reqTask, implTask, null, isFinished));
+                    Items.Add(new(ProvisioningWay.FirewallWrite, reqTask, implTask, null, isFinished, IsBeingPlanned(reqTask, modes)));
                     break;
                 case ProvisioningImplementationMode.RerouteToExternalTicketSystem when !isFinished:
                     Gaps.Add(new(reqTask, implTask, managementId, $"target management {managementId} is set to external ticket system, " +
@@ -158,6 +166,12 @@ namespace FWO.Services.Workflow
                     Log.WriteDebug(kLogTitle, $"Implementation task {implTask.Id} of request task {reqTask.Id} is implemented manually.");
                     break;
             }
+        }
+
+        private static bool IsBeingPlanned(WfReqTask reqTask, IProvisioningModeSource modes)
+        {
+            int? planningEndState = modes.GetPlanningEndState(reqTask.TaskType);
+            return planningEndState != null && reqTask.StateId < planningEndState;
         }
 
         private static string NoExternalTicketSystemSelectedReason(int managementId)

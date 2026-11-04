@@ -174,6 +174,11 @@ namespace FWO.Middleware.Server
             {
                 Log.WriteError("External Request Update", $"Ticket not found.");
             }
+            else if (externalRequest.ImplTaskId != null)
+            {
+                wfHandler.SetTicketEnv(intTicket);
+                await HandleImplTaskStateChange(intTicket, externalRequest);
+            }
             else
             {
                 wfHandler.SetTicketEnv(intTicket);

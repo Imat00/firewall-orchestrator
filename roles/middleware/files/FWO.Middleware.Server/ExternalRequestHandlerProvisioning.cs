@@ -14,6 +14,9 @@ namespace FWO.Middleware.Server
     {
         private const string kProvisioningLogTitle = "Provisioning";
 
+        /// <summary>A firewall write is handled by no external ticket system.</summary>
+        private static readonly ExternalTicketSystem kNoExternalTicketSystem = new();
+
         /// <summary>
         /// Creates the external request for the next entry of the provisioning work list of a ticket: a request task
         /// handed to its external ticket system, or an implementation task written to the firewall. The requests of a
@@ -23,8 +26,10 @@ namespace FWO.Middleware.Server
         /// </summary>
         /// <param name="ticketId">Ticket to provision.</param>
         /// <param name="scopeReqTaskId">Request task in the request task scope; null in the ticket scope.</param>
+        /// <param name="previousRequest">Request just finished, if the provisioning continues after it; a group change it
+        /// made may let the next request wait some cycles, see <see cref="GetWaitCycles"/>.</param>
         /// <returns>true if a request was created or nothing is to be done; false if the provisioning failed.</returns>
-        public async Task<bool> StartProvisioning(long ticketId, long? scopeReqTaskId = null)
+        public async Task<bool> StartProvisioning(long ticketId, long? scopeReqTaskId = null, ExternalRequest? previousRequest = null)
         {
             try
             {
@@ -50,7 +55,7 @@ namespace FWO.Middleware.Server
                     }
                 }
                 ProvisioningWorkList workList = await wfHandler.BuildProvisioningWorkList(ticket, scopeTask);
-                return await CreateRequestForNextEntry(ticket, workList);
+                return await CreateRequestForNextEntry(ticket, workList, previousRequest);
             }
             catch (Exception exception)
             {
@@ -59,7 +64,7 @@ namespace FWO.Middleware.Server
             }
         }
 
-        private async Task<bool> CreateRequestForNextEntry(WfTicket ticket, ProvisioningWorkList workList)
+        private async Task<bool> CreateRequestForNextEntry(WfTicket ticket, ProvisioningWorkList workList, ExternalRequest? previousRequest)
         {
             ProvisioningWorkItem? next = workList.Next;
             if (next == null)
@@ -67,13 +72,20 @@ namespace FWO.Middleware.Server
                 Log.WriteInfo(kProvisioningLogTitle, $"Nothing left to provision for ticket {ticket.Id}.");
                 return true;
             }
+            if (next.WaitsForPlanning)
+            {
+                Log.WriteInfo(kProvisioningLogTitle, $"Request task {next.ReqTask.TaskNumber} of ticket {ticket.Id} is still being planned; " +
+                    "its implementation tasks are written once it is planned.");
+                return true;
+            }
             if (next.Way == ProvisioningWay.FirewallWrite && next.ImplTask != null)
             {
-                await CreateFirewallWriteRequest(ticket, next.ReqTask, next.ImplTask);
+                int waitCycles = GetWaitCycles(next.ImplTask.TaskType, previousRequest, kNoExternalTicketSystem);
+                await CreateFirewallWriteRequest(ticket, next.ReqTask, next.ImplTask, waitCycles);
             }
             else
             {
-                await CreateExternalTicketSystemRequest(ticket, next.ReqTask, next.ExternalTicketSystemId);
+                await CreateExternalTicketSystemRequest(ticket, next.ReqTask, next.ExternalTicketSystemId, previousRequest);
             }
             Log.WriteInfo(kProvisioningLogTitle, $"Created the external request for request task {next.ReqTask.TaskNumber}" +
                 $"{(next.ImplTask == null ? "" : $", implementation task {next.ImplTask.TaskNumber}")} of ticket {ticket.Id}.");
@@ -93,7 +105,7 @@ namespace FWO.Middleware.Server
         /// Creates the request writing an implementation task to the firewall. It references the implementation task,
         /// which the sender loads itself, so the request carries no ticket system and no content.
         /// </summary>
-        private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask)
+        private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, int waitCycles)
         {
             Dictionary<string, List<int>> extQueryVariables = [];
             if (implTask.ManagementId is int managementId)
@@ -110,7 +122,7 @@ namespace FWO.Middleware.Server
                 extTaskContent = "",
                 extQueryVariables = JsonSerializer.Serialize(extQueryVariables),
                 extRequestState = ExtStates.ExtReqInitialized.ToString(),
-                waitCycles = 0,
+                waitCycles,
                 implTaskId = implTask.Id
             };
             await ApiConnection.SendQueryAsync<ReturnIdWrapper>(ExtRequestQueries.addExtRequest, variables);
@@ -119,7 +131,7 @@ namespace FWO.Middleware.Server
         /// <summary>
         /// Hands a request task to the external ticket system selected for its management in the device specific settings.
         /// </summary>
-        private async Task CreateExternalTicketSystemRequest(WfTicket ticket, WfReqTask reqTask, int? externalTicketSystemId)
+        private async Task CreateExternalTicketSystemRequest(WfTicket ticket, WfReqTask reqTask, int? externalTicketSystemId, ExternalRequest? previousRequest)
         {
             List<ExternalTicketSystem> extTicketSystems = JsonSerializer.Deserialize<List<ExternalTicketSystem>>(UserConfig.ExtTicketSystems) ?? [];
             actSystem = extTicketSystems.FirstOrDefault(system => system.Id == externalTicketSystemId)
@@ -128,7 +140,7 @@ namespace FWO.Middleware.Server
             await ApplySecureChangeTemplates(ticket, reqTask);
             // a request task handed over alone is both the content and the only handled task of the request
             List<WfReqTask> handedOverTasks = [reqTask];
-            await CreateExtRequest(ticket, handedOverTasks, handedOverTasks, 0);
+            await CreateExtRequest(ticket, handedOverTasks, handedOverTasks, GetWaitCycles(reqTask.TaskType, previousRequest, actSystem));
         }
     }
 }

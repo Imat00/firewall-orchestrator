@@ -20,6 +20,8 @@ namespace FWO.Test
         private const int kOpenStateId = 210;
         private const int kEndStateId = 249;
         private const int kDoneStateId = 631;
+        private const int kPlannedStateId = 149;
+        private const int kBeingPlannedStateId = 110;
 
         private static readonly List<ProvisioningWay> kExternalTicketSystemOnly = [ProvisioningWay.ExternalTicketSystem];
         private static readonly List<long> kExampleReqTaskIds = [1, 2, 3];
@@ -33,7 +35,7 @@ namespace FWO.Test
         /// <summary>
         /// Settings for the tests: one management per implementation mode, rules and objects alike.
         /// </summary>
-        private sealed class FixedModes : IProvisioningModeSource
+        private sealed class FixedModes(int? planningEndState = null) : IProvisioningModeSource
         {
             public ProvisioningImplementationMode GetImplementationMode(int managementId, bool isRuleTask)
             {
@@ -54,6 +56,11 @@ namespace FWO.Test
             {
                 return kEndStateId;
             }
+
+            public int? GetPlanningEndState(string taskType)
+            {
+                return planningEndState;
+            }
         }
 
         private static WfReqTask ReqTask(long id, int taskNumber, int? managementId, string taskType = nameof(WfTaskType.group_create), int stateId = kOpenStateId)
@@ -71,6 +78,12 @@ namespace FWO.Test
         private static ProvisioningWorkList Build(params WfReqTask[] reqTasks)
         {
             return ProvisioningWorkList.Build(reqTasks.ToList(), new FixedModes());
+        }
+
+        /// <summary>Builds the work list with an active planning phase ending in the planned state.</summary>
+        private static ProvisioningWorkList BuildWithPlanning(params WfReqTask[] reqTasks)
+        {
+            return ProvisioningWorkList.Build(reqTasks.ToList(), new FixedModes(kPlannedStateId));
         }
 
         private static List<long?> ImplTaskIds(ProvisioningWorkList workList)
@@ -285,6 +298,45 @@ namespace FWO.Test
             ProvisioningWorkList workList = Build(reqTask);
 
             Assert.That(workList.Next?.ImplTask?.Id, Is.EqualTo(12));
+        }
+
+        [Test]
+        public void Build_PlanningActive_RequestTaskBeingPlannedHoldsBackTheEntriesBehindIt()
+        {
+            WfReqTask beingPlanned = ReqTask(1, 1, kAutomaticManagementId, stateId: kBeingPlannedStateId);
+            AddImplTask(beingPlanned, 11, 1, kAutomaticManagementId);
+            WfReqTask planned = ReqTask(2, 2, kAutomaticManagementId, stateId: kPlannedStateId);
+            AddImplTask(planned, 21, 1, kAutomaticManagementId);
+
+            ProvisioningWorkList workList = BuildWithPlanning(beingPlanned, planned);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Next?.ImplTask?.Id, Is.EqualTo(11));
+                Assert.That(workList.Next?.WaitsForPlanning, Is.True);
+                Assert.That(workList.Items[1].WaitsForPlanning, Is.False);
+            });
+        }
+
+        [Test]
+        public void Build_PlanningActive_RequestTaskOfAnExternalManagementIsHandedOverBeforeItIsPlanned()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kExternalManagementId, stateId: kBeingPlannedStateId);
+
+            ProvisioningWorkList workList = BuildWithPlanning(reqTask);
+
+            Assert.That(workList.Next?.WaitsForPlanning, Is.False);
+        }
+
+        [Test]
+        public void Build_PlanningInactive_NothingWaitsForPlanning()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, stateId: kBeingPlannedStateId);
+            AddImplTask(reqTask, 11, 1, kAutomaticManagementId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.That(workList.Next?.WaitsForPlanning, Is.False);
         }
 
         [Test]

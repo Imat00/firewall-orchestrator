@@ -48,6 +48,12 @@ namespace FWO.Services.Workflow
         /// </summary>
         public int ImplementationLowestEndState;
 
+        /// <summary>
+        /// Lowest end state of the planning phase if the planning phase is active; null otherwise. Implementation tasks of
+        /// a request task below this state are still being planned, so they are not written to a firewall yet.
+        /// </summary>
+        public int? PlanningLowestEndState;
+
         public async Task Init(WorkflowPhases phase, ApiConnection apiConnection, WfTaskType taskType = WfTaskType.master)
         {
             await Init(phase, apiConnection, await apiConnection.SendQueryAsync<List<WfState>>(RequestQueries.getStates), taskType);
@@ -89,6 +95,10 @@ namespace FWO.Services.Workflow
             ImplementationLowestEndState = glbStateMatrix.GlobalMatrix.TryGetValue(WorkflowPhases.implementation, out StateMatrix? implementationMatrix)
                 ? implementationMatrix.LowestEndState
                 : MinTicketCompleted;
+            bool planningActive = PhaseActive.TryGetValue(WorkflowPhases.planning, out bool active) && active;
+            PlanningLowestEndState = planningActive && glbStateMatrix.GlobalMatrix.TryGetValue(WorkflowPhases.planning, out StateMatrix? planningMatrix)
+                ? planningMatrix.LowestEndState
+                : null;
         }
 
         public bool getNextActivePhase(ref WorkflowPhases phase)

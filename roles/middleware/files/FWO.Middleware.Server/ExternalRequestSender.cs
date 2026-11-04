@@ -4,7 +4,9 @@ using FWO.Basics.Exceptions;
 using FWO.Config.Api;
 using FWO.Data;
 using FWO.Logging;
+using FWO.Data.Workflow;
 using FWO.ExternalSystems;
+using FWO.ExternalSystems.FirewallWrite;
 using FWO.ExternalSystems.Tufin.SecureChange;
 using RestSharp;
 using System.Net;
@@ -15,7 +17,7 @@ namespace FWO.Middleware.Server
     /// <summary>
     /// Class handling the sending of external requests
     /// </summary>
-    public class ExternalRequestSender : IDisposable
+    public partial class ExternalRequestSender : IDisposable
     {
         /// <summary>
         /// Api Connection
@@ -29,6 +31,7 @@ namespace FWO.Middleware.Server
 
         private readonly UserConfig userConfig;
         private readonly SCClient? InjScClient;
+        private readonly Func<WfImplTask, Task<ModifyFirewallResult>> modifyFirewall;
         ExternalTicketSystem? ExtTicketSystem;
         private bool disposed = false;
 
@@ -48,12 +51,18 @@ namespace FWO.Middleware.Server
         /// <summary>
         /// Constructor for External Request Sender
         /// </summary>
-        public ExternalRequestSender(ApiConnection apiConnection, GlobalConfig globalConfig, SCClient? injScClient = null)
+        /// <param name="apiConnection">Api connection</param>
+        /// <param name="globalConfig">Global config</param>
+        /// <param name="injScClient">SecureChange client replacing the real one (unit testing only)</param>
+        /// <param name="injFirewallWrite">Firewall write replacing the write library (unit testing only)</param>
+        public ExternalRequestSender(ApiConnection apiConnection, GlobalConfig globalConfig, SCClient? injScClient = null,
+            Func<WfImplTask, Task<ModifyFirewallResult>>? injFirewallWrite = null)
         {
             this.apiConnection = apiConnection;
             this.globalConfig = globalConfig;
             userConfig = UserConfig.ForGlobalSettings(globalConfig, apiConnection);
             InjScClient = injScClient;
+            modifyFirewall = injFirewallWrite ?? (implTask => new FirewallWriter(new ApiFirewallWriteDataSource(apiConnection)).ModifyFirewall(implTask));
         }
 
         /// <summary>
@@ -87,6 +96,12 @@ namespace FWO.Middleware.Server
         {
             try
             {
+                if (IsFirewallWriteRequest(request))
+                {
+                    await HandleFirewallWriteRequest(request);
+                    await ReleaseLock(request);
+                    return;
+                }
                 ExtTicketSystem = JsonSerializer.Deserialize<ExternalTicketSystem>(request.ExtTicketSystem) ?? throw new JsonException("No Ticket System");
                 if (request.ExtRequestState == ExtStates.ExtReqInitialized.ToString() ||
                     request.ExtRequestState == ExtStates.ExtReqFailed.ToString()) // try again
@@ -104,15 +119,20 @@ namespace FWO.Middleware.Server
                 {
                     await RefreshState(request);
                 }
-                if ((await apiConnection.SendQueryAsync<ReturnId>(ExtRequestQueries.updateExternalRequestLock, new { id = request.Id, locked = false })).UpdatedIdLong == request.Id)
-                {
-                    request.Locked = false;
-                }
+                await ReleaseLock(request);
             }
             catch (Exception exception)
             {
                 Log.WriteError(LogMessageTitle, "Runs into exception: ", exception);
                 FailedRequests.Add(RequestInfo(request));
+            }
+        }
+
+        private async Task ReleaseLock(ExternalRequest request)
+        {
+            if ((await apiConnection.SendQueryAsync<ReturnId>(ExtRequestQueries.updateExternalRequestLock, new { id = request.Id, locked = false })).UpdatedIdLong == request.Id)
+            {
+                request.Locked = false;
             }
         }
 

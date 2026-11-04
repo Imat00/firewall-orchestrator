@@ -84,6 +84,11 @@ namespace FWO.Services.Workflow
             {
                 return handler.StateMatrix(taskType).ImplementationLowestEndState;
             }
+
+            public int? GetPlanningEndState(string taskType)
+            {
+                return handler.StateMatrix(taskType).PlanningLowestEndState;
+            }
         }
     }
 }
