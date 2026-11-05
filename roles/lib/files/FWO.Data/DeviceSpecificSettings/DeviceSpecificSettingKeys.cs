@@ -52,9 +52,21 @@ public static class DeviceSpecificSettingKeys
     public static readonly DeviceSpecificSettingKey<ProvisioningRuleImplementationMode> ImplementationModeForRules =
         new("implementationModeForRules", AllScopeTypes);
 
-    /// <summary>ID of the configured external ticket system; undefined (null) unless overridden.</summary>
-    public static readonly DeviceSpecificSettingKey<int?> RerouteToExternalTicketSystem =
+    /// <summary>External ticket system tasks are handed to in the external ticket system mode; undefined unless overridden.</summary>
+    public static readonly DeviceSpecificSettingKey<ExternalTicketSystemKind> RerouteToExternalTicketSystem =
         new("rerouteToExternalTicketSystem", AllScopeTypes);
+
+    /// <summary>Base URL of the Tufin SecureChange API.</summary>
+    public static readonly DeviceSpecificSettingKey<string> ScUrl =
+        new("scUrl", ManagerScopeTypes);
+
+    /// <summary>ID of the credential used to log into Tufin SecureChange; undefined (null) unless overridden.</summary>
+    public static readonly DeviceSpecificSettingKey<int?> ScCredential =
+        new("scCredential", ManagerScopeTypes);
+
+    /// <summary>Whether the Tufin SecureChange user ID of the requester is looked up and set as requester of the ticket.</summary>
+    public static readonly DeviceSpecificSettingKey<bool> ScLookupRequesterId =
+        new("scLookupRequesterId", ManagerScopeTypes);
 
     /// <summary>Seconds a call to the external ticket system or the firewall may take before it fails.</summary>
     public static readonly DeviceSpecificSettingKey<int> RequestResponseTimeout =
@@ -130,6 +142,9 @@ public static class DeviceSpecificSettingKeys
         ImplementationMode,
         ImplementationModeForRules,
         RerouteToExternalTicketSystem,
+        ScUrl,
+        ScCredential,
+        ScLookupRequesterId,
         RequestResponseTimeout,
         RequestMaxAttempts,
         RequestCyclesBetweenAttempts,

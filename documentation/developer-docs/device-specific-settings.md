@@ -32,7 +32,10 @@ remains effective and is shown as a dormant override that can be cleared there.
 | ruleZoneToOverride | string | ANY | All | Global to manager (Fortinet only) |
 | implementationMode | enum | Automatic | All | All |
 | implementationModeForRules | enum | Automatic | All | All |
-| rerouteToExternalTicketSystem | integer | undefined | All | All |
+| rerouteToExternalTicketSystem | enum (tufinSecureChange) | undefined | All | Global to manager |
+| scUrl | string | empty | Global, device type, manager | Global to manager |
+| scCredential | integer (credential ID) | undefined | Global, device type, manager | Global to manager |
+| scLookupRequesterId | boolean | false | Global, device type, manager | Global to manager |
 | requestResponseTimeout | integer (seconds) | 300 | Global, device type, manager | Global to manager |
 | requestMaxAttempts | integer | 3 | Global, device type, manager | Global to manager |
 | requestCyclesBetweenAttempts | integer | 5 | Global, device type, manager | Global to manager |
@@ -200,3 +203,25 @@ SELECT config_values FROM public.device_specific_config_backup WHERE version = '
 
 The regression probe `roles/tests-integration/files/database/test-upgrade-9.8.7-request-settings.sql` runs like the
 other 9.8.7 probe.
+
+## Upgrade to 9.8.7: Tufin SecureChange connection
+
+`rerouteToExternalTicketSystem` names the kind of external ticket system (`tufinSecureChange`) instead of an entry of
+the ticket system list, and the connection to Tufin SecureChange is set by `scUrl`, `scCredential` and
+`scLookupRequesterId`, next to the SecureChange ticket templates. A request to SecureChange is built from the settings of
+the management of its request task; when sending or polling, the credential currently configured for that management is
+used as long as the URL is unchanged, so a changed password applies to open requests as well. Credentials referenced by
+`scCredential` cannot be deleted.
+
+The upgrade converts a selected Tufin SecureChange system into `tufinSecureChange`. A level selecting another or an
+unknown system loses the selection, and its implementation modes in effect for external ticket systems become `Manual`.
+The connection of the system most managements use becomes global, a management using another one gets its differing
+values; a system without credential (legacy authorization) leaves the credential to be selected, which the settings page
+reports. The previous selections are backed up, which also marks the migration as done:
+
+```sql
+SELECT config_values FROM public.device_specific_config_backup WHERE version = '9.8.7 securechange connection';
+```
+
+The regression probe `roles/tests-integration/files/database/test-upgrade-9.8.7-sc-connection.sql` runs like the
+other 9.8.7 probes.

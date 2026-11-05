@@ -4,6 +4,7 @@ using FWO.Basics.Exceptions;
 using FWO.Config.Api;
 using FWO.Data;
 using FWO.Logging;
+using FWO.Data.DeviceSpecificSettings;
 using FWO.Data.Workflow;
 using FWO.ExternalSystems;
 using FWO.ExternalSystems.FirewallWrite;
@@ -188,7 +189,7 @@ namespace FWO.Middleware.Server
         {
             Log.WriteInfo(LogMessageTitle, $"Sending {RequestInfo(request)}");
             request.Attempts++;
-            await ResolveAuthorization(request, ticket.TicketSystem);
+            await ResolveAuthorization(request, ticket.TicketSystem, ticket.OnManagement);
 
             RestResponse<int> ticketIdResponse = await ticket.CreateExternalTicket();
             request.LastMessage = ticketIdResponse.Content;
@@ -243,11 +244,12 @@ namespace FWO.Middleware.Server
         /// </summary>
         /// <param name="request">The external request, its last message is set on failure.</param>
         /// <param name="ticketSystem">The ticket system stored with the request.</param>
-        private async Task ResolveAuthorization(ExternalRequest request, ExternalTicketSystem ticketSystem)
+        /// <param name="management">Management of the request, whose settings give the credential currently configured.</param>
+        private async Task ResolveAuthorization(ExternalRequest request, ExternalTicketSystem ticketSystem, Management? management)
         {
             try
             {
-                await ExternalTicketAuthorization.ResolveHeader(ticketSystem, apiConnection, globalConfig.ExtTicketSystems);
+                await ExternalTicketAuthorization.ResolveHeader(ticketSystem, apiConnection, await LoadConfiguredSystem(management));
             }
             catch (Exception exception)
             {
@@ -368,6 +370,41 @@ namespace FWO.Middleware.Server
             }
         }
 
+        /// <summary>
+        /// The Tufin SecureChange system as currently configured in the device specific settings of a management, so that
+        /// a changed credential applies to open requests as well. Null without management or if the settings cannot be
+        /// read; the credential stored with the request applies then.
+        /// </summary>
+        private async Task<ExternalTicketSystem?> LoadConfiguredSystem(Management? management)
+        {
+            if (management == null)
+            {
+                return null;
+            }
+            try
+            {
+                GlobalDeviceSpecificSettings? settings = await (ManagementSettingsLoader ?? LoadManagementSettings)(management);
+                return settings == null ? null : ExternalTicketSystem.FromSecureChangeSettings(settings);
+            }
+            catch (Exception exception)
+            {
+                Log.WriteWarning(LogMessageTitle, $"Settings of management {management.Id} not readable, the credential stored with the request applies: {exception.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Loads the device specific settings in effect for a management (settable for unit testing only).
+        /// </summary>
+        internal Func<Management, Task<GlobalDeviceSpecificSettings?>>? ManagementSettingsLoader { get; init; }
+
+        private async Task<GlobalDeviceSpecificSettings?> LoadManagementSettings(Management management)
+        {
+            List<DeviceSpecificScopePath> paths = [DeviceSpecificScopePath.ForManagement(management)];
+            List<GlobalDeviceSpecificSettings> settings = await new DeviceSpecificSettingsManager(apiConnection).LoadEffectiveSettingsAsync(paths);
+            return settings.FirstOrDefault();
+        }
+
         private async Task<(string, string?)> PollState(ExternalRequest request)
         {
             try
@@ -384,7 +421,8 @@ namespace FWO.Middleware.Server
                 );
 
                 ticket.TicketId = request.ExtTicketId;
-                await ExternalTicketAuthorization.ResolveHeader(ExtTicketSystem, apiConnection, globalConfig.ExtTicketSystems);
+                await ExternalTicketAuthorization.ResolveHeader(ExtTicketSystem, apiConnection,
+                    await LoadConfiguredSystem(await LoadManagementForRequest(request)));
 
                 return await ticket.GetNewState(request.ExtRequestState);
             }

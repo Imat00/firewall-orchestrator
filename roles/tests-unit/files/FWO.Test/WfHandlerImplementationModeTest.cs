@@ -35,7 +35,6 @@ namespace FWO.Test
         private const int kFirstGatewayId = 1;
         private const int kSecondGatewayId = 2;
         private const int kExternalGatewayId = 3;
-        private const int kExternalTicketSystemId = 2;
         private const int kOpenStateId = 4;
         private const int kApprovedStateId = 5;
         private const int kCompletedStateId = 10;
@@ -76,7 +75,7 @@ namespace FWO.Test
             api.SetValue(nodeId, DeviceSpecificSettingKeys.ImplementationMode, ProvisioningImplementationMode.RerouteToExternalTicketSystem);
             if (withSystem)
             {
-                api.SetValue(nodeId, DeviceSpecificSettingKeys.RerouteToExternalTicketSystem, (int?)kExternalTicketSystemId);
+                api.SetValue(nodeId, DeviceSpecificSettingKeys.RerouteToExternalTicketSystem, ExternalTicketSystemKind.TufinSecureChange);
             }
         }
 

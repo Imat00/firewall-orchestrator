@@ -15,7 +15,7 @@ namespace FWO.Ui.Pages.Settings
         Text,
         TemplateText,
         StringList,
-        ExtTicketSystem,
+        Credential,
         FirewallEndpoint,
         FirewallTemplate,
         SecureChangeTemplate,
@@ -178,6 +178,13 @@ namespace FWO.Ui.Pages.Settings
 
         private const char kListSeparator = ',';
 
+        /// <summary>External ticket systems a level can hand its tasks to; empty means undefined.</summary>
+        private static readonly List<DeviceSpecificFieldOption> ExternalTicketSystemOptions =
+        [
+            new("", "undefined"),
+            new(nameof(ExternalTicketSystemKind.TufinSecureChange), "dss_opt_tufin_securechange")
+        ];
+
         private static readonly Dictionary<string, string> HelpTextKeys = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "dss_implementation_mode", "H5168" },
@@ -206,6 +213,9 @@ namespace FWO.Ui.Pages.Settings
             { "dss_positioning_algorithm", "H5195" },
             { "dss_common_service_separation", "H5196" },
             { "dss_zone_from", "H5198" },
+            { "dss_sc_url", "H5198a" },
+            { "dss_sc_credential", "H5198b" },
+            { "dss_sc_lookup_requester_id", "H5198c" },
             { "dss_zone_to", "H5199" },
             { "dss_modelling_connection_id_field", "H5199m" },
             { "dss_modelling_connection_id_template", "H5199m" },
@@ -321,9 +331,10 @@ namespace FWO.Ui.Pages.Settings
                 Key = DeviceSpecificSettingKeys.RerouteToExternalTicketSystem,
                 LabelTextKey = "dss_reroute_to_external_ticket_system",
                 HelpTextKey = HelpKey("dss_reroute_to_external_ticket_system"),
-                Kind = DeviceSpecificFieldKind.ExtTicketSystem,
+                Kind = DeviceSpecificFieldKind.SingleSelect,
+                Options = ExternalTicketSystemOptions,
                 MaxLevel = DeviceSpecificScopeType.Management,
-                Read = s => s.RerouteToExternalTicketSystem?.ToString(CultureInfo.InvariantCulture) ?? "",
+                Read = s => s.RerouteToExternalTicketSystem == ExternalTicketSystemKind.Undefined ? "" : s.RerouteToExternalTicketSystem.ToString(),
                 SetOverride = SetExtTicketSystemOverride
             },
             new()
@@ -362,6 +373,7 @@ namespace FWO.Ui.Pages.Settings
                 minLevel: DeviceSpecificScopeType.DeviceType, maxLevel: DeviceSpecificScopeType.DeviceType),
             .. RequestFields(),
             .. FirewallWriteFields(),
+            .. SecureChangeConnectionFields(),
             .. SecureChangeTemplateFields(),
         ];
 
@@ -421,6 +433,37 @@ namespace FWO.Ui.Pages.Settings
             }
             return fields;
         }
+
+        /// <summary>
+        /// Fields of the connection to Tufin SecureChange, offered from Global down to the management like the templates.
+        /// </summary>
+        private static List<DeviceSpecificFieldDefinition> SecureChangeConnectionFields() =>
+        [
+            new()
+            {
+                Key = DeviceSpecificSettingKeys.ScUrl,
+                LabelTextKey = "dss_sc_url",
+                HelpTextKey = HelpKey("dss_sc_url"),
+                Kind = DeviceSpecificFieldKind.Text,
+                Section = DeviceSpecificFieldSection.SecureChange,
+                MaxLevel = DeviceSpecificScopeType.Management,
+                Read = s => s.ScUrl,
+                SetOverride = (changes, value) => changes.Set(DeviceSpecificSettingKeys.ScUrl, value.Trim())
+            },
+            new()
+            {
+                Key = DeviceSpecificSettingKeys.ScCredential,
+                LabelTextKey = "dss_sc_credential",
+                HelpTextKey = HelpKey("dss_sc_credential"),
+                Kind = DeviceSpecificFieldKind.Credential,
+                Section = DeviceSpecificFieldSection.SecureChange,
+                MaxLevel = DeviceSpecificScopeType.Management,
+                Read = s => s.ScCredential?.ToString(CultureInfo.InvariantCulture) ?? "",
+                SetOverride = SetScCredentialOverride
+            },
+            BoolField(DeviceSpecificSettingKeys.ScLookupRequesterId, "dss_sc_lookup_requester_id", s => s.ScLookupRequesterId,
+                DeviceSpecificScopeType.Management, DeviceSpecificFieldSection.SecureChange)
+        ];
 
         /// <summary>
         /// Fields of the Tufin SecureChange ticket templates: one per task type and template part, offered from Global down to
@@ -681,18 +724,31 @@ namespace FWO.Ui.Pages.Settings
             }
             else
             {
-                changes.Set(DeviceSpecificSettingKeys.RerouteToExternalTicketSystem, (int?)int.Parse(value, CultureInfo.InvariantCulture));
+                changes.Set(DeviceSpecificSettingKeys.RerouteToExternalTicketSystem, Enum.Parse<ExternalTicketSystemKind>(value));
+            }
+        }
+
+        /// <summary>An empty selection means undefined, which is never stored, so the level inherits instead.</summary>
+        private static void SetScCredentialOverride(DeviceSpecificSettingsChangeSet changes, string value)
+        {
+            if (value.Length == 0)
+            {
+                changes.Remove(DeviceSpecificSettingKeys.ScCredential);
+            }
+            else
+            {
+                changes.Set(DeviceSpecificSettingKeys.ScCredential, (int?)int.Parse(value, CultureInfo.InvariantCulture));
             }
         }
 
         /// <summary>
-        /// Selectable external ticket systems as (ID, display name). A stored ID no longer configured stays selectable
-        /// so the editor still shows it.
+        /// Selectable credentials as (ID, display name), without key pairs, which cannot log in with a password. A stored
+        /// ID that is not offered, e.g. not readable for the user, stays selectable so the editor still shows it.
         /// </summary>
-        public static List<(string Value, string Name)> ExtTicketSystemOptions(string? configuredTicketSystems, string currentValue)
+        public static List<(string Value, string Name)> CredentialOptions(IEnumerable<Credential> credentials, string currentValue)
         {
-            List<(string Value, string Name)> options = [.. ExternalTicketSystem.ParseConfigured(configuredTicketSystems)
-                .Select(system => (system.Id.ToString(CultureInfo.InvariantCulture), $"{system.Name} ({system.Id})"))];
+            List<(string Value, string Name)> options = [.. credentials.Where(credential => !credential.IsKeyPair)
+                .Select(credential => (credential.Id.ToString(CultureInfo.InvariantCulture), credential.Name))];
             if (currentValue.Length > 0 && !options.Any(option => option.Value == currentValue))
             {
                 options.Add((currentValue, currentValue));

@@ -23,12 +23,12 @@ namespace FWO.Services.Workflow
     /// <param name="Way">How the entry is implemented.</param>
     /// <param name="ReqTask">Request task of the entry.</param>
     /// <param name="ImplTask">Implementation task written to the firewall; null for an external ticket system.</param>
-    /// <param name="ExternalTicketSystemId">External ticket system the request task is handed to; null for a firewall write.</param>
+    /// <param name="ExternalTicketSystem">External ticket system the request task is handed to; null for a firewall write.</param>
     /// <param name="IsFinished">Whether the task has reached the end state of the implementation phase, e.g. implemented,
     /// set to done by hand or rejected; a finished entry is not provisioned again.</param>
     /// <param name="WaitsForPlanning">Whether the request task of a firewall write is still being planned. Such an entry is
     /// not written yet and holds back the entries behind it, until the request task reaches the end of the planning phase.</param>
-    public sealed record ProvisioningWorkItem(ProvisioningWay Way, WfReqTask ReqTask, WfImplTask? ImplTask, int? ExternalTicketSystemId, bool IsFinished,
+    public sealed record ProvisioningWorkItem(ProvisioningWay Way, WfReqTask ReqTask, WfImplTask? ImplTask, ExternalTicketSystemKind? ExternalTicketSystem, bool IsFinished,
         bool WaitsForPlanning = false);
 
     /// <summary>
@@ -49,8 +49,8 @@ namespace FWO.Services.Workflow
         /// <summary>Implementation mode of a management for rules or for objects.</summary>
         ProvisioningImplementationMode GetImplementationMode(int managementId, bool isRuleTask);
 
-        /// <summary>External ticket system selected for a management; null if none is selected.</summary>
-        int? GetExternalTicketSystemId(int managementId);
+        /// <summary>External ticket system selected for a management; undefined if none is selected.</summary>
+        ExternalTicketSystemKind GetExternalTicketSystem(int managementId);
 
         /// <summary>Lowest end state of the implementation phase for a task type.</summary>
         int GetImplementationEndState(string taskType);
@@ -127,8 +127,8 @@ namespace FWO.Services.Workflow
                 return false;
             }
             bool isFinished = reqTask.StateId >= modes.GetImplementationEndState(reqTask.TaskType);
-            int? systemId = modes.GetExternalTicketSystemId(managementId);
-            if (systemId == null)
+            ExternalTicketSystemKind system = modes.GetExternalTicketSystem(managementId);
+            if (system == ExternalTicketSystemKind.Undefined)
             {
                 if (!isFinished)
                 {
@@ -136,7 +136,7 @@ namespace FWO.Services.Workflow
                 }
                 return true;
             }
-            Items.Add(new(ProvisioningWay.ExternalTicketSystem, reqTask, null, systemId, isFinished));
+            Items.Add(new(ProvisioningWay.ExternalTicketSystem, reqTask, null, system, isFinished));
             return true;
         }
 

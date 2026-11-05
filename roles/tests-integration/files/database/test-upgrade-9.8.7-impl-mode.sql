@@ -6,7 +6,8 @@
 -- Automatic, Internal Work, Disabled, disabled managements, other and unknown ticket systems become Manual, values are
 -- only stored where the value in effect differs (including a differing management value and an inherited device type
 -- value), missing categories, missing and unknown managements stay unchanged, the old setting is backed up and removed,
--- and a repeated upgrade keeps an administrator change made in between.
+-- and a repeated upgrade keeps an administrator change made in between. The selected systems end up as tufinSecureChange
+-- by the later conversion of the same upgrade.
 \set ON_ERROR_STOP 1
 BEGIN;
 CREATE SCHEMA impl_mode_upgrade_9_8_7_test;
@@ -51,21 +52,21 @@ INSERT INTO expected_values VALUES
     ('global', 'global', 'implementationModeForRules', '"Automatic"'),
     ('device_type', '12', 'implementationMode', '"reroute_to_external_ticket_system"'),
     ('device_type', '12', 'implementationModeForRules', '"rerouteToExternalTicketSystem"'),
-    ('device_type', '12', 'rerouteToExternalTicketSystem', '1'),
+    ('device_type', '12', 'rerouteToExternalTicketSystem', '"tufinSecureChange"'),
     -- objects of the Check Point system: Automatic is in effect already
     ('management', '100', 'implementationModeForRules', '"rerouteToExternalTicketSystem"'),
-    ('management', '100', 'rerouteToExternalTicketSystem', '1'),
+    ('management', '100', 'rerouteToExternalTicketSystem', '"tufinSecureChange"'),
     ('management', '101', 'implementationMode', '"Manual"'),
     ('management', '101', 'implementationModeForRules', '"Manual"'),
     ('management', '102', 'implementationMode', '"reroute_to_external_ticket_system"'),
     ('management', '102', 'implementationModeForRules', '"rerouteToExternalTicketSystem"'),
-    ('management', '102', 'rerouteToExternalTicketSystem', '2'),
+    ('management', '102', 'rerouteToExternalTicketSystem', '"tufinSecureChange"'),
     ('management', '103', 'implementationMode', '"Manual"'),
     ('management', '103', 'implementationModeForRules', '"Manual"'),
     -- the old setting wins over the management value; rules had no target and keep the copied object mode
     ('management', '104', 'implementationMode', '"reroute_to_external_ticket_system"'),
     ('management', '104', 'implementationModeForRules', '"Manual"'),
-    ('management', '104', 'rerouteToExternalTicketSystem', '1'),
+    ('management', '104', 'rerouteToExternalTicketSystem', '"tufinSecureChange"'),
     -- Check Point targets override the external ticket system mode inherited from the device type
     ('management', '105', 'implementationMode', '"Automatic"'),
     ('management', '105', 'implementationModeForRules', '"Automatic"'),

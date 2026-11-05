@@ -35,8 +35,17 @@ public class GlobalDeviceSpecificSettings
 
     public ProvisioningRuleImplementationMode ImplementationModeForRules { get; set; } = ProvisioningRuleImplementationMode.Automatic;
 
-    /// <summary>ID of the external ticket system to reroute to; null while undefined.</summary>
-    public int? RerouteToExternalTicketSystem { get; set; }
+    /// <summary>External ticket system to hand tasks to in the external ticket system mode; undefined unless set.</summary>
+    public ExternalTicketSystemKind RerouteToExternalTicketSystem { get; set; } = ExternalTicketSystemKind.Undefined;
+
+    /// <summary>Base URL of the Tufin SecureChange API; empty while undefined.</summary>
+    public string ScUrl { get; set; } = "";
+
+    /// <summary>ID of the credential used to log into Tufin SecureChange; null while undefined.</summary>
+    public int? ScCredential { get; set; }
+
+    /// <summary>Whether the Tufin SecureChange user ID of the requester is looked up and set as requester of the ticket.</summary>
+    public bool ScLookupRequesterId { get; set; } = false;
 
     /// <summary>Seconds a call to the external ticket system or the firewall may take before it fails.</summary>
     public int RequestResponseTimeout { get; set; } = kDefaultRequestResponseTimeout;

@@ -27,7 +27,6 @@ namespace FWO.Test
         private const int kAutomaticManagementId = 20;
         private const int kExternalManagementId = 30;
         private const int kManualManagementId = 40;
-        private const int kExternalTicketSystemId = 2;
         private const long kTicketId = 5;
         private const int kOpenStateId = 210;
         private const int kEndStateId = 249;
@@ -50,7 +49,7 @@ namespace FWO.Test
             api.AddNode(kExternalManagementNodeId, DeviceSpecificScopeType.Management, kExternalManagementId.ToString(), kDeviceTypeNodeId);
             api.AddNode(kManualManagementNodeId, DeviceSpecificScopeType.Management, kManualManagementId.ToString(), kDeviceTypeNodeId);
             api.SetValue(kExternalManagementNodeId, DeviceSpecificSettingKeys.ImplementationMode, ProvisioningImplementationMode.RerouteToExternalTicketSystem);
-            api.SetValue(kExternalManagementNodeId, DeviceSpecificSettingKeys.RerouteToExternalTicketSystem, (int?)kExternalTicketSystemId);
+            api.SetValue(kExternalManagementNodeId, DeviceSpecificSettingKeys.RerouteToExternalTicketSystem, ExternalTicketSystemKind.TufinSecureChange);
             api.SetValue(kManualManagementNodeId, DeviceSpecificSettingKeys.ImplementationMode, ProvisioningImplementationMode.Manual);
             return api;
         }
@@ -117,7 +116,7 @@ namespace FWO.Test
             {
                 Assert.That(workList.Items.Select(item => item.Way), Is.EqualTo(kFirewallWriteThenExternal));
                 Assert.That(workList.Items[0].ImplTask?.Id, Is.EqualTo(10));
-                Assert.That(workList.Items[1].ExternalTicketSystemId, Is.EqualTo(kExternalTicketSystemId));
+                Assert.That(workList.Items[1].ExternalTicketSystem, Is.EqualTo(ExternalTicketSystemKind.TufinSecureChange));
                 Assert.That(AlertDescriptions(api), Is.Empty);
             });
         }

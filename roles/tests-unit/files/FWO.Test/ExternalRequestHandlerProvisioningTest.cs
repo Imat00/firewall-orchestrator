@@ -20,7 +20,6 @@ namespace FWO.Test
     {
         private const long kTicketId = 5;
         private const int kManagementId = 1;
-        private const int kTufinSystemId = 1;
         private const long kImplTaskId = 10;
         private const int kOpenStateId = 210;
         private const int kDoneStateId = 631;
@@ -106,11 +105,7 @@ namespace FWO.Test
 
         private static GlobalDeviceSpecificSettings ExternalTicketSystemSettings()
         {
-            return new GlobalDeviceSpecificSettings
-            {
-                ImplementationMode = ProvisioningImplementationMode.RerouteToExternalTicketSystem,
-                RerouteToExternalTicketSystem = kTufinSystemId
-            };
+            return ExtTicketHandlerTest.ExternalTicketSystemSettings(ExtTicketHandlerTest.ticketSystem);
         }
 
         private static object? Variable(object variables, string name)
@@ -155,7 +150,9 @@ namespace FWO.Test
             Assert.Multiple(() =>
             {
                 Assert.That(Variable(apiConnection.CreatedRequests[0], "implTaskId"), Is.Null);
-                Assert.That(storedSystem.Id, Is.EqualTo(kTufinSystemId));
+                Assert.That(storedSystem.TypeId, Is.EqualTo(BuiltInExternalTicketSystemTypes.TufinSecureChangeId));
+                Assert.That(storedSystem.Url, Is.EqualTo(ExtTicketHandlerTest.ticketSystem.Url));
+                Assert.That(storedSystem.CredentialId, Is.EqualTo(ExtTicketHandlerTest.kTestCredentialId));
             });
         }
 
@@ -182,11 +179,11 @@ namespace FWO.Test
         }
 
         [Test]
-        public async Task StartProvisioning_SelectedSystemUnknown_Fails()
+        public async Task StartProvisioning_ConnectionWithoutCredential_Fails()
         {
             ProvisioningApiConn apiConnection = new(Ticket());
             GlobalDeviceSpecificSettings settings = ExternalTicketSystemSettings();
-            settings.RerouteToExternalTicketSystem = kTufinSystemId + 1;
+            settings.ScCredential = null;
             using ExternalRequestHandler handler = CreateHandler(apiConnection, settings);
 
             bool result = await handler.StartProvisioning(kTicketId);

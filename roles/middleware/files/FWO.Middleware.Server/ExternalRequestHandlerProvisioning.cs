@@ -130,31 +130,32 @@ namespace FWO.Middleware.Server
         }
 
         /// <summary>
-        /// Hands a request task to the external ticket system selected for its management in the device specific
-        /// settings, together with the request tasks it is bundled with. The response timeout and retries of the request
-        /// are those of the management.
+        /// Hands a request task to Tufin SecureChange as configured for its management in the device specific settings
+        /// (connection, ticket templates, response timeout and retries), together with the request tasks it is bundled with.
         /// </summary>
+        /// <exception cref="InvalidOperationException">The management has no URL or no credential for Tufin SecureChange.</exception>
         private async Task CreateExternalTicketSystemRequest(WfTicket ticket, ProvisioningWorkList workList, ProvisioningWorkItem start, ExternalRequest? previousRequest)
         {
-            List<ExternalTicketSystem> extTicketSystems = JsonSerializer.Deserialize<List<ExternalTicketSystem>>(UserConfig.ExtTicketSystems) ?? [];
-            actSystem = extTicketSystems.FirstOrDefault(system => system.Id == start.ExternalTicketSystemId)
-                ?? throw new InvalidOperationException($"No matching external ticket system found for id {start.ExternalTicketSystemId}.");
-            await ApplyRequestSettings(start.ReqTask.ManagementId);
+            actSystem = ExternalTicketSystem.FromSecureChangeSettings(await GetRequestSettings(start.ReqTask.ManagementId));
+            if (string.IsNullOrWhiteSpace(actSystem.Url) || actSystem.CredentialId == null)
+            {
+                throw new InvalidOperationException($"The Tufin SecureChange connection of management {start.ReqTask.ManagementId} has no URL or no credential.");
+            }
             await ApplySecureChangeTemplates(ticket, start.ReqTask);
-            (List<WfReqTask> contentTasks, List<WfReqTask> handledTasks) = BundleRequestTasks(workList, start);
+            (List<WfReqTask> contentTasks, List<WfReqTask> handledTasks) = await BundleRequestTasks(workList, start);
             await CreateExtRequest(ticket, contentTasks, handledTasks, GetWaitCycles(start.ReqTask.TaskType, previousRequest, actSystem));
         }
 
         /// <summary>
         /// Bundles the open entries directly following the start entry into one request, as long as they are handed to
-        /// the same external ticket system, have the same task type and, for SecureChange, the same ticket templates.
+        /// the same external ticket system with the same connection, have the same task type and the same ticket templates.
         /// Only rule tasks are bundled. A rule change of the same connection on another gateway of the same management
         /// is merged into the task before (if the system bundles gateways); other tasks join as tasks of their own if
         /// bundling is switched on, up to the maximum number of tasks of the system. The first entry that does not fit
         /// ends the bundle; finished entries and implementation tasks left to a person do not interrupt it.
         /// </summary>
         /// <returns>The tasks forming the content of the request and all request tasks it handles.</returns>
-        private (List<WfReqTask> ContentTasks, List<WfReqTask> HandledTasks) BundleRequestTasks(ProvisioningWorkList workList, ProvisioningWorkItem start)
+        private async Task<(List<WfReqTask> ContentTasks, List<WfReqTask> HandledTasks)> BundleRequestTasks(ProvisioningWorkList workList, ProvisioningWorkItem start)
         {
             List<WfReqTask> contentTasks = [];
             List<WfReqTask> handledTasks = [start.ReqTask];
@@ -163,7 +164,7 @@ namespace FWO.Middleware.Server
             {
                 foreach (ProvisioningWorkItem further in OpenEntriesAfter(workList, start))
                 {
-                    if (!CanBundle(further, start))
+                    if (!await CanBundle(further, start))
                     {
                         break;
                     }
@@ -198,26 +199,25 @@ namespace FWO.Middleware.Server
             return await wfHandler.GetManagementSettings(managementId);
         }
 
-        /// <summary>Gives the copy of the ticket system stored with the request the timeout and retries of the management.</summary>
-        private async Task ApplyRequestSettings(int? managementId)
-        {
-            GlobalDeviceSpecificSettings settings = await GetRequestSettings(managementId);
-            actSystem.ResponseTimeout = settings.RequestResponseTimeout;
-            actSystem.MaxAttempts = settings.RequestMaxAttempts;
-            actSystem.CyclesBetweenAttempts = settings.RequestCyclesBetweenAttempts;
-        }
-
         private static IEnumerable<ProvisioningWorkItem> OpenEntriesAfter(ProvisioningWorkList workList, ProvisioningWorkItem start)
         {
             return workList.Items.SkipWhile(item => item != start).Skip(1).Where(item => !item.IsFinished);
         }
 
-        private bool CanBundle(ProvisioningWorkItem further, ProvisioningWorkItem start)
+        /// <summary>
+        /// Whether a further entry joins the request of the start entry: one request goes to one SecureChange server with
+        /// one login and one set of ticket templates.
+        /// </summary>
+        private async Task<bool> CanBundle(ProvisioningWorkItem further, ProvisioningWorkItem start)
         {
-            return further.Way == ProvisioningWay.ExternalTicketSystem
-                && further.ExternalTicketSystemId == start.ExternalTicketSystemId
-                && further.ReqTask.TaskType == start.ReqTask.TaskType
-                && (!actSystem.IsTufinSecureChange() || scTemplates.HaveSameTemplates(further.ReqTask.ManagementId, start.ReqTask.ManagementId));
+            if (further.Way != ProvisioningWay.ExternalTicketSystem || further.ExternalTicketSystem != start.ExternalTicketSystem
+                || further.ReqTask.TaskType != start.ReqTask.TaskType
+                || !scTemplates.HaveSameTemplates(further.ReqTask.ManagementId, start.ReqTask.ManagementId))
+            {
+                return false;
+            }
+            GlobalDeviceSpecificSettings furtherSettings = await GetRequestSettings(further.ReqTask.ManagementId);
+            return furtherSettings.ScUrl == actSystem.Url && furtherSettings.ScCredential == actSystem.CredentialId;
         }
 
         private static bool IsBundledTaskType(string taskType)

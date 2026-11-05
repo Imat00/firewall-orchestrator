@@ -42,8 +42,9 @@ INSERT INTO management VALUES (100, 'mgm100', 10), (101, 'mgm101', 10), (102, 'm
 
 CREATE TEMP TABLE expected_values (node_type varchar, object_key varchar, config_key varchar, config_value jsonb);
 INSERT INTO expected_values VALUES
-    ('device_type', '10', 'rerouteToExternalTicketSystem', '1'),
-    ('management', '101', 'rerouteToExternalTicketSystem', '2'),
+    -- the selected systems are converted by the later part of the same upgrade
+    ('device_type', '10', 'rerouteToExternalTicketSystem', '"tufinSecureChange"'),
+    ('management', '101', 'rerouteToExternalTicketSystem', '"tufinSecureChange"'),
     -- SC main is used by mgm100 and mgm102; only its timeout differs from the default
     ('global', 'global', 'requestResponseTimeout', '600'),
     -- SC other: the missing timeout is the default, the invalid cycles are left out

@@ -16,7 +16,6 @@ namespace FWO.Test
         private const int kExternalManagementId = 2;
         private const int kManualManagementId = 3;
         private const int kExternalWithoutSystemManagementId = 4;
-        private const int kExternalTicketSystemId = 7;
         private const int kOpenStateId = 210;
         private const int kEndStateId = 249;
         private const int kDoneStateId = 631;
@@ -47,9 +46,9 @@ namespace FWO.Test
                 };
             }
 
-            public int? GetExternalTicketSystemId(int managementId)
+            public ExternalTicketSystemKind GetExternalTicketSystem(int managementId)
             {
-                return managementId == kExternalManagementId ? kExternalTicketSystemId : null;
+                return managementId == kExternalManagementId ? ExternalTicketSystemKind.TufinSecureChange : ExternalTicketSystemKind.Undefined;
             }
 
             public int GetImplementationEndState(string taskType)
@@ -139,7 +138,7 @@ namespace FWO.Test
             {
                 Assert.That(workList.Items.Select(item => item.Way), Is.EqualTo(kExternalTicketSystemOnly));
                 Assert.That(workList.Items[0].ImplTask, Is.Null);
-                Assert.That(workList.Items[0].ExternalTicketSystemId, Is.EqualTo(kExternalTicketSystemId));
+                Assert.That(workList.Items[0].ExternalTicketSystem, Is.EqualTo(ExternalTicketSystemKind.TufinSecureChange));
             });
         }
 

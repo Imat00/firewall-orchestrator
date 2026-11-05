@@ -351,3 +351,164 @@ BEGIN
     DROP TABLE tmp_request_value;
     DROP TABLE tmp_request_route;
 END $$;
+
+-- The device specific setting rerouteToExternalTicketSystem names the kind of external ticket system instead of an
+-- entry of the ticket system list, and the connection to Tufin SecureChange (scUrl, scCredential, scLookupRequesterId)
+-- moves from the ticket system list to the device specific settings. A level selecting a Tufin SecureChange system
+-- selects tufinSecureChange; a level selecting another or an unknown system loses the selection, and its implementation
+-- modes in effect for external ticket systems become Manual, as only Tufin SecureChange takes over tasks. The
+-- connection of the system most managements use becomes global, a management using another one gets its differing
+-- values; a system without credential (legacy authorization) leaves the credential to be selected. The previous
+-- selections are backed up, which also marks the migration as done.
+DO $$
+DECLARE
+    t_systems text;
+    j_systems jsonb;
+    i_global_node bigint;
+    i_device_type_node bigint;
+    i_management_node bigint;
+    i_global_system integer;
+    i_ancestor bigint;
+    j_effective jsonb;
+    i_depth integer;
+    r_selection RECORD;
+    r_mode RECORD;
+    r_route RECORD;
+    r_value RECORD;
+BEGIN
+    IF EXISTS (SELECT 1 FROM device_specific_config_backup WHERE version = '9.8.7 securechange connection') THEN
+        RETURN;
+    END IF;
+
+    SELECT config_value INTO t_systems FROM config WHERE config_key = 'extTicketSystems' AND config_user = 0;
+    BEGIN
+        j_systems := COALESCE(NULLIF(btrim(COALESCE(t_systems, '')), ''), '[]')::jsonb;
+    EXCEPTION WHEN invalid_text_representation THEN
+        j_systems := '[]'::jsonb;
+    END;
+    IF jsonb_typeof(j_systems) <> 'array' THEN
+        j_systems := '[]'::jsonb;
+    END IF;
+
+    INSERT INTO device_specific_config_backup (version, config_values)
+    SELECT '9.8.7 securechange connection', COALESCE(jsonb_agg(jsonb_build_object('node_type', n.node_type, 'object_key', n.object_key,
+        'config_value', v.config_value) ORDER BY n.id), '[]'::jsonb)
+    FROM device_specific_config_value v
+    JOIN device_specific_config_node n ON n.id = v.node_id
+    WHERE v.config_key = 'rerouteToExternalTicketSystem';
+
+    DROP TABLE IF EXISTS tmp_sc_system;
+    DROP TABLE IF EXISTS tmp_sc_connection_route;
+
+    -- connection of every Tufin SecureChange system
+    CREATE TEMP TABLE tmp_sc_system AS
+    SELECT (s->>'Id')::integer AS system_id, COALESCE(s->>'Url', '') AS url,
+        CASE WHEN (s->>'CredentialId') ~ '^[0-9]{1,9}$' AND (s->>'CredentialId')::integer > 0 THEN (s->>'CredentialId')::integer END AS credential_id,
+        COALESCE(s->>'LookupRequesterId', 'false') = 'true' AS lookup_requester_id
+    FROM jsonb_array_elements(j_systems) s
+    WHERE jsonb_typeof(s) = 'object' AND (s->>'Id') ~ '^[0-9]{1,9}$' AND s->>'TypeId' = '2';
+
+    -- the Tufin SecureChange system in effect for each management, before the selections are converted
+    CREATE TEMP TABLE tmp_sc_connection_route AS
+    SELECT m.mgm_id, m.mgm_name, m.dev_typ_id, (effective.value #>> '{}')::integer AS system_id
+    FROM management m
+    CROSS JOIN LATERAL (SELECT COALESCE(
+        (SELECT v.config_value FROM device_specific_config_value v JOIN device_specific_config_node n ON n.id = v.node_id
+            WHERE n.node_type = 'management' AND n.object_key = m.mgm_id::text AND v.config_key = 'rerouteToExternalTicketSystem'),
+        (SELECT v.config_value FROM device_specific_config_value v JOIN device_specific_config_node n ON n.id = v.node_id
+            WHERE n.node_type = 'device_type' AND n.object_key = m.dev_typ_id::text AND v.config_key = 'rerouteToExternalTicketSystem'),
+        (SELECT v.config_value FROM device_specific_config_value v JOIN device_specific_config_node n ON n.id = v.node_id
+            WHERE n.node_type = 'global' AND v.config_key = 'rerouteToExternalTicketSystem')) AS value) effective
+    WHERE (effective.value #>> '{}') ~ '^[0-9]{1,9}$'
+        AND (effective.value #>> '{}')::integer IN (SELECT system_id FROM tmp_sc_system);
+
+    -- levels selecting another or an unknown system: the implementation modes in effect for external ticket systems become Manual
+    FOR r_selection IN
+        SELECT v.node_id FROM device_specific_config_value v
+        WHERE v.config_key = 'rerouteToExternalTicketSystem' AND jsonb_typeof(v.config_value) = 'number'
+            AND NOT (v.config_value #>> '{}') IN (SELECT system_id::text FROM tmp_sc_system)
+    LOOP
+        FOR r_mode IN
+            SELECT * FROM (VALUES ('implementationMode', 'reroute_to_external_ticket_system'),
+                ('implementationModeForRules', 'rerouteToExternalTicketSystem')) m (config_key, external_value)
+        LOOP
+            i_ancestor := r_selection.node_id;
+            j_effective := NULL;
+            i_depth := 0;
+            WHILE i_ancestor IS NOT NULL AND j_effective IS NULL AND i_depth < 100 LOOP -- recursion limit, the hierarchy has four levels
+                SELECT config_value INTO j_effective FROM device_specific_config_value
+                WHERE node_id = i_ancestor AND config_key = r_mode.config_key;
+                SELECT parent_id INTO i_ancestor FROM device_specific_config_node WHERE id = i_ancestor;
+                i_depth := i_depth + 1;
+            END LOOP;
+            IF j_effective #>> '{}' = r_mode.external_value THEN
+                INSERT INTO device_specific_config_value (node_id, config_key, config_value)
+                VALUES (r_selection.node_id, r_mode.config_key, '"Manual"'::jsonb)
+                ON CONFLICT (node_id, config_key) DO UPDATE SET config_value = EXCLUDED.config_value;
+            END IF;
+        END LOOP;
+    END LOOP;
+    DELETE FROM device_specific_config_value
+    WHERE config_key = 'rerouteToExternalTicketSystem' AND (jsonb_typeof(config_value) <> 'number'
+        OR NOT (config_value #>> '{}') IN (SELECT system_id::text FROM tmp_sc_system));
+    UPDATE device_specific_config_value SET config_value = '"tufinSecureChange"'::jsonb
+    WHERE config_key = 'rerouteToExternalTicketSystem';
+
+    SELECT system_id INTO i_global_system FROM tmp_sc_connection_route
+    GROUP BY system_id ORDER BY count(*) DESC, system_id LIMIT 1;
+
+    INSERT INTO device_specific_config_node (node_type, object_key, display_name, sort_order)
+    VALUES ('global', 'global', 'Global', 0)
+    ON CONFLICT (node_type, object_key) DO NOTHING;
+    SELECT id INTO i_global_node FROM device_specific_config_node WHERE node_type = 'global';
+
+    INSERT INTO device_specific_config_value (node_id, config_key, config_value)
+    SELECT i_global_node, k.config_key, k.config_value
+    FROM tmp_sc_system s
+    CROSS JOIN LATERAL (VALUES ('scUrl', CASE WHEN s.url <> '' THEN to_jsonb(s.url) END),
+        ('scCredential', to_jsonb(s.credential_id)),
+        ('scLookupRequesterId', CASE WHEN s.lookup_requester_id THEN 'true'::jsonb END)) k (config_key, config_value)
+    WHERE s.system_id = i_global_system AND k.config_value IS NOT NULL AND k.config_value <> 'null'::jsonb
+    ON CONFLICT (node_id, config_key) DO NOTHING;
+
+    FOR r_route IN
+        SELECT r.mgm_id, r.mgm_name, r.dev_typ_id, r.system_id, concat_ws(' ', d.dev_typ_name, d.dev_typ_version) AS device_type_name
+        FROM tmp_sc_connection_route r
+        JOIN stm_dev_typ d ON d.dev_typ_id = r.dev_typ_id
+        WHERE r.system_id <> i_global_system
+        ORDER BY r.mgm_id
+    LOOP
+        i_management_node := NULL;
+        FOR r_value IN
+            SELECT k.config_key, k.config_value
+            FROM tmp_sc_system own
+            JOIN tmp_sc_system glob ON glob.system_id = i_global_system
+            CROSS JOIN LATERAL (VALUES
+                ('scUrl', to_jsonb(own.url), own.url IS DISTINCT FROM glob.url),
+                ('scCredential', to_jsonb(own.credential_id), own.credential_id IS NOT NULL AND own.credential_id IS DISTINCT FROM glob.credential_id),
+                ('scLookupRequesterId', to_jsonb(own.lookup_requester_id), own.lookup_requester_id IS DISTINCT FROM glob.lookup_requester_id)
+            ) k (config_key, config_value, differs)
+            WHERE own.system_id = r_route.system_id AND k.differs
+            ORDER BY k.config_key
+        LOOP
+            IF i_management_node IS NULL THEN
+                INSERT INTO device_specific_config_node (node_type, object_key, parent_id, display_name)
+                VALUES ('device_type', r_route.dev_typ_id::text, i_global_node, r_route.device_type_name)
+                ON CONFLICT (node_type, object_key) DO NOTHING;
+                SELECT id INTO i_device_type_node FROM device_specific_config_node
+                WHERE node_type = 'device_type' AND object_key = r_route.dev_typ_id::text;
+                INSERT INTO device_specific_config_node (node_type, object_key, parent_id, display_name)
+                VALUES ('management', r_route.mgm_id::text, i_device_type_node, r_route.mgm_name)
+                ON CONFLICT (node_type, object_key) DO NOTHING;
+                SELECT id INTO i_management_node FROM device_specific_config_node
+                WHERE node_type = 'management' AND object_key = r_route.mgm_id::text;
+            END IF;
+            INSERT INTO device_specific_config_value (node_id, config_key, config_value)
+            VALUES (i_management_node, r_value.config_key, r_value.config_value)
+            ON CONFLICT (node_id, config_key) DO NOTHING;
+        END LOOP;
+    END LOOP;
+
+    DROP TABLE tmp_sc_system;
+    DROP TABLE tmp_sc_connection_route;
+END $$;

@@ -123,6 +123,18 @@
   become_user: postgres
 
 # the upgrade file is run twice within the test transaction (at its run-upgrade markers), which is always rolled back
+- name: test the SecureChange connection migration of the 9.8.7 database upgrade
+  command: psql -X -q -v ON_ERROR_STOP=1 -d "{{ fworch_db_name }}"
+  args:
+    stdin: >-
+      {{ lookup('file', 'database/test-upgrade-9.8.7-sc-connection.sql')
+         | replace('-- @run-upgrade-9.8.7', lookup('file', role_path + '/../database/files/upgrade/9.8.7.sql')) }}
+  register: test_upgrade_9_8_7_sc_connection
+  changed_when: false
+  become: true
+  become_user: postgres
+
+# the upgrade file is run twice within the test transaction (at its run-upgrade markers), which is always rolled back
 - name: test the SecureChange template migration of the 9.8.5 database upgrade
   command: psql -X -q -v ON_ERROR_STOP=1 -d "{{ fworch_db_name }}"
   args:

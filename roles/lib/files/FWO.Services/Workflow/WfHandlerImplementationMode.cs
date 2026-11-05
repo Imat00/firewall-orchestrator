@@ -39,7 +39,7 @@ namespace FWO.Services.Workflow
             {
                 return false;
             }
-            if (settings.RerouteToExternalTicketSystem == null)
+            if (settings.RerouteToExternalTicketSystem == ExternalTicketSystemKind.Undefined)
             {
                 await ReportUnimplementedTarget(reqTask, managementId, null, NoExternalTicketSystemSelectedReason(managementId));
             }
@@ -142,7 +142,7 @@ namespace FWO.Services.Workflow
         private bool IsHandedToExternalTicketSystemByTicket(int managementId, bool isRuleTask)
         {
             GlobalDeviceSpecificSettings settings = GetResolvedSettings(DeviceSpecificScopeType.Management, managementId);
-            return settings.UsesExternalTicketSystem(isRuleTask) && settings.RerouteToExternalTicketSystem != null
+            return settings.UsesExternalTicketSystem(isRuleTask) && settings.RerouteToExternalTicketSystem != ExternalTicketSystemKind.Undefined
                 && ActTicket.Tasks.Any(task => task.ManagementId == managementId
                     && (isRuleTask ? IsRuleTaskType(task.TaskType) : WfObjectTaskHelper.IsManagementObjectTask(task.TaskType)));
         }
@@ -173,7 +173,7 @@ namespace FWO.Services.Workflow
         /// <param name="managementId">Management of the gateway or object target.</param>
         private string? GetMissingExternalTicketSystemReason(int managementId)
         {
-            return GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).RerouteToExternalTicketSystem == null
+            return GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).RerouteToExternalTicketSystem == ExternalTicketSystemKind.Undefined
                 ? NoExternalTicketSystemSelectedReason(managementId)
                 : null;
         }

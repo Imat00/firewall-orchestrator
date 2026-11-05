@@ -305,6 +305,12 @@ internal class DeviceSpecificSettingsDataTest
                     : new() { ScopeType = DeviceSpecificScopeType.Global, ObjectKey = DeviceSpecificSettingsData.GlobalObjectKey };
                 DeviceSpecificSettingsChangeSet changes = new(fieldScope);
                 field.SetOverride(changes, option.Value);
+                if (option.Value.Length == 0)
+                {
+                    // the empty option stands for undefined, which is not stored, so the level inherits
+                    Assert.That(changes.Removals, Does.Contain(field.Key), field.Id);
+                    continue;
+                }
                 Assert.That(changes.Upserts.Single().Value.ToString(), Is.EqualTo(option.Value), $"{field.Id}/{option.Value}");
             }
         }
@@ -371,7 +377,7 @@ internal class DeviceSpecificSettingsDataTest
                 {
                     storable.Remove(nameof(ProvisioningObjectCreationMode.Ignore));
                 }
-                Assert.That(field.Options.Select(o => o.Value), Is.EquivalentTo(storable), field.Id);
+                Assert.That(field.Options.Select(o => o.Value).Where(value => value.Length > 0), Is.EquivalentTo(storable), field.Id);
             }
         }
     }

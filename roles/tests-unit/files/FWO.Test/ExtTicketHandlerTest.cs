@@ -262,21 +262,28 @@ namespace FWO.Test
             ClassicAssert.AreEqual(0, noWaitHandler.GetWaitCycles(WfTaskType.access.ToString(), oldRequest, ticketSystem));
         }
 
+        /// <summary>Credential of the SecureChange connection in the tests.</summary>
+        internal const int kTestCredentialId = 1;
+
         /// <summary>
-        /// Settings handing every task of the tests to the given external ticket system.
+        /// Settings handing every task of the tests to Tufin SecureChange, reached at the URL of the given system with the
+        /// given credential.
         /// </summary>
-        internal static GlobalDeviceSpecificSettings ExternalTicketSystemSettings(int systemId)
+        internal static GlobalDeviceSpecificSettings ExternalTicketSystemSettings(ExternalTicketSystem system, int? credentialId = kTestCredentialId)
         {
             return new GlobalDeviceSpecificSettings
             {
                 ImplementationMode = ProvisioningImplementationMode.RerouteToExternalTicketSystem,
                 ImplementationModeForRules = ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem,
-                RerouteToExternalTicketSystem = systemId
+                RerouteToExternalTicketSystem = ExternalTicketSystemKind.TufinSecureChange,
+                ScUrl = system.Url,
+                ScCredential = credentialId,
+                ScLookupRequesterId = system.LookupRequesterId
             };
         }
 
         [Test]
-        public async Task HandleStateChangeUsesTheSystemSelectedInTheDeviceSpecificSettings()
+        public async Task HandleStateChangeUsesTheConnectionOfTheDeviceSpecificSettings()
         {
             ExternalTicketSystem tufinSystem = new()
             {
@@ -312,7 +319,7 @@ namespace FWO.Test
             using ExternalRequestHandler handler = new ExternalRequestHandler(localUserConfig, localApiConnection, null)
             {
                 SCTemplateSource = TestSCTemplates
-            }.WithProvisioningSettings(ExternalTicketSystemSettings(tufinSystem.Id));
+            }.WithProvisioningSettings(ExternalTicketSystemSettings(tufinSystem));
 
             // the request of task 1 is finished already
             ExtTicketHandlerTestApiConn.SetReqTaskState(1, kDoneStateId);
@@ -327,7 +334,8 @@ namespace FWO.Test
             });
 
             StringAssert.Contains("taskNumber = 4", localApiConnection.AddExtRequestVars ?? "");
-            StringAssert.Contains("\"Name\":\"Tufin\"", localApiConnection.AddedExtTicketSystem ?? "");
+            StringAssert.Contains($"\"Url\":\"{tufinSystem.Url}\"", localApiConnection.AddedExtTicketSystem ?? "");
+            StringAssert.Contains($"\"CredentialId\":{kTestCredentialId}", localApiConnection.AddedExtTicketSystem ?? "");
             StringAssert.Contains("\"TypeId\":2", localApiConnection.AddedExtTicketSystem ?? "");
         }
 
@@ -358,7 +366,7 @@ namespace FWO.Test
             using ExternalRequestHandler handler = new ExternalRequestHandler(localUserConfig, localApiConnection, null)
             {
                 SCTemplateSource = TestSCTemplates
-            }.WithProvisioningSettings(ExternalTicketSystemSettings(tufinSystem.Id));
+            }.WithProvisioningSettings(ExternalTicketSystemSettings(tufinSystem));
 
             ExternalRequest externalRequest = new()
             {
@@ -395,7 +403,7 @@ namespace FWO.Test
             using ExternalRequestHandler handler = new ExternalRequestHandler(localUserConfig, localApiConnection, null)
             {
                 SCTemplateSource = TestSCTemplates
-            }.WithProvisioningSettings(ExternalTicketSystemSettings(ticketSystem.Id));
+            }.WithProvisioningSettings(ExternalTicketSystemSettings(ticketSystem));
             // tasks 1 to 5 are implemented, and task 7 was set to done by hand
             foreach (long finishedTaskId in kFinishedBeforeBundle)
             {
@@ -445,7 +453,7 @@ namespace FWO.Test
             using ExternalRequestHandler externalRequestHandler = new ExternalRequestHandler(localUserConfig, localApiConnection, null)
             {
                 SCTemplateSource = TestSCTemplates
-            }.WithProvisioningSettings(ExternalTicketSystemSettings(ticketSystem.Id));
+            }.WithProvisioningSettings(ExternalTicketSystemSettings(ticketSystem));
             ExternalRequest externalRequest = new()
             {
                 Id = 1,

@@ -3617,6 +3617,14 @@ INSERT INTO txt VALUES ('dss_modelling_connection_id_template', 'German', 'Vorla
 INSERT INTO txt VALUES ('dss_modelling_connection_id_template', 'English', 'Connection ID template');
 INSERT INTO txt VALUES ('dss_reroute_to_external_ticket_system', 'German', 'Externes Ticketsystem f&uuml;r Umleitung');
 INSERT INTO txt VALUES ('dss_reroute_to_external_ticket_system', 'English', 'Reroute to external ticket system');
+INSERT INTO txt VALUES ('dss_opt_tufin_securechange', 'German', 'Tufin SecureChange');
+INSERT INTO txt VALUES ('dss_opt_tufin_securechange', 'English', 'Tufin SecureChange');
+INSERT INTO txt VALUES ('dss_sc_url', 'German', 'URL');
+INSERT INTO txt VALUES ('dss_sc_url', 'English', 'URL');
+INSERT INTO txt VALUES ('dss_sc_credential', 'German', 'Login-Daten');
+INSERT INTO txt VALUES ('dss_sc_credential', 'English', 'Credentials');
+INSERT INTO txt VALUES ('dss_sc_lookup_requester_id', 'German', 'Antragsteller-ID nachschlagen');
+INSERT INTO txt VALUES ('dss_sc_lookup_requester_id', 'English', 'Look up requester ID');
 INSERT INTO txt VALUES ('dss_opt_custom_field', 'German', 'Benutzerdefiniertes Feld');
 INSERT INTO txt VALUES ('dss_opt_custom_field', 'English', 'Custom field');
 INSERT INTO txt VALUES ('dss_opt_reroute', 'German', 'Externes Ticketsystem');
@@ -4866,6 +4874,8 @@ INSERT INTO txt VALUES ('U5508', 'German',  'Folgende Gateways weichen beim Umse
 INSERT INTO txt VALUES ('U5508', 'English', 'The following gateways differ from their management in the implementation mode &quot;External ticket system&quot; for rules. An external ticket system only takes over whole managements: below a management with external ticket system the gateway value has no effect, below any other management nobody implements the gateway:');
 INSERT INTO txt VALUES ('U5509', 'German',  'Die Objektanlage-Einstellung folgender Sub-Managements weicht von der ihres Super-Managements ab. Ein Auftrag auf dem Super-Management folgt dessen Einstellung, ein Auftrag auf einem Sub-Management der des Sub-Managements, daher werden Objekte je nach Auftrag an unterschiedlichen Stellen angelegt:');
 INSERT INTO txt VALUES ('U5509', 'English', 'The object creation setting of the following sub-managements differs from the one of their super-management. A task on the super-management follows its setting, a task on a sub-management the setting of that sub-management, so objects are created in different places depending on the task:');
+INSERT INTO txt VALUES ('U5510', 'German',  'Folgende Ebenen geben ihre Auftr&auml;ge an Tufin SecureChange, aber f&uuml;r die Verbindung fehlt die URL oder die Login-Daten. Ihre Anfragen k&ouml;nnen nicht angelegt werden:');
+INSERT INTO txt VALUES ('U5510', 'English', 'The following levels hand their tasks to Tufin SecureChange, but the URL or the credentials of the connection are missing. Their requests cannot be created:');
 
 INSERT INTO txt VALUES ('U5601', 'German',  'Sind sie sicher, dass sie das letzte Senden f&uuml;r folgende Benachrichtigung zur&uuml;cksetzen wollen: ');
 INSERT INTO txt VALUES ('U5601', 'English', 'Are you sure you want to reset the last sending for following notification: ');
@@ -5102,8 +5112,8 @@ INSERT INTO txt VALUES ('E5111', 'German',  'Es gibt bereits ein Gateway mit der
 INSERT INTO txt VALUES ('E5111', 'English', 'There is already a gateway in the same configuration with import enabled');
 INSERT INTO txt VALUES ('E5112', 'German',  'Gateway konnte nicht angelegt werden');
 INSERT INTO txt VALUES ('E5112', 'English', 'Gateway could not be created');
-INSERT INTO txt VALUES ('E5113', 'German',  'L&ouml;schen der Login-Daten nicht m&ouml;glich, da diese von den genannten externen Ticket-Systemen verwendet werden. Dort zuerst andere Login-Daten ausw&auml;hlen.');
-INSERT INTO txt VALUES ('E5113', 'English', 'Deletion of credentials not allowed as they are in use by the external ticket systems named. Change the credentials of these ticket systems before deleting them.');
+INSERT INTO txt VALUES ('E5113', 'German',  'L&ouml;schen der Login-Daten nicht m&ouml;glich, da die Verbindung zu Tufin SecureChange der genannten Ebenen der ger&auml;tespezifischen Einstellungen sie verwendet. Dort zuerst andere Login-Daten ausw&auml;hlen.');
+INSERT INTO txt VALUES ('E5113', 'English', 'Deletion of credentials not allowed as the Tufin SecureChange connection of the device specific settings levels named uses them. Select other credentials there before deleting them.');
 INSERT INTO txt VALUES ('E5114', 'German',  'Der Antrag kann nur vom Antragsteller oder von Verantwortlichen der betroffenen Anwendungen ge&auml;ndert werden.');
 INSERT INTO txt VALUES ('E5114', 'English', 'The ticket can only be changed by its requester or by users responsible for the applications concerned.');
 INSERT INTO txt VALUES ('E5121', 'German',  'Bitte einen Namen f&uuml;r das benutzerdefinierte Flow-Objekt eingeben');
@@ -6985,6 +6995,12 @@ INSERT INTO txt VALUES ('H5197', 'German', 'Sicherheitsprofile: Namen der anzuwe
 INSERT INTO txt VALUES ('H5197', 'English', 'Security profiles: names of profiles to apply, one entry per row. Device type and manager.');
 INSERT INTO txt VALUES ('H5198', 'German',  'Zone von (nur Fortinet): Quellzone der erzeugten Regeln.');
 INSERT INTO txt VALUES ('H5198', 'English', 'Zone from (Fortinet only): source zone of the generated rules.');
+INSERT INTO txt VALUES ('H5198a', 'German',  'URL: Basis-URL der Tufin SecureChange API, z.B. https://securechange.example/securechangeworkflow/api/securechange/. Global, Ger&auml;tetyp und Manager.');
+INSERT INTO txt VALUES ('H5198a', 'English', 'URL: base URL of the Tufin SecureChange API, e.g. https://securechange.example/securechangeworkflow/api/securechange/. Global, device type and manager.');
+INSERT INTO txt VALUES ('H5198b', 'German',  'Login-Daten: die Login-Daten aus Einstellungen - Login-Daten, mit denen sich FWO an Tufin SecureChange anmeldet. Ge&auml;nderte Login-Daten gelten auch f&uuml;r offene Anfragen. Global, Ger&auml;tetyp und Manager.');
+INSERT INTO txt VALUES ('H5198b', 'English', 'Credentials: the credentials from Settings - Credentials FWO logs into Tufin SecureChange with. Changed credentials apply to open requests as well. Global, device type and manager.');
+INSERT INTO txt VALUES ('H5198c', 'German',  'Antragsteller-ID nachschlagen: ob die Tufin-SecureChange-Benutzer-ID des Antragstellers gesucht und als Antragsteller des Tickets gesetzt wird. Global, Ger&auml;tetyp und Manager. Standard: aus.');
+INSERT INTO txt VALUES ('H5198c', 'English', 'Look up requester ID: whether the Tufin SecureChange user ID of the requester is looked up and set as requester of the ticket. Global, device type and manager. Default: off.');
 INSERT INTO txt VALUES ('H5199', 'German',  'Zone nach (nur Fortinet): Zielzone der erzeugten Regeln.');
 INSERT INTO txt VALUES ('H5199', 'English', 'Zone to (Fortinet only): destination zone of the generated rules.');
 INSERT INTO txt VALUES ('H5199a', 'German', 'Wo Zeitobjekte angelegt werden; ignore deaktiviert die Anlage. Wie bei den Adress-Objekten entscheidet die Einstellung des Managements, auf dem der Auftrag gestellt wird; ein Submanager auf ignore erh&auml;lt auch bei einem Auftrag auf dem Supermanager keinen. Global, Ger&auml;tetyp und Manager.');
@@ -6997,8 +7013,8 @@ INSERT INTO txt VALUES ('H5199d', 'German', 'Name des Manager-Feldes f&uuml;r di
 INSERT INTO txt VALUES ('H5199d', 'English', 'Name of the manager custom field for the owner ID. Default: OwnerId. Global, device type and manager.');
 INSERT INTO txt VALUES ('H5199e', 'German', 'Name des Manager-Feldes f&uuml;r die &Auml;nderungs-ID. Standard: ChangeId. Global, Ger&auml;tetyp und Manager.');
 INSERT INTO txt VALUES ('H5199e', 'English', 'Name of the manager custom field for the change ID. Default: ChangeId. Global, device type and manager.');
-INSERT INTO txt VALUES ('H5199f', 'German', 'Externes Ticketsystem f&uuml;r Umleitung: eines der konfigurierten externen Ticketsysteme, an das die Umsetzung umgeleitet wird. Wirkt nur zusammen mit dem Umsetzungsmodus externes Ticketsystem. Global, Ger&auml;tetyp und Manager. Standard: nicht definiert.');
-INSERT INTO txt VALUES ('H5199f', 'English', 'Reroute to external ticket system: one of the configured external ticket systems implementation is rerouted to. Only effective together with the implementation mode external ticket system. Global, device type and manager. Default: undefined.');
+INSERT INTO txt VALUES ('H5199f', 'German', 'Externes Ticketsystem f&uuml;r Umleitung: das externe Ticketsystem, an das die Umsetzung umgeleitet wird, derzeit Tufin SecureChange. Verbindung und Vorlagen stehen im Abschnitt SecureChange. Wirkt nur zusammen mit dem Umsetzungsmodus externes Ticketsystem. Global, Ger&auml;tetyp und Manager. Standard: nicht definiert.');
+INSERT INTO txt VALUES ('H5199f', 'English', 'Reroute to external ticket system: the external ticket system implementation is rerouted to, currently Tufin SecureChange. Its connection and templates are set in the SecureChange section. Only effective together with the implementation mode external ticket system. Global, device type and manager. Default: undefined.');
 INSERT INTO txt VALUES ('H5199g', 'German',  'Umsetzung automatisch planen: Ja = die Aktion &quot;Implementierungs-Auftr&auml;ge erzeugen&quot; legt die Implementierungs-Auftr&auml;ge eines Antrags-Auftrags an, Nein = ein Planer legt sie an. Gilt f&uuml;r alle Auftragstypen; f&uuml;r Regel-Auftr&auml;ge (Zugriff, Regel &auml;ndern, Regel l&ouml;schen) muss zus&auml;tzlich &quot;Umsetzung f&uuml;r Regeln automatisch planen&quot; auf Ja stehen. Die Einstellung ist unabh&auml;ngig von der Planungsphase: wird manuell geplant, muss die Planungsphase des Auftragstyps aktiv sein. Kann kein Gateway bzw. Management bestimmt werden, wird ein Implementierungs-Auftrag ohne Gateway angelegt. Standard: Ja.');
 INSERT INTO txt VALUES ('H5199g', 'English', 'Auto plan implementation: Yes = the action &quot;Create implementation tasks&quot; creates the implementation tasks of a request task, No = a planner creates them. Applies to all task types; rule tasks (access, modify rule, delete rule) additionally need &quot;Auto plan implementation for rules&quot; set to Yes. The setting is independent of the planning phase: if planned manually, the planning phase of the task type must be active. If no gateway or management can be determined, one implementation task without gateway is created. Default: Yes.');
 INSERT INTO txt VALUES ('H5199h', 'German',  'Umsetzung f&uuml;r Regeln automatisch planen: Ja = die Aktion &quot;Implementierungs-Auftr&auml;ge erzeugen&quot; legt die Implementierungs-Auftr&auml;ge von Regel-Auftr&auml;gen (Zugriff, Regel &auml;ndern, Regel l&ouml;schen) an, Nein = ein Planer legt sie an. Wirkt nur, wenn &quot;Umsetzung automatisch planen&quot; auf Ja steht. Die Gateways kommen aus dem Antrag oder, falls dort keine angegeben sind, aus dem Pfadanalyse-Algorithmus der Workflow-Anpassungen; kann kein Gateway bestimmt werden, wird ein Implementierungs-Auftrag ohne Gateway angelegt. Standard: Nein.');

@@ -50,6 +50,7 @@ namespace FWO.Data
     public partial class ExternalTicketSystem
     {
         private const string kRedactedAuthorization = "****";
+        private const string kTufinSecureChangeName = "Tufin SecureChange";
 
         [JsonProperty(nameof(Id)), JsonPropertyName(nameof(Id))]
         public int Id { get; set; } = 0;
@@ -107,36 +108,24 @@ namespace FWO.Data
         public int CyclesBetweenAttempts { get; set; } = 5;
 
         /// <summary>
-        /// Lists the configured external ticket systems that log in with the given credential.
+        /// Builds the Tufin SecureChange system a management hands its tasks to from its device specific settings:
+        /// connection, requester lookup, response timeout and retries. The ticket templates are added separately.
         /// </summary>
-        /// <param name="extTicketSystems">The external ticket systems as stored in the config (JSON list).</param>
-        /// <param name="credentialId">The id of the credential.</param>
-        /// <returns>The external ticket systems referencing the credential.</returns>
-        public static List<ExternalTicketSystem> UsingCredential(string? extTicketSystems, int credentialId)
+        /// <param name="settings">Device specific settings in effect for the management.</param>
+        public static ExternalTicketSystem FromSecureChangeSettings(DeviceSpecificSettings.GlobalDeviceSpecificSettings settings)
         {
-            return [.. ParseConfigured(extTicketSystems).Where(system => system.CredentialId == credentialId)];
-        }
-
-        /// <summary>
-        /// Finds a configured external ticket system by its id.
-        /// </summary>
-        /// <param name="extTicketSystems">The external ticket systems as stored in the config (JSON list).</param>
-        /// <param name="id">The id of the ticket system.</param>
-        /// <returns>The configured ticket system, null if there is none with this id.</returns>
-        public static ExternalTicketSystem? FindConfigured(string? extTicketSystems, int id)
-        {
-            return ParseConfigured(extTicketSystems).FirstOrDefault(system => system.Id == id);
-        }
-
-        /// <summary>
-        /// Reads the configured external ticket systems.
-        /// </summary>
-        /// <param name="extTicketSystems">The external ticket systems as stored in the config (JSON list).</param>
-        /// <returns>The ticket systems, empty if none are configured.</returns>
-        public static List<ExternalTicketSystem> ParseConfigured(string? extTicketSystems)
-        {
-            return string.IsNullOrWhiteSpace(extTicketSystems) ? []
-                : System.Text.Json.JsonSerializer.Deserialize<List<ExternalTicketSystem>>(extTicketSystems) ?? [];
+            ArgumentNullException.ThrowIfNull(settings);
+            return new ExternalTicketSystem
+            {
+                TypeId = BuiltInExternalTicketSystemTypes.TufinSecureChangeId,
+                Name = kTufinSecureChangeName,
+                Url = settings.ScUrl,
+                CredentialId = settings.ScCredential,
+                LookupRequesterId = settings.ScLookupRequesterId,
+                ResponseTimeout = settings.RequestResponseTimeout,
+                MaxAttempts = settings.RequestMaxAttempts,
+                CyclesBetweenAttempts = settings.RequestCyclesBetweenAttempts
+            };
         }
 
         /// <summary>

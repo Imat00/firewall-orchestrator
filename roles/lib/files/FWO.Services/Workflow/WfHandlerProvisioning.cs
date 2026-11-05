@@ -87,7 +87,7 @@ namespace FWO.Services.Workflow
                 return handler.GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).GetImplementationMode(isRuleTask);
             }
 
-            public int? GetExternalTicketSystemId(int managementId)
+            public ExternalTicketSystemKind GetExternalTicketSystem(int managementId)
             {
                 return handler.GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).RerouteToExternalTicketSystem;
             }

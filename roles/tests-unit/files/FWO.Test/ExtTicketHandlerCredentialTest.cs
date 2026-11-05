@@ -45,16 +45,16 @@ namespace FWO.Test
         }
 
         [Test]
-        public async Task CreatedRequestWithoutCredentialHasNoAuthorization()
+        public async Task RequestWithoutCredentialIsNotCreated()
         {
             ExtTicketHandlerTestApiConn apiConnection = new();
 
-            await CreateFollowingRequest(apiConnection, null, legacyAuthorization: kLegacyHeader);
+            // the provisioning logs the incomplete connection and creates no request
+            await CreateFollowingRequest(apiConnection, null);
 
             Assert.Multiple(() =>
             {
-                Assert.That(apiConnection.AddedExtTicketSystem, Is.Not.Null);
-                Assert.That(apiConnection.AddedExtTicketSystem, Does.Not.Contain("Authorization"));
+                Assert.That(apiConnection.AddedExtTicketSystem, Is.Null);
                 Assert.That(apiConnection.CredentialQueryVars, Is.Empty);
             });
         }
@@ -131,7 +131,7 @@ namespace FWO.Test
             using ExternalRequestHandler handler = new ExternalRequestHandler(userConfig, apiConnection, null)
             {
                 SCTemplateSource = new FixedSCTemplateSource(ExtTicketHandlerTest.ticketSystem.Templates)
-            }.WithProvisioningSettings(ExtTicketHandlerTest.ExternalTicketSystemSettings(tufinSystem.Id));
+            }.WithProvisioningSettings(ExtTicketHandlerTest.ExternalTicketSystemSettings(tufinSystem, credentialId));
             // the request of task 1 is finished already
             ExtTicketHandlerTestApiConn.SetReqTaskState(1, kDoneStateId);
             await handler.HandleStateChange(new ExternalRequest
