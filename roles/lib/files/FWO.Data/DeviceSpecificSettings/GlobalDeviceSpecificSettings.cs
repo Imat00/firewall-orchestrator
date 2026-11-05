@@ -3,6 +3,10 @@ namespace FWO.Data.DeviceSpecificSettings;
 /// <summary>Effective device specific setting values, initialized with their compiled defaults.</summary>
 public class GlobalDeviceSpecificSettings
 {
+    public const int kDefaultRequestResponseTimeout = 300;
+    public const int kDefaultRequestMaxAttempts = 3;
+    public const int kDefaultRequestCyclesBetweenAttempts = 5;
+
     public DeviceSpecificSettingsScope Scope { get; set; } = new();
 
     public ProvisioningInstallOn InstallOn { get; set; } = ProvisioningInstallOn.Any;
@@ -33,6 +37,15 @@ public class GlobalDeviceSpecificSettings
 
     /// <summary>ID of the external ticket system to reroute to; null while undefined.</summary>
     public int? RerouteToExternalTicketSystem { get; set; }
+
+    /// <summary>Seconds a call to the external ticket system or the firewall may take before it fails.</summary>
+    public int RequestResponseTimeout { get; set; } = kDefaultRequestResponseTimeout;
+
+    /// <summary>How often an external request is sent before it is rejected, if its errors may pass.</summary>
+    public int RequestMaxAttempts { get; set; } = kDefaultRequestMaxAttempts;
+
+    /// <summary>Job cycles to wait before the next attempt, multiplied by the number of attempts so far.</summary>
+    public int RequestCyclesBetweenAttempts { get; set; } = kDefaultRequestCyclesBetweenAttempts;
 
     public List<string> SecurityProfiles { get; set; } = new();
 

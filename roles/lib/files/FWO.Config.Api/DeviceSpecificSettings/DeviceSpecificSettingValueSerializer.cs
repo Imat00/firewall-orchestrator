@@ -72,6 +72,16 @@ public static class DeviceSpecificSettingValueSerializer
             return new JValue((bool)value);
         }
 
+        if (key.ValueType == typeof(int))
+        {
+            int number = (int)value;
+            if (number < 0)
+            {
+                throw new ArgumentException($"Setting '{key.DatabaseKey}' requires a non-negative number.", nameof(value));
+            }
+            return new JValue(number);
+        }
+
         if (key.ValueType == typeof(int?))
         {
             int id = (int)value;
@@ -126,6 +136,11 @@ public static class DeviceSpecificSettingValueSerializer
             return DeserializeBool(key, value);
         }
 
+        if (key.ValueType == typeof(int))
+        {
+            return DeserializeNonNegativeNumber(key, value);
+        }
+
         if (key.ValueType == typeof(int?))
         {
             return DeserializePositiveId(key, value);
@@ -163,6 +178,14 @@ public static class DeviceSpecificSettingValueSerializer
         return value.Type == JTokenType.Boolean
             ? value.Value<bool>()
             : throw InvalidValue(key, value, "a JSON boolean is required");
+    }
+
+    /// <summary>Reads a non-negative JSON integer that fits into an <see cref="int"/>.</summary>
+    private static int DeserializeNonNegativeNumber(DeviceSpecificSettingKey key, JToken value)
+    {
+        return value.Type == JTokenType.Integer && value.Value<long>() is >= 0 and <= int.MaxValue
+            ? value.Value<int>()
+            : throw InvalidValue(key, value, "a non-negative JSON integer is required");
     }
 
     /// <summary>Reads a positive JSON integer that fits into an <see cref="int"/>.</summary>

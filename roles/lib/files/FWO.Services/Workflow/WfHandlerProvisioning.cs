@@ -42,6 +42,18 @@ namespace FWO.Services.Workflow
             return workList;
         }
 
+        /// <summary>
+        /// Device specific settings in effect for a management, e.g. the response timeout and retries of its external
+        /// requests. Without management, or if the settings cannot be resolved, the global settings or the defaults apply.
+        /// </summary>
+        /// <param name="managementId">Management of the request task or implementation task.</param>
+        public async Task<GlobalDeviceSpecificSettings> GetManagementSettings(int? managementId)
+        {
+            List<int> managementIds = managementId is int id && id > 0 ? [id] : kNoIds;
+            await EnsureAutoPlanSettings(kNoIds, managementIds);
+            return GetResolvedSettings(DeviceSpecificScopeType.Management, managementId);
+        }
+
         private static List<int> ProvisioningManagementIds(List<WfReqTask> reqTasks)
         {
             IEnumerable<int?> reqTaskManagementIds = reqTasks.Select(task => task.ManagementId);

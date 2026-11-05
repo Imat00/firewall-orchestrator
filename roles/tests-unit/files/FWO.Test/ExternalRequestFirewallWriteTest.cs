@@ -167,9 +167,9 @@ namespace FWO.Test
             };
         }
 
-        private static ExternalRequestHandler CreateHandler(FirewallWriteApiConn apiConnection)
+        private static ExternalRequestHandler CreateHandler(FirewallWriteApiConn apiConnection, GlobalDeviceSpecificSettings? settings = null)
         {
-            return new ExternalRequestHandler(new SimulatedUserConfig(), apiConnection, null).WithProvisioningSettings(new GlobalDeviceSpecificSettings());
+            return new ExternalRequestHandler(new SimulatedUserConfig(), apiConnection, null).WithProvisioningSettings(settings ?? new GlobalDeviceSpecificSettings());
         }
 
         private sealed class RecordingWriter(ModifyFirewallResult result)
@@ -183,13 +183,14 @@ namespace FWO.Test
             }
         }
 
-        private static async Task<RecordingWriter> RunSender(FirewallWriteApiConn apiConnection, ExternalRequest request, ModifyFirewallResult result)
+        private static async Task<RecordingWriter> RunSender(FirewallWriteApiConn apiConnection, ExternalRequest request, ModifyFirewallResult result,
+            GlobalDeviceSpecificSettings? settings = null)
         {
             apiConnection.OpenRequests.Add(request);
             RecordingWriter writer = new(result);
             using ExternalRequestSender sender = new(apiConnection, new SimulatedGlobalConfig(), null, writer.Write)
             {
-                HandlerFactory = () => CreateHandler(apiConnection)
+                HandlerFactory = () => CreateHandler(apiConnection, settings)
             };
             List<string> failedRequests = await sender.Run();
             Assert.That(failedRequests, Is.Empty);
@@ -279,6 +280,25 @@ namespace FWO.Test
                 Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestFinal), Does.Contain(ExtStates.ExtReqAckRejected.ToString()));
                 Assert.That(apiConnection.History, Has.Some.Contains("Rejected Implementation 10 on"));
                 Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task Run_RetryableError_UsesTheRetriesOfTheManagement()
+        {
+            GlobalDeviceSpecificSettings settings = new() { RequestMaxAttempts = 3, RequestCyclesBetweenAttempts = 7 };
+            FirewallWriteApiConn retried = new(Ticket());
+            FirewallWriteApiConn rejected = new(Ticket());
+
+            await RunSender(retried, Request(attempts: 1), Failure(FirewallWriteErrorKind.Unreachable), settings);
+            await RunSender(rejected, Request(attempts: 2), Failure(FirewallWriteErrorKind.Unreachable), settings);
+
+            object retry = retried.VariablesOf(ExtRequestQueries.updateExtRequestCreation).Single();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Variable(retry, "extRequestState"), Is.EqualTo(ExtStates.ExtReqFailed.ToString()));
+                Assert.That(Variable(retry, "waitCycles"), Is.EqualTo(2 * 7));
+                Assert.That(States(rejected, ExtRequestQueries.updateExtRequestCreation), Is.EqualTo(kRejectedOnly));
             }
         }
 

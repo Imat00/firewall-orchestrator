@@ -26,8 +26,9 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// <param name="baseUrl">Base url of the vendor API.</param>
         /// <param name="management">Management with export credentials.</param>
         /// <param name="checkCertificates">False accepts any server certificate.</param>
-        protected FirewallWriteClient(string baseUrl, Management management, bool checkCertificates)
-            : base(baseUrl, checkCertificates: checkCertificates)
+        /// <param name="responseTimeout">Seconds a call may take before it fails as unreachable; null keeps the default.</param>
+        protected FirewallWriteClient(string baseUrl, Management management, bool checkCertificates, int? responseTimeout = null)
+            : base(baseUrl, responseTimeout, checkCertificates)
         {
             Management = management;
         }

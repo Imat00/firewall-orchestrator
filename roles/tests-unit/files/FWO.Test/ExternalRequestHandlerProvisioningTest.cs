@@ -160,6 +160,28 @@ namespace FWO.Test
         }
 
         [Test]
+        public async Task StartProvisioning_ExternalManagement_StoresTheTimeoutAndRetriesOfTheManagement()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            GlobalDeviceSpecificSettings settings = ExternalTicketSystemSettings();
+            settings.RequestResponseTimeout = 60;
+            settings.RequestMaxAttempts = 4;
+            settings.RequestCyclesBetweenAttempts = 9;
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, settings);
+
+            await handler.StartProvisioning(kTicketId);
+
+            ExternalTicketSystem storedSystem = System.Text.Json.JsonSerializer.Deserialize<ExternalTicketSystem>(apiConnection.AddedExtTicketSystem ?? "")
+                ?? throw new AssertionException("No external ticket system stored");
+            Assert.Multiple(() =>
+            {
+                Assert.That(storedSystem.ResponseTimeout, Is.EqualTo(60));
+                Assert.That(storedSystem.MaxAttempts, Is.EqualTo(4));
+                Assert.That(storedSystem.CyclesBetweenAttempts, Is.EqualTo(9));
+            });
+        }
+
+        [Test]
         public async Task StartProvisioning_SelectedSystemUnknown_Fails()
         {
             ProvisioningApiConn apiConnection = new(Ticket());

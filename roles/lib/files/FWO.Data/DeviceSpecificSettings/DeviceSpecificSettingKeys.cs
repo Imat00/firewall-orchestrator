@@ -56,6 +56,18 @@ public static class DeviceSpecificSettingKeys
     public static readonly DeviceSpecificSettingKey<int?> RerouteToExternalTicketSystem =
         new("rerouteToExternalTicketSystem", AllScopeTypes);
 
+    /// <summary>Seconds a call to the external ticket system or the firewall may take before it fails.</summary>
+    public static readonly DeviceSpecificSettingKey<int> RequestResponseTimeout =
+        new("requestResponseTimeout", ManagerScopeTypes);
+
+    /// <summary>How often an external request is sent before it is rejected, if its errors may pass.</summary>
+    public static readonly DeviceSpecificSettingKey<int> RequestMaxAttempts =
+        new("requestMaxAttempts", ManagerScopeTypes);
+
+    /// <summary>Job cycles to wait before the next attempt, multiplied by the number of attempts so far.</summary>
+    public static readonly DeviceSpecificSettingKey<int> RequestCyclesBetweenAttempts =
+        new("requestCyclesBetweenAttempts", ManagerScopeTypes);
+
     public static readonly DeviceSpecificSettingKey<List<string>> SecurityProfiles =
         new("securityProfiles", DeviceScopeTypes);
 
@@ -118,6 +130,9 @@ public static class DeviceSpecificSettingKeys
         ImplementationMode,
         ImplementationModeForRules,
         RerouteToExternalTicketSystem,
+        RequestResponseTimeout,
+        RequestMaxAttempts,
+        RequestCyclesBetweenAttempts,
         SecurityProfiles,
         OwnerIdCustomFieldName,
         ChangeIdCustomFieldName,

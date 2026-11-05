@@ -1,4 +1,5 @@
 using FWO.Data;
+using FWO.Data.DeviceSpecificSettings;
 using FWO.Data.Workflow;
 using FWO.ExternalSystems.FirewallWrite;
 using FWO.Logging;
@@ -11,12 +12,6 @@ namespace FWO.Middleware.Server
     public partial class ExternalRequestSender
     {
         private const string kFirewallWriteLogTitle = "Firewall Write Request";
-
-        /// <summary>
-        /// Retry settings of firewall writes: the defaults of an external ticket system, until they are part of the
-        /// device specific settings.
-        /// </summary>
-        private static readonly ExternalTicketSystem kFirewallWriteRetrySettings = new();
 
         /// <summary>
         /// Creates the request handler taking over the result of a firewall write (settable for unit testing only).
@@ -61,7 +56,7 @@ namespace FWO.Middleware.Server
                 request.LastMessage = $"Implementation task {implTask.Id} is already finished, nothing written.";
                 request.ExtRequestState = ExtStates.ExtReqDone.ToString();
             }
-            else if (!await WriteImplTask(request, implTask))
+            else if (!await WriteImplTask(request, implTask, extReqHandler))
             {
                 return;
             }
@@ -71,9 +66,9 @@ namespace FWO.Middleware.Server
 
         /// <summary>
         /// Writes the implementation task and sets the resulting request state. Returns false if the write is retried
-        /// later; the request is then already stored.
+        /// later, as configured for its management; the request is then already stored.
         /// </summary>
-        private async Task<bool> WriteImplTask(ExternalRequest request, WfImplTask implTask)
+        private async Task<bool> WriteImplTask(ExternalRequest request, WfImplTask implTask, ExternalRequestHandler extReqHandler)
         {
             Log.WriteInfo(kFirewallWriteLogTitle, $"Writing implementation task {implTask.Id} of {RequestInfo(request)}");
             request.Attempts++;
@@ -85,10 +80,11 @@ namespace FWO.Middleware.Server
                 return true;
             }
             Log.WriteWarning(kFirewallWriteLogTitle, $"{RequestInfo(request)}, attempt {request.Attempts}: {request.LastMessage}");
-            if (result.IsRetryable && request.Attempts < kFirewallWriteRetrySettings.MaxAttempts)
+            GlobalDeviceSpecificSettings settings = await extReqHandler.GetRequestSettings(implTask.ManagementId);
+            if (result.IsRetryable && request.Attempts < settings.RequestMaxAttempts)
             {
                 request.ExtRequestState = ExtStates.ExtReqFailed.ToString();
-                request.WaitCycles = request.Attempts * kFirewallWriteRetrySettings.CyclesBetweenAttempts;
+                request.WaitCycles = request.Attempts * settings.RequestCyclesBetweenAttempts;
                 await UpdateRequestCreation(request);
                 return false;
             }

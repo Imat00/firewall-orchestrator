@@ -65,6 +65,41 @@ internal class DeviceSpecificSettingsDataTest
         [nameof(ProvisioningRuleImplementationMode.Automatic), nameof(ProvisioningRuleImplementationMode.Manual)];
 
     [Test]
+    public void RequestSettings_AreNumbersOfferedUpToTheManagementOnly()
+    {
+        DeviceSpecificFieldDefinition timeout = Field(DeviceSpecificSettingKeys.RequestResponseTimeout);
+        DeviceSpecificFieldDefinition cycles = Field(DeviceSpecificSettingKeys.RequestCyclesBetweenAttempts);
+        Assert.Multiple(() =>
+        {
+            Assert.That(timeout.Kind, Is.EqualTo(DeviceSpecificFieldKind.Number));
+            Assert.That(timeout.Section, Is.EqualTo(DeviceSpecificFieldSection.ExternalRequests));
+            Assert.That(timeout.AppliesToLevel(DeviceSpecificScopeType.Management), Is.True);
+            Assert.That(timeout.AppliesToLevel(DeviceSpecificScopeType.Gateway), Is.False);
+            Assert.That(timeout.MinimumNumber, Is.EqualTo(1));
+            Assert.That(Field(DeviceSpecificSettingKeys.RequestMaxAttempts).MinimumNumber, Is.EqualTo(1));
+            Assert.That(cycles.MinimumNumber, Is.Zero);
+            Assert.That(timeout.Read(new GlobalDeviceSpecificSettings()), Is.EqualTo("300"));
+        });
+    }
+
+    [TestCase("0", 0, 0)]
+    [TestCase(" 12 ", 1, 12)]
+    public void ParseNumber_AcceptsWholeNumbersFromTheMinimum(string value, int minimum, int expected)
+    {
+        Assert.That(DeviceSpecificSettingsData.ParseNumber(DeviceSpecificSettingKeys.RequestMaxAttempts, value, minimum), Is.EqualTo(expected));
+    }
+
+    [TestCase("0", 1)]
+    [TestCase("-1", 0)]
+    [TestCase("2.5", 0)]
+    [TestCase("", 0)]
+    [TestCase("ten", 0)]
+    public void ParseNumber_RejectsOtherValues(string value, int minimum)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => DeviceSpecificSettingsData.ParseNumber(DeviceSpecificSettingKeys.RequestMaxAttempts, value, minimum));
+    }
+
+    [Test]
     public void ExternalTicketSystemSettings_AreOfferedUpToTheManagementOnly()
     {
         Assert.Multiple(() =>

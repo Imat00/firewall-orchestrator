@@ -211,3 +211,143 @@ BEGIN
     DROP TABLE tmp_impl_mode_route;
     DROP TABLE tmp_impl_mode_target;
 END $$;
+
+-- External requests take their response timeout and retries from the device specific settings requestResponseTimeout,
+-- requestMaxAttempts and requestCyclesBetweenAttempts instead of the ticket system they are sent to. Each management
+-- keeps the values of the ticket system it uses: the external ticket system selected for it, otherwise the Check Point
+-- system the former setting "Firewall config changes - General" routed it to (its values now apply to the firewall
+-- writes). The values of the system most managements use become global, where they differ from the defaults (300
+-- seconds, 3 attempts, 5 cycles); a management using another system gets the values of that system that differ. The
+-- values of the ticket systems are backed up, which also marks the migration as done.
+DO $$
+DECLARE
+    t_systems text;
+    j_systems jsonb;
+    j_old_routes jsonb;
+    i_global_node bigint;
+    i_device_type_node bigint;
+    i_management_node bigint;
+    i_global_system integer;
+    r_route RECORD;
+    r_value RECORD;
+BEGIN
+    IF EXISTS (SELECT 1 FROM device_specific_config_backup WHERE version = '9.8.7 request settings') THEN
+        RETURN;
+    END IF;
+
+    SELECT config_value INTO t_systems FROM config WHERE config_key = 'extTicketSystems' AND config_user = 0;
+    BEGIN
+        j_systems := COALESCE(NULLIF(btrim(COALESCE(t_systems, '')), ''), '[]')::jsonb;
+    EXCEPTION WHEN invalid_text_representation THEN
+        j_systems := '[]'::jsonb;
+    END;
+    IF jsonb_typeof(j_systems) <> 'array' THEN
+        j_systems := '[]'::jsonb;
+    END IF;
+    SELECT config_values->'fwConfigChangeMgmSettings' INTO j_old_routes
+    FROM device_specific_config_backup WHERE version = '9.8.7 implementation modes';
+    IF jsonb_typeof(j_old_routes) IS DISTINCT FROM 'array' THEN
+        j_old_routes := '[]'::jsonb;
+    END IF;
+
+    INSERT INTO device_specific_config_backup (version, config_values)
+    SELECT '9.8.7 request settings', COALESCE(jsonb_agg(jsonb_build_object('Id', s->'Id', 'Name', s->'Name', 'TypeId', s->'TypeId',
+        'ResponseTimeout', s->'ResponseTimeout', 'MaxAttempts', s->'MaxAttempts', 'CyclesBetweenAttempts', s->'CyclesBetweenAttempts')
+        ORDER BY ord), '[]'::jsonb)
+    FROM jsonb_array_elements(j_systems) WITH ORDINALITY e(s, ord)
+    WHERE jsonb_typeof(s) = 'object';
+
+    DROP TABLE IF EXISTS tmp_request_value;
+    DROP TABLE IF EXISTS tmp_request_route;
+
+    -- the values of each ticket system; a missing value is the default of the ticket system, which equals the setting default
+    CREATE TEMP TABLE tmp_request_value AS
+    SELECT system_id, config_key, value, default_value
+    FROM (
+        SELECT (s->>'Id')::integer AS system_id, k.config_key, k.minimum, k.default_value,
+            CASE WHEN s->>k.property IS NULL THEN k.default_value
+                WHEN (s->>k.property) ~ '^[0-9]{1,9}$' THEN (s->>k.property)::integer END AS value
+        FROM jsonb_array_elements(j_systems) s
+        CROSS JOIN (VALUES ('requestResponseTimeout', 'ResponseTimeout', 1, 300),
+            ('requestMaxAttempts', 'MaxAttempts', 1, 3),
+            ('requestCyclesBetweenAttempts', 'CyclesBetweenAttempts', 0, 5)) k (config_key, property, minimum, default_value)
+        WHERE jsonb_typeof(s) = 'object' AND (s->>'Id') ~ '^[0-9]{1,9}$'
+    ) system_values
+    WHERE value >= minimum;
+
+    -- the ticket system each management uses: the selected external ticket system in effect, otherwise its Check Point system
+    CREATE TEMP TABLE tmp_request_route AS
+    SELECT m.mgm_id, m.mgm_name, m.dev_typ_id, COALESCE(selected.system_id, check_point.system_id) AS system_id
+    FROM management m
+    LEFT JOIN LATERAL (
+        SELECT (effective.value #>> '{}')::integer AS system_id
+        FROM (SELECT COALESCE(
+            (SELECT v.config_value FROM device_specific_config_value v JOIN device_specific_config_node n ON n.id = v.node_id
+                WHERE n.node_type = 'management' AND n.object_key = m.mgm_id::text AND v.config_key = 'rerouteToExternalTicketSystem'),
+            (SELECT v.config_value FROM device_specific_config_value v JOIN device_specific_config_node n ON n.id = v.node_id
+                WHERE n.node_type = 'device_type' AND n.object_key = m.dev_typ_id::text AND v.config_key = 'rerouteToExternalTicketSystem'),
+            (SELECT v.config_value FROM device_specific_config_value v JOIN device_specific_config_node n ON n.id = v.node_id
+                WHERE n.node_type = 'global' AND v.config_key = 'rerouteToExternalTicketSystem')) AS value) effective
+        WHERE (effective.value #>> '{}') ~ '^[0-9]{1,9}$'
+    ) selected ON true
+    LEFT JOIN LATERAL (
+        SELECT min(c.value::integer) AS system_id
+        FROM jsonb_array_elements(j_old_routes) ms
+        CROSS JOIN LATERAL jsonb_each_text(CASE WHEN jsonb_typeof(ms->'SelectedChanges') = 'object'
+            THEN ms->'SelectedChanges' ELSE '{}'::jsonb END) c
+        JOIN jsonb_array_elements(j_systems) s ON jsonb_typeof(s) = 'object' AND s->>'Id' = c.value
+            AND COALESCE(s->>'TypeId', '1') IN ('9', '13')
+        WHERE jsonb_typeof(ms) = 'object' AND ms->>'Id' = m.mgm_id::text AND COALESCE(ms->>'Enabled', 'true') <> 'false'
+            AND c.value ~ '^[0-9]{1,9}$'
+    ) check_point ON true
+    WHERE COALESCE(selected.system_id, check_point.system_id) IN (SELECT system_id FROM tmp_request_value);
+
+    SELECT system_id INTO i_global_system FROM tmp_request_route
+    GROUP BY system_id ORDER BY count(*) DESC, system_id LIMIT 1;
+
+    INSERT INTO device_specific_config_node (node_type, object_key, display_name, sort_order)
+    VALUES ('global', 'global', 'Global', 0)
+    ON CONFLICT (node_type, object_key) DO NOTHING;
+    SELECT id INTO i_global_node FROM device_specific_config_node WHERE node_type = 'global';
+
+    INSERT INTO device_specific_config_value (node_id, config_key, config_value)
+    SELECT i_global_node, config_key, to_jsonb(value)
+    FROM tmp_request_value WHERE system_id = i_global_system AND value <> default_value
+    ON CONFLICT (node_id, config_key) DO NOTHING;
+
+    FOR r_route IN
+        SELECT r.mgm_id, r.mgm_name, r.dev_typ_id, r.system_id, concat_ws(' ', d.dev_typ_name, d.dev_typ_version) AS device_type_name
+        FROM tmp_request_route r
+        JOIN stm_dev_typ d ON d.dev_typ_id = r.dev_typ_id
+        WHERE r.system_id <> i_global_system
+        ORDER BY r.mgm_id
+    LOOP
+        i_management_node := NULL;
+        FOR r_value IN
+            SELECT own.config_key, own.value
+            FROM tmp_request_value own
+            LEFT JOIN tmp_request_value glob ON glob.system_id = i_global_system AND glob.config_key = own.config_key
+            WHERE own.system_id = r_route.system_id AND own.value <> COALESCE(glob.value, own.default_value)
+            ORDER BY own.config_key
+        LOOP
+            IF i_management_node IS NULL THEN
+                INSERT INTO device_specific_config_node (node_type, object_key, parent_id, display_name)
+                VALUES ('device_type', r_route.dev_typ_id::text, i_global_node, r_route.device_type_name)
+                ON CONFLICT (node_type, object_key) DO NOTHING;
+                SELECT id INTO i_device_type_node FROM device_specific_config_node
+                WHERE node_type = 'device_type' AND object_key = r_route.dev_typ_id::text;
+                INSERT INTO device_specific_config_node (node_type, object_key, parent_id, display_name)
+                VALUES ('management', r_route.mgm_id::text, i_device_type_node, r_route.mgm_name)
+                ON CONFLICT (node_type, object_key) DO NOTHING;
+                SELECT id INTO i_management_node FROM device_specific_config_node
+                WHERE node_type = 'management' AND object_key = r_route.mgm_id::text;
+            END IF;
+            INSERT INTO device_specific_config_value (node_id, config_key, config_value)
+            VALUES (i_management_node, r_value.config_key, to_jsonb(r_value.value))
+            ON CONFLICT (node_id, config_key) DO NOTHING;
+        END LOOP;
+    END LOOP;
+
+    DROP TABLE tmp_request_value;
+    DROP TABLE tmp_request_route;
+END $$;

@@ -3647,6 +3647,16 @@ INSERT INTO txt VALUES ('dss_rule_type',       'German', 	'Regeltyp');
 INSERT INTO txt VALUES ('dss_rule_type',       'English', 	'Rule type');
 INSERT INTO txt VALUES ('dss_templates',       'German', 	'Vorlagen');
 INSERT INTO txt VALUES ('dss_templates',       'English', 	'Templates');
+INSERT INTO txt VALUES ('dss_request_section', 'German', 	'Externe Anfragen');
+INSERT INTO txt VALUES ('dss_request_section', 'English', 	'External requests');
+INSERT INTO txt VALUES ('dss_request_section_intro', 'German', 	'Antwortzeit und Wiederholungen der externen Anfragen eines Managements, sowohl an Tufin SecureChange als auch beim Schreiben auf die Firewall.');
+INSERT INTO txt VALUES ('dss_request_section_intro', 'English', 	'Response timeout and retries of the external requests of a management, both to Tufin SecureChange and when writing to the firewall.');
+INSERT INTO txt VALUES ('dss_request_response_timeout', 'German', 	'Antwortzeit (Sekunden)');
+INSERT INTO txt VALUES ('dss_request_response_timeout', 'English', 	'Response timeout (seconds)');
+INSERT INTO txt VALUES ('dss_request_max_attempts', 'German', 	'Maximale Versuche');
+INSERT INTO txt VALUES ('dss_request_max_attempts', 'English', 	'Maximum attempts');
+INSERT INTO txt VALUES ('dss_request_cycles_between_attempts', 'German', 	'Zyklen zwischen Versuchen');
+INSERT INTO txt VALUES ('dss_request_cycles_between_attempts', 'English', 	'Cycles between attempts');
 INSERT INTO txt VALUES ('dss_fw_write_section', 'German', 	'Schreiben auf Firewalls');
 INSERT INTO txt VALUES ('dss_fw_write_section', 'English', 	'Firewall write');
 INSERT INTO txt VALUES ('dss_fw_write_section_intro', 'German', 	'Endpunkte und Vorlagen, mit denen Implementierungs-Auftr&auml;ge direkt auf die Firewall geschrieben werden. Ein leerer Wert verwendet die f&uuml;r den Ger&auml;tetyp mitgelieferte Vorgabe.');
@@ -7035,6 +7045,10 @@ INSERT INTO txt VALUES ('H5199w', 'German',  'Hinweise oben auf der Seite: Sie w
 INSERT INTO txt VALUES ('H5199w', 'English', 'Hints on top of the page: they are computed from the effective settings of all levels; a level is only named where the setting arises, not on the levels below that inherit it. Yellow hints show settings with which tasks are implemented by nobody or which have no effect: implementation mode external ticket system without a selected system, a selected system without this mode, a gateway differing from its management in the external ticket system, and sub-managements whose object creation setting differs from the one of their super-management (sub-managements set to ignore excepted).');
 INSERT INTO txt VALUES ('H5199x', 'German',  'SHA-1-SSH-Schl&uuml;sselaustausch erlauben: ob der Importer beim SSH-Verbindungsaufbau zus&auml;tzlich den Schl&uuml;sselaustausch diffie-hellman-group14-sha1 anbietet, den aktuelle OpenSSH-Versionen abschalten (Cisco ASA). Nur f&uuml;r Ger&auml;te einschalten, die nichts Besseres anbieten, und diese besser aktualisieren. Standard: Nein. Global, Ger&auml;tetyp und Manager.');
 INSERT INTO txt VALUES ('H5199x', 'English', 'Allow SHA-1 SSH key exchange: whether the importer also offers the key exchange diffie-hellman-group14-sha1, which current OpenSSH versions disable, when connecting via SSH (Cisco ASA). Only switch it on for devices that offer nothing better, and better update them. Default: No. Global, device type and manager.');
+INSERT INTO txt VALUES ('H5199y', 'German',  'Antwortzeit (Sekunden): wie lange ein Aufruf an Tufin SecureChange oder an die Firewall dauern darf, bevor er als nicht erreichbar abbricht. Gilt bis zur Management-Ebene, Standard 300.');
+INSERT INTO txt VALUES ('H5199y', 'English', 'Response timeout (seconds): how long a call to Tufin SecureChange or to the firewall may take before it fails as unreachable. Applies down to the management, default 300.');
+INSERT INTO txt VALUES ('H5199z', 'German',  'Maximale Versuche und Zyklen zwischen Versuchen: Scheitert eine externe Anfrage an einem Fehler, der vor&uuml;bergehen kann (z.B. keine Verbindung), wird sie erneut gesendet, nach so vielen Zyklen des Jobs f&uuml;r externe Anfragen wie die bisherigen Versuche mal die Zyklen zwischen Versuchen. Ist die maximale Zahl der Versuche erreicht, wird die Anfrage abgelehnt. Gilt bis zur Management-Ebene, Standard 3 Versuche und 5 Zyklen.');
+INSERT INTO txt VALUES ('H5199z', 'English', 'Maximum attempts and cycles between attempts: if an external request fails with an error that may pass (e.g. no connection), it is sent again after as many cycles of the external request job as the attempts so far times the cycles between attempts. Once the maximum number of attempts is reached, the request is rejected. Applies down to the management, default 3 attempts and 5 cycles.');
 INSERT INTO txt VALUES ('H5201', 'German',  'Admins k&ouml;nnen mehrere unterschiedliche Ldap-Verbindungen einrichten und verwalten. Sie k&ouml;nnen alle zur Nutzerauthentifizierung genutzt werden.<br>
     Das interne Ldap (Bestandteil der Installation) wird mindestens f&uuml;r die Rollenzuordnung ben&ouml;tigt, kann aber auch f&uuml;r Nutzerauthentifizierung und Nutzergruppenverwaltung genutzt werden.<br>
     Die Ldap-Verbindungen k&ouml;nnen hinzugef&uuml;gt, ge&auml;ndert oder gel&ouml;scht werden.

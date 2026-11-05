@@ -64,6 +64,7 @@ else
                     {
                         @RenderField(state, form)
                     }
+                    @RenderSection(form, DeviceSpecificFieldSection.ExternalRequests, "dss_request_section", "dss_request_section_intro")
                     @RenderSection(form, DeviceSpecificFieldSection.FirewallWrite, "dss_fw_write_section", "dss_fw_write_section_intro")
                     @RenderSection(form, DeviceSpecificFieldSection.SecureChange, "dss_sc_template_section", "dss_sc_template_section_intro")
                 </form>
@@ -602,6 +603,18 @@ else
 
             case DeviceSpecificFieldKind.StringList:
                 builder.AddContent(0, RenderStringList(value, disabled, onChange));
+                break;
+
+            case DeviceSpecificFieldKind.Number:
+                builder.OpenElement(0, "input");
+                builder.AddAttribute(1, "type", "number");
+                builder.AddAttribute(2, "class", "form-control form-control-sm w-auto");
+                builder.AddAttribute(3, "min", field.MinimumNumber);
+                builder.AddAttribute(4, "step", 1);
+                builder.AddAttribute(5, "value", value);
+                builder.AddAttribute(6, "onchange", changeCallback);
+                builder.AddAttribute(7, "disabled", disabled);
+                builder.CloseElement();
                 break;
 
             default:

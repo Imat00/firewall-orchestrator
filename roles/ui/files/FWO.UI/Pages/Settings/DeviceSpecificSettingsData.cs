@@ -18,13 +18,15 @@ namespace FWO.Ui.Pages.Settings
         ExtTicketSystem,
         FirewallEndpoint,
         FirewallTemplate,
-        SecureChangeTemplate
+        SecureChangeTemplate,
+        Number
     }
 
     /// <summary>Section of the settings page a field is shown in.</summary>
     public enum DeviceSpecificFieldSection
     {
         General,
+        ExternalRequests,
         FirewallWrite,
         SecureChange
     }
@@ -69,6 +71,9 @@ namespace FWO.Ui.Pages.Settings
         public bool FirewallWriteOnly { get; init; } = false;
 
         public DeviceSpecificFieldKind Kind { get; init; } = DeviceSpecificFieldKind.SingleSelect;
+
+        /// <summary>Smallest value of a number field.</summary>
+        public int MinimumNumber { get; init; } = 0;
         public List<DeviceSpecificFieldOption> Options { get; init; } = [];
 
         /// <summary>Lowest (most general) scope at which this field is offered.</summary>
@@ -190,6 +195,9 @@ namespace FWO.Ui.Pages.Settings
             { "dss_modelling_dyn_ip_labels_visible_as_groups", "H5199k" },
             { "dss_importer_host_name", "H5199l" },
             { "dss_ssh_legacy_key_exchange", "H5199x" },
+            { "dss_request_response_timeout", "H5199y" },
+            { "dss_request_max_attempts", "H5199z" },
+            { "dss_request_cycles_between_attempts", "H5199z" },
             { "dss_logging", "H5190" },
             { "dss_service_object_creation", "H5191" },
             { "dss_address_object_creation", "H5192" },
@@ -352,6 +360,7 @@ namespace FWO.Ui.Pages.Settings
                 maxLevel: DeviceSpecificScopeType.Management),
             TextField(DeviceSpecificSettingKeys.Templates, "dss_templates", s => s.Templates, DeviceSpecificFieldKind.TemplateText,
                 minLevel: DeviceSpecificScopeType.DeviceType, maxLevel: DeviceSpecificScopeType.DeviceType),
+            .. RequestFields(),
             .. FirewallWriteFields(),
             .. SecureChangeTemplateFields(),
         ];
@@ -376,6 +385,17 @@ namespace FWO.Ui.Pages.Settings
             }
             return textKey.ToString();
         }
+
+        /// <summary>
+        /// Fields of the external requests of a management: response timeout and retries, for Tufin SecureChange and
+        /// firewall writes alike. Requests run per management, so they are set up to the management.
+        /// </summary>
+        private static List<DeviceSpecificFieldDefinition> RequestFields() =>
+        [
+            NumberField(DeviceSpecificSettingKeys.RequestResponseTimeout, "dss_request_response_timeout", s => s.RequestResponseTimeout, 1),
+            NumberField(DeviceSpecificSettingKeys.RequestMaxAttempts, "dss_request_max_attempts", s => s.RequestMaxAttempts, 1),
+            NumberField(DeviceSpecificSettingKeys.RequestCyclesBetweenAttempts, "dss_request_cycles_between_attempts", s => s.RequestCyclesBetweenAttempts, 0)
+        ];
 
         /// <summary>
         /// Fields of the firewall write library: certificate checks, policy installation and object deletion, then endpoint and body
@@ -622,6 +642,35 @@ namespace FWO.Ui.Pages.Settings
                 Read = s => get(s).ToString(),
                 SetOverride = (changes, value) => changes.Set(key, bool.Parse(value))
             };
+
+        /// <summary>A whole number of at least the given minimum, set from Global down to the management.</summary>
+        private static DeviceSpecificFieldDefinition NumberField(
+            DeviceSpecificSettingKey<int> key,
+            string textKey,
+            Func<GlobalDeviceSpecificSettings, int> get,
+            int minimum) => new()
+            {
+                Key = key,
+                LabelTextKey = textKey,
+                HelpTextKey = HelpKey(textKey),
+                Kind = DeviceSpecificFieldKind.Number,
+                Section = DeviceSpecificFieldSection.ExternalRequests,
+                MinimumNumber = minimum,
+                MaxLevel = DeviceSpecificScopeType.Management,
+                Read = s => get(s).ToString(CultureInfo.InvariantCulture),
+                SetOverride = (changes, value) => changes.Set(key, ParseNumber(key, value, minimum))
+            };
+
+        /// <summary>Parses the editor value of a number field.</summary>
+        /// <exception cref="ArgumentOutOfRangeException">The value is no whole number of at least the minimum.</exception>
+        public static int ParseNumber(DeviceSpecificSettingKey key, string value, int minimum)
+        {
+            if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number) || number < minimum)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"Setting '{key.DatabaseKey}' requires a whole number of at least {minimum}.");
+            }
+            return number;
+        }
 
         /// <summary>An empty selection means undefined, which is never stored, so the level inherits instead.</summary>
         private static void SetExtTicketSystemOverride(DeviceSpecificSettingsChangeSet changes, string value)

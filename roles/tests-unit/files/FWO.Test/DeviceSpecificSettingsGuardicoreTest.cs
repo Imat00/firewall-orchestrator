@@ -28,6 +28,7 @@ internal class DeviceSpecificSettingsGuardicoreTest
         "serviceObjectCreation", "addressObjectCreation", "timeObjectCreation", "labelCreation",
         "ruleType", "commonServiceSeparation", "ruleZoneFromOverride", "ruleZoneToOverride",
         "implementationMode", "implementationModeForRules", "rerouteToExternalTicketSystem",
+        "requestResponseTimeout", "requestMaxAttempts", "requestCyclesBetweenAttempts",
         "securityProfiles", "ownerIdCustomFieldName", "changeIdCustomFieldName", "importerHostName", "sshLegacyKeyExchange",
         "autoPlanImplementation", "autoPlanImplementationForRules", "modellingCreateAppZones",
         "modellingImplementNetworkAreaObjects", "modellingDynIpLabelsVisibleAsGroups",
@@ -39,7 +40,8 @@ internal class DeviceSpecificSettingsGuardicoreTest
     [
         "ownerIdCustomFieldName", "changeIdCustomFieldName", "importerHostName", "sshLegacyKeyExchange",
         "modellingCreateAppZones", "modellingImplementNetworkAreaObjects", "modellingDynIpLabelsVisibleAsGroups",
-        "modellingConnectionIdField", "modellingConnectionIdTemplate"
+        "modellingConnectionIdField", "modellingConnectionIdTemplate",
+        "requestResponseTimeout", "requestMaxAttempts", "requestCyclesBetweenAttempts"
     ];
     private static readonly HashSet<string> kManagerUiKeys =
     [
@@ -176,6 +178,7 @@ internal class DeviceSpecificSettingsGuardicoreTest
             DeviceSpecificFieldKind.ExtTicketSystem => "7",
             DeviceSpecificFieldKind.StringList => "profile1,profile2",
             DeviceSpecificFieldKind.FirewallEndpoint => "POST custom-endpoint",
+            DeviceSpecificFieldKind.Number => "42",
             _ => "custom value"
         };
         DeviceSpecificSettingsChangeSet changes = new(new DeviceSpecificSettingsScope

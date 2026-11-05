@@ -33,6 +33,9 @@ remains effective and is shown as a dormant override that can be cleared there.
 | implementationMode | enum | Automatic | All | All |
 | implementationModeForRules | enum | Automatic | All | All |
 | rerouteToExternalTicketSystem | integer | undefined | All | All |
+| requestResponseTimeout | integer (seconds) | 300 | Global, device type, manager | Global to manager |
+| requestMaxAttempts | integer | 3 | Global, device type, manager | Global to manager |
+| requestCyclesBetweenAttempts | integer | 5 | Global, device type, manager | Global to manager |
 | securityProfiles | string array | [] | Device type, manager, gateway | Device type, manager |
 | ownerIdCustomFieldName | string | OwnerId | Global, device type, manager | Global to manager |
 | changeIdCustomFieldName | string | ChangeId | Global, device type, manager | Global to manager |
@@ -180,3 +183,20 @@ SELECT config_values FROM public.device_specific_config_backup WHERE version = '
 
 The regression probe `roles/tests-integration/files/database/test-upgrade-9.8.7-impl-mode.sql` runs like the 9.7.4
 probe, with the upgrade file inserted at its two `-- @run-upgrade-9.8.7` markers.
+
+## Upgrade to 9.8.7: request settings
+
+`requestResponseTimeout`, `requestMaxAttempts` and `requestCyclesBetweenAttempts` set the response timeout and retries of
+the external requests of a management, for Tufin SecureChange and firewall writes alike; before, they were part of each
+ticket system. The upgrade gives each management the values of the ticket system it uses: the external ticket system
+selected for it, otherwise the Check Point system the former setting "Firewall config changes - General" routed it to.
+The values of the system most managements use become global where they differ from the defaults; a management using
+another system gets its differing values. The values of the ticket systems are backed up, which also marks the migration
+as done:
+
+```sql
+SELECT config_values FROM public.device_specific_config_backup WHERE version = '9.8.7 request settings';
+```
+
+The regression probe `roles/tests-integration/files/database/test-upgrade-9.8.7-request-settings.sql` runs like the
+other 9.8.7 probe.

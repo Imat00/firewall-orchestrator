@@ -44,7 +44,7 @@ namespace FWO.ExternalSystems.FirewallWrite
         private string? sessionId;
 
         /// <summary>Creates a client for the web_api of a Check Point management.</summary>
-        public CheckPointWriteClient(Management management, bool checkCertificates)
+        public CheckPointWriteClient(Management management, bool checkCertificates, int? responseTimeout = null)
             : base(HostUrl(management, "/web_api/"), management, checkCertificates, responseTimeout)
         { }
 

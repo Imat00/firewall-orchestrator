@@ -1,5 +1,6 @@
 using FWO.Api.Client.Queries;
 using FWO.Data;
+using FWO.Data.DeviceSpecificSettings;
 using FWO.Data.Workflow;
 using FWO.Logging;
 using FWO.Services.Workflow;
@@ -130,13 +131,15 @@ namespace FWO.Middleware.Server
 
         /// <summary>
         /// Hands a request task to the external ticket system selected for its management in the device specific
-        /// settings, together with the request tasks it is bundled with.
+        /// settings, together with the request tasks it is bundled with. The response timeout and retries of the request
+        /// are those of the management.
         /// </summary>
         private async Task CreateExternalTicketSystemRequest(WfTicket ticket, ProvisioningWorkList workList, ProvisioningWorkItem start, ExternalRequest? previousRequest)
         {
             List<ExternalTicketSystem> extTicketSystems = JsonSerializer.Deserialize<List<ExternalTicketSystem>>(UserConfig.ExtTicketSystems) ?? [];
             actSystem = extTicketSystems.FirstOrDefault(system => system.Id == start.ExternalTicketSystemId)
                 ?? throw new InvalidOperationException($"No matching external ticket system found for id {start.ExternalTicketSystemId}.");
+            await ApplyRequestSettings(start.ReqTask.ManagementId);
             await ApplySecureChangeTemplates(ticket, start.ReqTask);
             (List<WfReqTask> contentTasks, List<WfReqTask> handledTasks) = BundleRequestTasks(workList, start);
             await CreateExtRequest(ticket, contentTasks, handledTasks, GetWaitCycles(start.ReqTask.TaskType, previousRequest, actSystem));
@@ -183,6 +186,25 @@ namespace FWO.Middleware.Server
             }
             contentTasks.Add(currentTask);
             return (contentTasks, handledTasks);
+        }
+
+        /// <summary>
+        /// Device specific settings in effect for a management, e.g. the response timeout and retries of its external
+        /// requests.
+        /// </summary>
+        /// <param name="managementId">Management of the request task or implementation task.</param>
+        public async Task<GlobalDeviceSpecificSettings> GetRequestSettings(int? managementId)
+        {
+            return await wfHandler.GetManagementSettings(managementId);
+        }
+
+        /// <summary>Gives the copy of the ticket system stored with the request the timeout and retries of the management.</summary>
+        private async Task ApplyRequestSettings(int? managementId)
+        {
+            GlobalDeviceSpecificSettings settings = await GetRequestSettings(managementId);
+            actSystem.ResponseTimeout = settings.RequestResponseTimeout;
+            actSystem.MaxAttempts = settings.RequestMaxAttempts;
+            actSystem.CyclesBetweenAttempts = settings.RequestCyclesBetweenAttempts;
         }
 
         private static IEnumerable<ProvisioningWorkItem> OpenEntriesAfter(ProvisioningWorkList workList, ProvisioningWorkItem start)
