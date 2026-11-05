@@ -29,7 +29,7 @@ internal sealed class UiSettingsDeviceSpecificTest
     public async Task Admin_CanSelectExternalTicketSystem()
     {
         InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
-        await using BunitContext context = CreateContext(Roles.Admin, api, "[]");
+        await using BunitContext context = CreateContext(Roles.Admin, api);
         IRenderedComponent<CascadingAuthenticationState> page = RenderPage(context);
         string key = DeviceSpecificSettingKeys.RerouteToExternalTicketSystem.DatabaseKey;
         page.Find($"#dss-override-{key}").Change(true);
@@ -312,13 +312,12 @@ internal sealed class UiSettingsDeviceSpecificTest
         return api;
     }
 
-    private static BunitContext CreateContext(string role, InMemoryDeviceSpecificSettingsApiConnection? api = null, string extTicketSystems = "")
+    private static BunitContext CreateContext(string role, InMemoryDeviceSpecificSettingsApiConnection? api = null)
     {
         api ??= CreateApi();
 
         SimulatedUserConfig userConfig = new();
         userConfig.User.Roles = new List<string> { role };
-        userConfig.ExtTicketSystems = extTicketSystems;
 
         BunitContext context = new();
         context.JSInterop.Mode = JSRuntimeMode.Loose;

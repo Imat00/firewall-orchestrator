@@ -84,7 +84,6 @@ namespace FWO.Test
             "settings/passwordpolicy",
             "settings/customtexts",
             "settings/devicespecificsettings",
-            "settings/exttickettemplates",
             "settings/password",
             "settings/personal"
         };

@@ -80,8 +80,8 @@ BEGIN
     END IF;
     IF (SELECT jsonb_array_length(config_values) FROM device_specific_config_backup WHERE version = '9.8.7 request settings')
             IS DISTINCT FROM (SELECT jsonb_array_length(systems) FROM original_systems)
-        OR NOT EXISTS (SELECT 1 FROM config WHERE config_key = 'extTicketSystems') THEN
-        RAISE EXCEPTION 'The ticket systems must be backed up and kept';
+        OR EXISTS (SELECT 1 FROM config WHERE config_key = 'extTicketSystems') THEN
+        RAISE EXCEPTION 'The retry values of the ticket systems must be backed up, the list removed';
     END IF;
 END $$;
 SELECT pg_temp.assert_migration();

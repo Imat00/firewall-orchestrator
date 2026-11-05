@@ -602,9 +602,6 @@ namespace FWO.Config.Api.Data
         [JsonProperty("externalRequestWaitCycles"), JsonPropertyName("externalRequestWaitCycles")]
         public int ExternalRequestWaitCycles { get; set; } = 0;
 
-        [JsonProperty("extTicketSystems"), JsonPropertyName("extTicketSystems")]
-        public string ExtTicketSystems { get; set; } = "";
-
         /// <summary>
         /// Whether TLS certificates of all external ticket systems are checked.
         /// </summary>

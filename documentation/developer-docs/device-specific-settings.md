@@ -225,3 +225,14 @@ SELECT config_values FROM public.device_specific_config_backup WHERE version = '
 
 The regression probe `roles/tests-integration/files/database/test-upgrade-9.8.7-sc-connection.sql` runs like the
 other 9.8.7 probes.
+
+The ticket system list (`extTicketSystems`) and its settings page are removed by the same upgrade; the list is backed
+up as `'9.8.7 extTicketSystems'` without authorization values. Request job timing and the certificate check of the
+ticket systems are set under Workflow - Customizing.
+
+### Adding an external ticket system
+
+Only Tufin SecureChange is supported. Another system needs a value in `ExternalTicketSystemKind`, its own device
+specific settings group (connection, templates), an `ExternalTicket` implementation and a branch in
+`ExternalTicketFactory`. Type IDs for AlgoSec (3) and ServiceNow (4) were reserved in `BuiltInExternalTicketSystemTypes`
+(`FWO.Data/ExternalTicketSystem.cs`) until 9.8.7 but never implemented (`git log -S AlgoSecId`).

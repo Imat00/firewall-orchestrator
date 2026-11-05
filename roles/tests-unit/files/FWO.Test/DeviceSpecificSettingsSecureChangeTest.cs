@@ -17,7 +17,7 @@ namespace FWO.Test
             [DeviceSpecificSettingKeys.ScUrl, DeviceSpecificSettingKeys.ScCredential, DeviceSpecificSettingKeys.ScLookupRequesterId];
         private static readonly List<string> kSectionTextKeys =
             ["dss_sc_template_section", "dss_sc_template_section_intro", "dss_sc_template_uses_default", "dss_sc_template_no_default",
-             "ext_ticket_sc_templates_moved", "H5199v", "H5599a"];
+             "H5199v", "dss_sc_url", "dss_sc_credential", "dss_sc_lookup_requester_id", "H5198a", "H5198b", "H5198c"];
         private static readonly List<Management> kManagements =
         [
             new()

@@ -93,7 +93,6 @@ namespace FWO.Test
         {
             SimulatedUserConfig userConfig = new()
             {
-                ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(kTicketSystems),
                 ReqPriorities = ExtTicketHandlerTest.reqPrios,
                 ModNamingConvention = ExtTicketHandlerTest.namingConvention
             };

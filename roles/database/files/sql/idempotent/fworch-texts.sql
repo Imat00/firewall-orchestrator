@@ -1715,16 +1715,6 @@ INSERT INTO txt VALUES ('save_service', 	    'German',	'Dienst speichern');
 INSERT INTO txt VALUES ('save_service', 	    'English',	'Save Service');
 INSERT INTO txt VALUES ('delete_service', 	    'German',	'Dienst l&ouml;schen');
 INSERT INTO txt VALUES ('delete_service', 	    'English',	'Delete Service');
-INSERT INTO txt VALUES ('ext_ticket_system_type','German',	'Typ des externen Ticketing Systems');
-INSERT INTO txt VALUES ('ext_ticket_system_type','English',	'Type of external ticketing system');
-INSERT INTO txt VALUES ('ext_ticket_url', 	    'German',	'URL des externen Ticketing Systems');
-INSERT INTO txt VALUES ('ext_ticket_url', 	    'English',	'URL of external ticketing system');
-INSERT INTO txt VALUES ('response_timeout', 	'German',	'Antwort Timeout (Sekunden)');
-INSERT INTO txt VALUES ('response_timeout', 	'English',	'Response Timeout (Seconds)');
-INSERT INTO txt VALUES ('max_attempts', 	    'German',	'Max Versuche');
-INSERT INTO txt VALUES ('max_attempts', 	    'English',	'Max Attempts');
-INSERT INTO txt VALUES ('cycles_between', 	    'German',	'Zyklen zwischen Versuchen');
-INSERT INTO txt VALUES ('cycles_between', 	    'English',	'Cycles between attempts');
 INSERT INTO txt VALUES ('ext_ticket_template', 	'German',	'Template Ticket-Text');
 INSERT INTO txt VALUES ('ext_ticket_template', 	'English',	'Template ticket text');
 INSERT INTO txt VALUES ('ext_task_template', 	'German',	'Template Aufgabentext');
@@ -1743,11 +1733,6 @@ INSERT INTO txt VALUES ('ext_icmp_template',    'German',	'Template ICMP');
 INSERT INTO txt VALUES ('ext_icmp_template',    'English',	'Template ICMP');
 INSERT INTO txt VALUES ('ext_ip_protocol_template','German','Template Ip-Protokoll');
 INSERT INTO txt VALUES ('ext_ip_protocol_template','English','Template Ip Protocol');
-INSERT INTO txt VALUES ('ext_ticket_template_ph_mgm', 'German',  'Beispiel: @@TASKS@@');
-INSERT INTO txt VALUES ('ext_ticket_template_ph_mgm', 'English', 'Example: @@TASKS@@');
-INSERT INTO txt VALUES ('ext_task_template_ph_mgm', 'German',  'Beispiel: {"name":"@@GROUPNAME@@","members":@@MEMBERS@@,"comments":"@@REASON@@"}');
-INSERT INTO txt VALUES ('ext_task_template_ph_mgm', 'English', 'Example: {"name":"@@GROUPNAME@@","members":@@MEMBERS@@,"comments":"@@REASON@@"}');
-INSERT INTO txt VALUES ('ext_ticket_template_ph','German',	'Ticket Template im JSON-Format, Bspw. f&uuml;r Tufin Secure Change:
 {
     "ticket": {
         "subject": "@@TICKET_SUBJECT@@",
@@ -1776,7 +1761,6 @@ INSERT INTO txt VALUES ('ext_ticket_template_ph','German',	'Ticket Template im J
     }
 }
 ');
-INSERT INTO txt VALUES ('ext_ticket_template_ph','English',	'Ticket Template in JSON format, e. g.  for Tufin Secure Change:
 {
     "ticket": {
         "subject": "@@TICKET_SUBJECT@@",
@@ -1804,7 +1788,6 @@ INSERT INTO txt VALUES ('ext_ticket_template_ph','English',	'Ticket Template in 
         }
     }
 }');
-INSERT INTO txt VALUES ('ext_task_template_ph',  'German',	'Template Text je Verbindung, f&uuml;r Tufin Secure Change etwa:
     {
         "@xsi.type": "multi_access_request",
         "name": "Gew&uuml;nschter Zugang",
@@ -1866,7 +1849,6 @@ INSERT INTO txt VALUES ('ext_task_template_ph',  'German',	'Template Text je Ver
         "name": "Expertenmodus: Exakt wie beantragt implementieren (Designervorschlag ignorieren)",
         "selection": "Nein"
     }');
-INSERT INTO txt VALUES ('ext_task_template_ph', 'English',	'Template text for each connection; e.g. for Tufin Secure Change:
     {
         "@xsi.type": "multi_access_request",
         "name": "Required access",
@@ -2019,8 +2001,6 @@ INSERT INTO txt VALUES ('all_implemented',      'German', 	'Alles implementiert'
 INSERT INTO txt VALUES ('all_implemented',      'English', 	'All implemented');
 INSERT INTO txt VALUES ('rejections',           'German', 	'Ablehnungen');
 INSERT INTO txt VALUES ('rejections',           'English', 	'Rejections');
-INSERT INTO txt VALUES ('ext_ticket_lookup_id', 'German', 	'Externe Nutzer Id ermitteln');
-INSERT INTO txt VALUES ('ext_ticket_lookup_id', 'English', 	'Lookup external user Id');
 INSERT INTO txt VALUES ('ext_ticket_number',    'German', 	'Externe Ticket-Nummer');
 INSERT INTO txt VALUES ('ext_ticket_number',    'English', 	'External ticket number');
 INSERT INTO txt VALUES ('changed_by',		    'German', 	'Ge&auml;ndert von');
@@ -3801,20 +3781,6 @@ INSERT INTO txt VALUES ('dss_opt_supermanager',                     'German', 	'
 INSERT INTO txt VALUES ('dss_opt_supermanager',                     'English', 	'Supermanager');
 INSERT INTO txt VALUES ('dss_opt_submanager',                       'German', 	'Submanager');
 INSERT INTO txt VALUES ('dss_opt_submanager',                       'English', 	'Submanager');
-INSERT INTO txt VALUES ('ext_ticket_templates', 'German', 	'Externe Ticket-Vorlagen');
-INSERT INTO txt VALUES ('ext_ticket_templates', 'English', 	'External ticket templates');
-INSERT INTO txt VALUES ('ext_ticket_sc_templates_moved', 'German', 	'Die Vorlagen f&uuml;r Tufin SecureChange werden in den ger&auml;tespezifischen Einstellungen gepflegt, wo sie je Ger&auml;tetyp und Management angepasst werden k&ouml;nnen:');
-INSERT INTO txt VALUES ('ext_ticket_sc_templates_moved', 'English', 	'The Tufin SecureChange templates are maintained in the device specific settings, where they can be adapted per device type and management:');
-INSERT INTO txt VALUES ('add_ext_ticket_system', 'German',  'Externes Ticket-System anlegen');
-INSERT INTO txt VALUES ('add_ext_ticket_system', 'English', 'Add external ticket system');
-INSERT INTO txt VALUES ('new_ext_ticket_system', 'German',  'Externes Ticket-System anlegen');
-INSERT INTO txt VALUES ('new_ext_ticket_system', 'English', 'Create external ticket system');
-INSERT INTO txt VALUES ('edit_ext_ticket_system', 'German',  'Externes Ticket-System bearbeiten');
-INSERT INTO txt VALUES ('edit_ext_ticket_system', 'English', 'Edit external ticket system');
-INSERT INTO txt VALUES ('delete_ext_ticket_system', 'German',  'Externes Ticket-System l&ouml;schen');
-INSERT INTO txt VALUES ('delete_ext_ticket_system', 'English', 'Delete external ticket system');
-INSERT INTO txt VALUES ('delete_ext_ticket_system_confirm', 'German',  'Soll dieses externe Ticket-System gel&ouml;scht werden:');
-INSERT INTO txt VALUES ('delete_ext_ticket_system_confirm', 'English', 'Delete this external ticket system:');
 INSERT INTO txt VALUES ('ext_ticket_settings',  'German', 	'Einstellungen externes Ticket-System');
 INSERT INTO txt VALUES ('ext_ticket_settings',  'English', 	'Settings external ticket tool');
 INSERT INTO txt VALUES ('modIconify',           'German', 	'Nutzung von Piktogrammen');
@@ -7050,15 +7016,15 @@ INSERT INTO txt VALUES ('H5199v', 'German',  'SecureChange-Ticket-Vorlagen: Vorl
     Ein Ticket verwendet die Vorlagen des Managements seiner Antrags-Auftr&auml;ge. Auftr&auml;ge verschiedener Managements werden nur dann in einem Ticket geb&uuml;ndelt, wenn ihre Vorlagen gleich sind.
     Ein leerer Wert verwendet die mitgelieferte Vorlage; mitgeliefert werden nur Ticket- und Aufgabentext von AccessRequest, alle anderen Vorlagenteile bleiben dann leer. Ist der Ticket- oder Aufgabentext eines Aufgabentyps leer, wird ein Antrags-Auftrag dieses Typs mit einem Konfigurationsfehler abgelehnt.
     Die Vorlagen werden beim Erzeugen des externen Requests ermittelt und mit ihm gespeichert: ge&auml;nderte Vorlagen gelten f&uuml;r neue Requests, nicht f&uuml;r wartende oder wiederholte.
-    Das Ticketsystem selbst (URL, Login-Daten, Zeitlimits) wird weiterhin unter <a href="/help/settings/exttickettemplates">Externe Ticket-Vorlagen</a> gepflegt.');
+    Die Verbindung (URL, Login-Daten, Antragsteller-ID) steht oben in diesem Abschnitt, Antwortzeit und Wiederholungen im Abschnitt Externe Anfragen.');
 INSERT INTO txt VALUES ('H5199v', 'English', 'SecureChange ticket templates: templates per Tufin SecureChange task type (AccessRequest for access, rule modification and rule deletion, NetworkObjectModify for network groups) and template part. Global, device type and manager.
     SecureChange only modifies groups of network objects: request tasks for service groups are refused with a configuration error.
     A ticket uses the templates of the management of its request tasks. Tasks of different managements are only bundled into one ticket if their templates are equal.
     An empty value uses the shipped template; only the ticket and task text of AccessRequest are shipped, all other template parts then stay empty. If the ticket or task text of a task type is empty, a request task of that type is refused with a configuration error.
     The templates are determined when the external request is created and stored with it: changed templates apply to new requests, not to waiting or retried ones.
-    The ticket system itself (URL, credentials, timeouts) is still maintained under <a href="/help/settings/exttickettemplates">External ticket templates</a>.');
-INSERT INTO txt VALUES ('H5199w', 'German',  'Hinweise oben auf der Seite: Sie werden aus den wirksamen Einstellungen aller Ebenen berechnet; eine Ebene wird nur dort genannt, wo die Einstellung entsteht, nicht auf den Ebenen darunter, die sie erben. Gelbe Hinweise zeigen Einstellungen, mit denen Auftr&auml;ge von niemandem umgesetzt werden oder die keine Wirkung haben: Umsetzungsmodus externes Ticketsystem ohne gew&auml;hltes System, ein gew&auml;hltes System ohne diesen Modus, ein Gateway, das beim externen Ticketsystem von seinem Management abweicht, und Sub-Managements, deren Objektanlage-Einstellung von der ihres Super-Managements abweicht (Sub-Managements auf Ignorieren ausgenommen).');
-INSERT INTO txt VALUES ('H5199w', 'English', 'Hints on top of the page: they are computed from the effective settings of all levels; a level is only named where the setting arises, not on the levels below that inherit it. Yellow hints show settings with which tasks are implemented by nobody or which have no effect: implementation mode external ticket system without a selected system, a selected system without this mode, a gateway differing from its management in the external ticket system, and sub-managements whose object creation setting differs from the one of their super-management (sub-managements set to ignore excepted).');
+    The connection (URL, credentials, requester ID) is set on top of this section, response timeout and retries in the section External requests.');
+INSERT INTO txt VALUES ('H5199w', 'German',  'Hinweise oben auf der Seite: Sie werden aus den wirksamen Einstellungen aller Ebenen berechnet; eine Ebene wird nur dort genannt, wo die Einstellung entsteht, nicht auf den Ebenen darunter, die sie erben. Gelbe Hinweise zeigen Einstellungen, mit denen Auftr&auml;ge von niemandem umgesetzt werden oder die keine Wirkung haben: Umsetzungsmodus externes Ticketsystem ohne gew&auml;hltes System, ein gew&auml;hltes System ohne diesen Modus, Tufin SecureChange ohne URL oder Login-Daten, ein Gateway, das beim externen Ticketsystem von seinem Management abweicht, und Sub-Managements, deren Objektanlage-Einstellung von der ihres Super-Managements abweicht (Sub-Managements auf Ignorieren ausgenommen).');
+INSERT INTO txt VALUES ('H5199w', 'English', 'Hints on top of the page: they are computed from the effective settings of all levels; a level is only named where the setting arises, not on the levels below that inherit it. Yellow hints show settings with which tasks are implemented by nobody or which have no effect: implementation mode external ticket system without a selected system, a selected system without this mode, Tufin SecureChange without URL or credentials, a gateway differing from its management in the external ticket system, and sub-managements whose object creation setting differs from the one of their super-management (sub-managements set to ignore excepted).');
 INSERT INTO txt VALUES ('H5199x', 'German',  'SHA-1-SSH-Schl&uuml;sselaustausch erlauben: ob der Importer beim SSH-Verbindungsaufbau zus&auml;tzlich den Schl&uuml;sselaustausch diffie-hellman-group14-sha1 anbietet, den aktuelle OpenSSH-Versionen abschalten (Cisco ASA). Nur f&uuml;r Ger&auml;te einschalten, die nichts Besseres anbieten, und diese besser aktualisieren. Standard: Nein. Global, Ger&auml;tetyp und Manager.');
 INSERT INTO txt VALUES ('H5199x', 'English', 'Allow SHA-1 SSH key exchange: whether the importer also offers the key exchange diffie-hellman-group14-sha1, which current OpenSSH versions disable, when connecting via SSH (Cisco ASA). Only switch it on for devices that offer nothing better, and better update them. Default: No. Global, device type and manager.');
 INSERT INTO txt VALUES ('H5199y', 'German',  'Antwortzeit (Sekunden): wie lange ein Aufruf an Tufin SecureChange oder an die Firewall dauern darf, bevor er als nicht erreichbar abbricht. Gilt bis zur Management-Ebene, Standard 300.');
@@ -7881,23 +7847,13 @@ INSERT INTO txt VALUES ('H5591a', 'German',  'Rezertifizierung aktiviert: Der Ei
 INSERT INTO txt VALUES ('H5591a', 'English', 'Recertification activated: This owner is to be recertified via Firewall Orchestrator.');
 INSERT INTO txt VALUES ('H5592', 'German',  'Importquelle: Falls importiert das dort vergebene Label (sh. <a href="/help/settings/modelling">Modellierungseinstellungen</a>).');
 INSERT INTO txt VALUES ('H5592', 'English', 'Import Source: If imported the label given there (see <a href="/help/settings/modelling">Modelling Settings</a>).');
-INSERT INTO txt VALUES ('H5593', 'German',  'URL des externen Ticketing Systems: Exakte Adresse inklusive Pfad, unter der die API das externen Ticket Systems erreicht werden kann.');
-INSERT INTO txt VALUES ('H5593', 'English', 'URL of external ticketing system: Exact address and path under which the external ticket system''s API can be reached.');
-INSERT INTO txt VALUES ('H5593a', 'German', 'Antwort Timeout (Sekunden): Gibt an in Sekunden, wie lange maximal auf eine Antwort des externen Systems gewartet wird.');
-INSERT INTO txt VALUES ('H5593a', 'English','Response Timeout (Seconds): Defines in seconds, how long should be waited for a response of the external system.');
-INSERT INTO txt VALUES ('H5593b', 'German', 'Max Versuche: Maximale Anzahl der Versuche, bevor das Ticket zur&uuml;ckgewiesen wird.');
-INSERT INTO txt VALUES ('H5593b', 'English','Max Attempts: Maximal attempts until the ticket is rejected.');
-INSERT INTO txt VALUES ('H5593c', 'German', 'Zyklen zwischen Versuchen: Zyklen zwischen zwei Sendeversuchen. Wird mit der Anzahl der Versuche multipliziert, um den Abstand mit der Zeit zu vergr&ouml;ssern.');
-INSERT INTO txt VALUES ('H5593c', 'English','Cycles between attempts: Cycles between two sending attempts. Will be multiplied with attempt count to enlarge interval with time.');
 INSERT INTO txt VALUES ('H5593d', 'German', 'Zertifikate pr&uuml;fen: Die TLS-Zertifikate aller externen Ticket-Systeme werden gegen den Zertifikatsspeicher des Hosts gepr&uuml;ft.
     Nur ausschalten, wenn die ausstellende CA dort nicht hinterlegt werden kann: ohne Pr&uuml;fung k&ouml;nnen die Zugangsdaten abgefangen werden.
     Default-Wert bei Neuinstallation = "aktiv"; ein Upgrade mit bereits konfigurierten Ticket-Systemen beh&auml;lt das bisherige Verhalten ("inaktiv"). Solange die Pr&uuml;fung ausgeschaltet ist, sehen Administratoren oben auf jeder Seite eine Warnung.');
 INSERT INTO txt VALUES ('H5593d', 'English','Check certificates: The TLS certificates of all external ticket systems are validated against the host trust store.
     Only switch this off if the issuing CA cannot be added there: without the check the credentials can be intercepted.
     Default value for new installations = "active"; an upgrade with ticket systems already configured keeps the previous behaviour ("inactive"). As long as the check is switched off, admins see a warning at the top of every page.');
-INSERT INTO txt VALUES ('H5594', 'German',  'Login-Daten: <a href="/help/settings/credentials">Login-Daten</a> (Benutzername und Passwort), mit denen sich Firewall Orchestrator per Basic Authentication am Ticket-System anmeldet.
     Der Authorization-Header wird vor jedem Aufruf des Ticket-Systems aus den aktuellen Login-Daten gebildet und nicht gespeichert, ge&auml;nderte Passw&ouml;rter gelten daher auch f&uuml;r offene Requests. Login-Daten mit Schl&uuml;sselpaar k&ouml;nnen nicht gew&auml;hlt werden.');
-INSERT INTO txt VALUES ('H5594', 'English', 'Credentials: <a href="/help/settings/credentials">Credentials</a> (username and password) Firewall Orchestrator uses to log into the ticket system via basic authentication.
     The authorization header is built from the current credentials before each call to the ticket system and is not stored, so changed passwords also apply to open requests. Credentials with a key pair cannot be selected.');
 INSERT INTO txt VALUES ('H5595', 'German',  'Template Ticket-Text: Vorlagentext mit verschiedenen Platzhaltern, die durch @@PLACEHOLDER@@ gekennzeichnet sind und f&uuml;r jede Anfrage durch die eigentlichen Anfragedaten ersetzt werden.
     Verf&uuml;gbare Platzhalter: @@TICKET_SUBJECT@@, @@PRIORITY@@, @@ONBEHALF@@, @@TASKS@@, @@REASON@@, @@APPID@@.
@@ -7927,14 +7883,6 @@ INSERT INTO txt VALUES ('H5596f', 'German', 'Template ICMP: spezielles Template 
 INSERT INTO txt VALUES ('H5596f', 'English','Template ICMP: Special template for protocol type ICMP. Available placeholders: @@SERVICENAME@@.');
 INSERT INTO txt VALUES ('H5596g', 'German', 'Template Ip-Protokoll: Template f&uuml;r alle Protokolltypen ausser TCP, UDP, ICMP, z.B. ESP. Verf&uuml;gbare Platzhalter: @@PROTOCOLNAME@@, @@PROTOCOLID@@, @@SERVICENAME@@.');
 INSERT INTO txt VALUES ('H5596g', 'English','Template Ip-Protokoll: Template for protocol types not TCP, UDP, ICMP, e.g. ESP. Available placeholders: @@PROTOCOLNAME@@, @@PROTOCOLID@@, @@SERVICENAME@@.');
-INSERT INTO txt VALUES ('H5597', 'German',  'Typ des externen Ticketing Systems: Aktuell wird nur TufinSecureChange unterst&uuml;tzt.');
-INSERT INTO txt VALUES ('H5597', 'English', 'Type of external ticketing system: Currently only TufinSecureChange is supported.');
-INSERT INTO txt VALUES ('H5598', 'German',  'Hier werden die globalen Einstellungen f&uuml;r externe Requests sowie die konfigurierten externen Ticket-Systeme und deren Vorlagen verwaltet. Die Vorlagen f&uuml;r Tufin SecureChange sind ger&auml;tespezifische Einstellungen.');
-INSERT INTO txt VALUES ('H5598', 'English', 'This page is used to manage global external request settings as well as configured external ticket systems and their templates. The Tufin SecureChange templates are device specific settings.');
-INSERT INTO txt VALUES ('H5599', 'German',  'Tasktyp: Typ des Tasks im externen Auftragssystem.');
-INSERT INTO txt VALUES ('H5599', 'English', 'Task Type: Type of the task in the external ticket system.');
-INSERT INTO txt VALUES ('H5599a', 'German',  'F&uuml;r Tufin SecureChange werden hier keine Vorlagen gepflegt: sie sind <a href="/help/settings/devicespecificsettings">ger&auml;tespezifische Einstellungen</a> und k&ouml;nnen je Ger&auml;tetyp und Management angepasst werden. Das Upgrade auf 9.8.5 &uuml;bernimmt die bisher hier gespeicherten SecureChange-Vorlagen dorthin.');
-INSERT INTO txt VALUES ('H5599a', 'English', 'No templates are maintained here for Tufin SecureChange: they are <a href="/help/settings/devicespecificsettings">device specific settings</a> and can be adapted per device type and management. The upgrade to 9.8.5 moves the SecureChange templates stored here so far to them.');
 INSERT INTO txt VALUES ('H5600', 'German',  'Antragsauftrags-Sortierung: Hier werden die Speichern-Priorit&auml;ten f&uuml;r Gruppenanlage, Gruppen&auml;nderung mit Hinzuf&uuml;gen, Zugriff, Regel&auml;nderung, Regel l&ouml;schen, Gruppen&auml;nderung mit Entfernen und Gruppenl&ouml;schung festgelegt. Wenn eine Gruppen&auml;nderung gleichzeitig Mitglieder hinzuf&uuml;gt und entfernt, kann sie in zwei Teilaufgaben aufgespalten werden.');
 INSERT INTO txt VALUES ('H5600', 'English', 'Request task sorting: Defines the save priorities for group creation, group modification with added members, access, rule modification, rule deletion, group modification with removed members, and group deletion. If a group modification both adds and removes members, it can be split into two separate tasks.');
 
@@ -8267,16 +8215,6 @@ INSERT INTO txt VALUES ('H5678', 'German',  'Trage hier die Schl&uuml;ssel ein, 
 INSERT INTO txt VALUES ('H5678', 'English', 'Enter the keys that represent the ChangeId field. You can add multiple keys by clicking the + button.');
 INSERT INTO txt VALUES ('H5679', 'German',  'Integrationsmodus: Legt fest, ob Modelling voll integriert arbeitet oder Workflow-Benachrichtigungen erzeugt. Im Workflow-Benachrichtigungsmodus werden Verbindungen beantragt, solange "requested_on_fw" nicht gesetzt ist. "Implemented" und "Rejected" k&ouml;nnen sp&auml;ter f&uuml;r erneute Beantragung nach &Auml;nderungen genutzt werden.');
 INSERT INTO txt VALUES ('H5679', 'English', 'Integration Mode: Defines whether Modelling works fully integrated or creates workflow notifications. In workflow notification mode, connections are requested while "requested_on_fw" is not set. "Implemented" and "Rejected" can later be used for re-requesting after changes.');
-INSERT INTO txt VALUES ('H5684', 'German',  'Im oberen Bereich werden die globalen Laufzeitparameter f&uuml;r externe Requests gepflegt. Darunter k&ouml;nnen externe Ticket-Systeme angelegt, bearbeitet und gel&ouml;scht werden.');
-INSERT INTO txt VALUES ('H5684', 'English', 'The upper section contains global runtime parameters for external requests. Below that, external ticket systems can be created, edited, and deleted.');
-INSERT INTO txt VALUES ('H5685', 'German',  'Im Bearbeitungsdialog werden pro Ticket-System die Templates je Task-Typ gepflegt. Diese Vorlagen steuern, wie Anfragen und Aufgaben an das externe System &uuml;bergeben werden.');
-INSERT INTO txt VALUES ('H5685', 'English', 'The edit dialog maintains templates per task type for each ticket system. These templates control how requests and tasks are sent to the external system.');
-INSERT INTO txt VALUES ('H5686', 'German',  'F&uuml;r NetworkObjectModify bei vom Management bereitgestellten Ticket-Systemen. Dieses Template beschreibt den Ticket-Inhalt f&uuml;r die direkte Umsetzung auf der Firewall.');
-INSERT INTO txt VALUES ('H5686', 'English', 'For NetworkObjectModify with management-provided ticket systems. This template defines the ticket content for direct implementation on the firewall.');
-INSERT INTO txt VALUES ('H5687', 'German',  'F&uuml;r NetworkObjectModify bei vom Management bereitgestellten Ticket-Systemen. Dieses Template beschreibt den zu &uuml;bergebenden Aufgabeninhalt.');
-INSERT INTO txt VALUES ('H5687', 'English', 'For NetworkObjectModify with management-provided ticket systems. This template defines the task content to be sent.');
-INSERT INTO txt VALUES ('H5688', 'German',  'F&uuml;r vom Management bereitgestellte Ticket-Systeme wird dieses Template im Fall NetworkObjectModify derzeit nicht verwendet.');
-INSERT INTO txt VALUES ('H5688', 'English', 'For management-provided ticket systems, this template is currently not used in the NetworkObjectModify case.');
 INSERT INTO txt VALUES ('H5693', 'German',  'Suche: Filtert die Eigent&uuml;merliste nach sichtbaren Spalteninhalten wie Id, Name, Lifecycle-Status, Verantwortlichen, Tenant, Rezertifizierungsintervall, externer App-Id und Importquelle.');
 INSERT INTO txt VALUES ('H5693', 'English', 'Search: Filters the owner list by visible column content such as id, name, lifecycle state, responsibles, tenant, recertification interval, external app id, and import source.');
 

@@ -7,42 +7,14 @@ using System.Text.RegularExpressions;
 
 namespace FWO.Data
 {
-    public class ExternalTicketSystemTypeDefinition
-    {
-        [JsonProperty("id"), JsonPropertyName("id")]
-        public int Id { get; set; }
-        [JsonProperty("name"), JsonPropertyName("name")]
-        public string Name { get; set; } = "";
-        [JsonProperty("version"), JsonPropertyName("version")]
-        public string Version { get; set; } = "";
-        [JsonProperty("is_built_in"), JsonPropertyName("is_built_in")]
-        public bool IsBuiltIn { get; set; }
-    }
-
+    /// <summary>
+    /// Type IDs of the external ticket system copy stored with an external request. A copy without type is generic, i.e.
+    /// no Tufin SecureChange system.
+    /// </summary>
     public static class BuiltInExternalTicketSystemTypes
     {
         public const int GenericId = 1;
         public const int TufinSecureChangeId = 2;
-        public const int AlgoSecId = 3;
-        public const int ServiceNowId = 4;
-
-        public static readonly IReadOnlyList<ExternalTicketSystemTypeDefinition> AllBuiltInTicketTypes =
-        [
-            new() { Id = GenericId, Name = "Generic", IsBuiltIn = true },
-            new() { Id = TufinSecureChangeId, Name = "Tufin SecureChange", IsBuiltIn = true },
-            new() { Id = AlgoSecId, Name = "AlgoSec", IsBuiltIn = true },
-            new() { Id = ServiceNowId, Name = "ServiceNow", IsBuiltIn = true }
-        ];
-
-        public static ExternalTicketSystemTypeDefinition GetById(int typeId)
-        {
-            return AllBuiltInTicketTypes.FirstOrDefault(type => type.Id == typeId) ?? new ExternalTicketSystemTypeDefinition
-            {
-                Id = typeId,
-                Name = typeId.ToString(),
-                IsBuiltIn = false
-            };
-        }
     }
 
 
@@ -176,24 +148,6 @@ namespace FWO.Data
             return TypeId == BuiltInExternalTicketSystemTypes.TufinSecureChangeId;
         }
 
-        public bool IsCheckPoint()
-        {
-            return DeviceType.IsCheckPointManagerTypeId(TypeId);
-        }
-
-        public bool Sanitize()
-        {
-            bool shortened = false;
-            Name = Name.SanitizeMand(ref shortened);
-            Url = IsCheckPoint() ? Url.SanitizeOpt(ref shortened) ?? "" : Url.SanitizeMand(ref shortened);
-            TicketTemplate = TicketTemplate.SanitizeJsonMand(ref shortened);
-            TasksTemplate = TasksTemplate.SanitizeJsonMand(ref shortened);
-            foreach (var template in Templates)
-            {
-                shortened = template.Sanitize();
-            }
-            return shortened;
-        }
     }
 
     public class ExternalTicketTemplate

@@ -90,7 +90,6 @@ namespace FWO.Test
         readonly SimulatedUserConfig userConfig = new()
         {
             ExternalRequestWaitCycles = 3,
-            ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(ticketSystemList),
             ReqPriorities = reqPrios,
             ModNamingConvention = namingConvention,
             ModRolloutBundleTasks = true
@@ -308,7 +307,6 @@ namespace FWO.Test
             SimulatedUserConfig localUserConfig = new()
             {
                 ExternalRequestWaitCycles = 3,
-                ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(new List<ExternalTicketSystem> { cpSystem, tufinSystem }),
                 ReqPriorities = reqPrios,
                 ModNamingConvention = namingConvention,
                 ModRolloutBundleTasks = true
@@ -355,7 +353,6 @@ namespace FWO.Test
             SimulatedUserConfig localUserConfig = new()
             {
                 ExternalRequestWaitCycles = 3,
-                ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(new List<ExternalTicketSystem> { tufinSystem }),
                 ReqPriorities = reqPrios,
                 ModNamingConvention = namingConvention,
                 ModRolloutBundleTasks = true
@@ -394,7 +391,6 @@ namespace FWO.Test
         {
             SimulatedUserConfig localUserConfig = new()
             {
-                ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(new List<ExternalTicketSystem> { ticketSystem }),
                 ReqPriorities = reqPrios,
                 ModNamingConvention = namingConvention,
                 ModRolloutBundleTasks = true
@@ -441,7 +437,6 @@ namespace FWO.Test
             SimulatedUserConfig localUserConfig = new()
             {
                 ExternalRequestWaitCycles = 3,
-                ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(new List<ExternalTicketSystem> { ticketSystem }),
                 ReqPriorities = reqPrios,
                 ModNamingConvention = namingConvention,
                 ModRolloutBundleTasks = true

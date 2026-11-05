@@ -6,7 +6,8 @@
 -- selecting another or an unknown system loses the selection and its modes in effect for external ticket systems become
 -- Manual (own and inherited ones, other modes stay), the connection of the system most managements use becomes global,
 -- a management using another system gets its differing values, a system without credential leaves the credential to be
--- inherited, the selections are backed up, and a repeated upgrade keeps an administrator change.
+-- inherited, the selections are backed up, the ticket system list is backed up without authorization values and removed,
+-- and a repeated upgrade keeps an administrator change.
 \set ON_ERROR_STOP 1
 BEGIN;
 CREATE SCHEMA sc_connection_upgrade_9_8_7_test;
@@ -87,6 +88,11 @@ BEGIN
     IF (SELECT jsonb_array_length(config_values) FROM device_specific_config_backup WHERE version = '9.8.7 securechange connection')
             IS DISTINCT FROM (SELECT selections::integer FROM original_selections) THEN
         RAISE EXCEPTION 'The previous selections must be backed up';
+    END IF;
+    IF EXISTS (SELECT 1 FROM config WHERE config_key = 'extTicketSystems')
+        OR (SELECT jsonb_array_length(config_values) FROM device_specific_config_backup WHERE version = '9.8.7 extTicketSystems') <> 4
+        OR (SELECT config_values::text FROM device_specific_config_backup WHERE version = '9.8.7 extTicketSystems') LIKE '%Authorization%' THEN
+        RAISE EXCEPTION 'The ticket system list must be backed up without authorization values and removed';
     END IF;
 END $$;
 SELECT pg_temp.assert_migration();

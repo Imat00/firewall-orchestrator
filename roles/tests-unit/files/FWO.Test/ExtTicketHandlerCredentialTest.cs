@@ -122,7 +122,6 @@ namespace FWO.Test
             SimulatedUserConfig userConfig = new()
             {
                 ExternalRequestWaitCycles = 3,
-                ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(new List<ExternalTicketSystem> { tufinSystem }),
                 ReqPriorities = ExtTicketHandlerTest.reqPrios,
                 ModNamingConvention = ExtTicketHandlerTest.namingConvention,
                 ModRolloutBundleTasks = true

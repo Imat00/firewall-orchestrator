@@ -107,8 +107,8 @@ BEGIN
         RAISE EXCEPTION 'Only the changed managements and their device types must get a node';
     END IF;
     IF EXISTS (SELECT 1 FROM config WHERE config_key = 'fwConfigChangeMgmSettings')
-        OR NOT EXISTS (SELECT 1 FROM config WHERE config_key = 'extTicketSystems') THEN
-        RAISE EXCEPTION 'The old setting must be removed, the ticket systems must stay';
+        OR EXISTS (SELECT 1 FROM config WHERE config_key = 'extTicketSystems') THEN
+        RAISE EXCEPTION 'The old setting and the ticket system list must be removed';
     END IF;
     IF (SELECT config_values->'fwConfigChangeMgmSettings' FROM device_specific_config_backup WHERE version = '9.8.7 implementation modes')
             IS DISTINCT FROM (SELECT settings FROM original_mgm_settings)

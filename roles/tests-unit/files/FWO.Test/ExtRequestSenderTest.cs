@@ -50,7 +50,6 @@ namespace FWO.Test
         readonly SimulatedGlobalConfig globalConfig = new()
         {
             ExternalRequestWaitCycles = 3,
-            ExtTicketSystems = System.Text.Json.JsonSerializer.Serialize(ticketSystemList),
             ReqPriorities = reqPrios,
             ModNamingConvention = namingConvention
         };

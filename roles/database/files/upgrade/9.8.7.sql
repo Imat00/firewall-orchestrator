@@ -512,3 +512,27 @@ BEGIN
     DROP TABLE tmp_sc_system;
     DROP TABLE tmp_sc_connection_route;
 END $$;
+
+-- The ticket system list (extTicketSystems) is replaced by the device specific settings of Tufin SecureChange, which the
+-- parts above took over. The list is backed up once without authorization values and removed.
+DO $$
+DECLARE
+    t_systems text;
+    j_systems jsonb;
+BEGIN
+    SELECT config_value INTO t_systems FROM config WHERE config_key = 'extTicketSystems' AND config_user = 0;
+    IF t_systems IS NOT NULL THEN
+        BEGIN
+            j_systems := COALESCE(NULLIF(btrim(t_systems), ''), '[]')::jsonb;
+        EXCEPTION WHEN invalid_text_representation THEN
+            j_systems := to_jsonb(t_systems);
+        END;
+        INSERT INTO device_specific_config_backup (version, config_values)
+        SELECT '9.8.7 extTicketSystems', CASE WHEN jsonb_typeof(j_systems) = 'array'
+            THEN (SELECT COALESCE(jsonb_agg(CASE WHEN jsonb_typeof(s) = 'object' THEN s - 'Authorization' ELSE s END ORDER BY ord), '[]'::jsonb)
+                FROM jsonb_array_elements(j_systems) WITH ORDINALITY e(s, ord))
+            ELSE j_systems END
+        ON CONFLICT (version) DO NOTHING;
+    END IF;
+    DELETE FROM config WHERE config_key = 'extTicketSystems';
+END $$;
