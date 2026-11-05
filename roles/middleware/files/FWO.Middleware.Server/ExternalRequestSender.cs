@@ -169,12 +169,6 @@ namespace FWO.Middleware.Server
                     throw new InvalidOperationException("No external ticket system loaded.");
                 }
 
-                if (ExtTicketSystem.IsCheckPoint())
-                {
-                    await SendCheckPointRequest(request, ticket);
-                    return;
-                }
-
                 await SendDefaultRequest(request, ticket);
             }
             catch (ProcessingFailedException)
@@ -261,62 +255,6 @@ namespace FWO.Middleware.Server
                 Log.WriteError(LogMessageTitle, $"{RequestInfo(request)}: no authorization for the external ticket system.", exception);
                 throw new InvalidOperationException(exception.Message, exception);
             }
-        }
-
-        private async Task SendCheckPointRequest(ExternalRequest request, ExternalTicket ticket)
-        {
-            Log.WriteInfo(LogMessageTitle, $"Sending CheckPoint request {RequestInfo(request)}");
-            request.Attempts++;
-
-            RestResponse<int> response = await ticket.CreateExternalTicket();
-            request.LastMessage = response.Content;
-
-            if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
-            {
-                request.ExtTicketId = BuildInternalCheckPointTicketNumber(userConfig, request);
-                request.ExtRequestState = ExtStates.ExtReqDone.ToString();
-                await UpdateRequestCreation(request);
-
-                try
-                {
-                    using ExternalRequestHandler extReqHandler = new(userConfig, apiConnection);
-                    await extReqHandler.HandleStateChange(request);
-                }
-                catch (Exception exception)
-                {
-                    Log.WriteError(
-                        LogMessageTitle,
-                        $"{RequestInfo(request)} completed in CheckPoint, but follow-up processing failed.",
-                        exception);
-                }
-
-                Log.WriteDebug(LogMessageTitle, $"{RequestInfo(request)}. CheckPoint request completed synchronously.");
-                return;
-            }
-
-            Log.WriteError(LogMessageTitle, $"{RequestInfo(request)}. CheckPoint send failed: " + response.StatusDescription + ", " + response.Content);
-
-            if (AnalyseForRejected(response))
-            {
-                await RejectRequest(request);
-            }
-            else
-            {
-                request.ExtRequestState = ExtStates.ExtReqFailed.ToString();
-                await UpdateRequestCreation(request);
-            }
-
-            throw new ProcessingFailedException(
-                $"CheckPoint external request failed for {RequestInfo(request)} with status {(int)response.StatusCode} " +
-                $"{response.StatusCode}: {response.Content}");
-        }
-
-        /// <summary>
-        /// Builds the internal Check Point ticket reference shown as external ticket number.
-        /// </summary>
-        private static string BuildInternalCheckPointTicketNumber(UserConfig userConfig, ExternalRequest request)
-        {
-            return $"{userConfig.GetText("Internal")} ({userConfig.GetText("ticket_id")}: {request.TicketId}, {userConfig.GetText("task_number")}: {request.TaskNumber})";
         }
 
         private async Task<ExternalTicket> ConstructTicket(ExternalRequest request)

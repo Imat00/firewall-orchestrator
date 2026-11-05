@@ -255,15 +255,6 @@ namespace FWO.Test
             }
         }
 
-        public static void MarkReqTaskAsInternalWork(long id)
-        {
-            WfReqTask? task = FindReqTaskById(id);
-            if (task != null)
-            {
-                task.SetAddInfo(AdditionalInfoKeys.FwConfigChangeTarget, ManagementFwConfigChangeTargets.InternalWork);
-            }
-        }
-
         /// <summary>
         /// Records a history entry, keeping workflow change log entries apart from modelling history entries.
         /// </summary>

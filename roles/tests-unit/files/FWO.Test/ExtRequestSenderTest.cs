@@ -129,21 +129,6 @@ namespace FWO.Test
         }
 
         [Test]
-        public void BuildInternalCheckPointTicketNumber_UsesInternalTicketAndTaskReferences()
-        {
-            UserConfig userConfig = new SimulatedUserConfig();
-            ExternalRequest request = new()
-            {
-                TicketId = 123,
-                TaskNumber = 4
-            };
-
-            string result = InvokePrivateStatic<string>("BuildInternalCheckPointTicketNumber", userConfig, request);
-
-            ClassicAssert.AreEqual("Internal (Ticket Id: 123, Task Number: 4)", result);
-        }
-
-        [Test]
         public async Task TestExternalRequestSenderRejectsUnsupportedCustomSystems()
         {
             ExtRequestSenderTestApiConn localApiConnection = new()

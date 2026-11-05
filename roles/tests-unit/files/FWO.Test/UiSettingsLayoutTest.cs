@@ -83,7 +83,6 @@ namespace FWO.Test
             "settings/notifications",
             "settings/passwordpolicy",
             "settings/customtexts",
-            "settings/fwconfigchangegeneral",
             "settings/devicespecificsettings",
             "settings/exttickettemplates",
             "settings/password",
