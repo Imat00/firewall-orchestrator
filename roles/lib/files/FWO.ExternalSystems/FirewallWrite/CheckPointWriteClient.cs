@@ -45,7 +45,7 @@ namespace FWO.ExternalSystems.FirewallWrite
 
         /// <summary>Creates a client for the web_api of a Check Point management.</summary>
         public CheckPointWriteClient(Management management, bool checkCertificates)
-            : base(HostUrl(management, "/web_api/"), management, checkCertificates)
+            : base(HostUrl(management, "/web_api/"), management, checkCertificates, responseTimeout)
         { }
 
         /// <inheritdoc/>
