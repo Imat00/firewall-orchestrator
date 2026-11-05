@@ -49,8 +49,8 @@ public static class DeviceSpecificSettingKeys
     public static readonly DeviceSpecificSettingKey<ProvisioningImplementationMode> ImplementationMode =
         new("implementationMode", AllScopeTypes);
 
-    public static readonly DeviceSpecificSettingKey<ProvisioningRuleImplementationMode> ImplementationModeOverrideForRules =
-        new("implementationModeOverrideForRules", AllScopeTypes);
+    public static readonly DeviceSpecificSettingKey<ProvisioningRuleImplementationMode> ImplementationModeForRules =
+        new("implementationModeForRules", AllScopeTypes);
 
     /// <summary>ID of the configured external ticket system; undefined (null) unless overridden.</summary>
     public static readonly DeviceSpecificSettingKey<int?> RerouteToExternalTicketSystem =
@@ -116,7 +116,7 @@ public static class DeviceSpecificSettingKeys
         RuleZoneFromOverride,
         RuleZoneToOverride,
         ImplementationMode,
-        ImplementationModeOverrideForRules,
+        ImplementationModeForRules,
         RerouteToExternalTicketSystem,
         SecurityProfiles,
         OwnerIdCustomFieldName,

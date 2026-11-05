@@ -27,7 +27,7 @@ internal class DeviceSpecificSettingsGuardicoreTest
         "installOn", "positioningAlgorithm", "ruleLoggingOverride",
         "serviceObjectCreation", "addressObjectCreation", "timeObjectCreation", "labelCreation",
         "ruleType", "commonServiceSeparation", "ruleZoneFromOverride", "ruleZoneToOverride",
-        "implementationMode", "implementationModeOverrideForRules", "rerouteToExternalTicketSystem",
+        "implementationMode", "implementationModeForRules", "rerouteToExternalTicketSystem",
         "securityProfiles", "ownerIdCustomFieldName", "changeIdCustomFieldName", "importerHostName", "sshLegacyKeyExchange",
         "autoPlanImplementation", "autoPlanImplementationForRules", "modellingCreateAppZones",
         "modellingImplementNetworkAreaObjects", "modellingDynIpLabelsVisibleAsGroups",
@@ -142,7 +142,7 @@ internal class DeviceSpecificSettingsGuardicoreTest
             Assert.That(settings.TimeObjectCreation, Is.EqualTo(ProvisioningObjectCreationMode.Supermanager));
             Assert.That(settings.LabelCreation, Is.EqualTo(ProvisioningObjectCreationMode.Supermanager));
             Assert.That(settings.CommonServiceSeparation, Is.False);
-            Assert.That(settings.ImplementationModeOverrideForRules, Is.EqualTo(ProvisioningRuleImplementationMode.Automatic));
+            Assert.That(settings.ImplementationModeForRules, Is.EqualTo(ProvisioningRuleImplementationMode.Automatic));
             Assert.That(settings.RerouteToExternalTicketSystem, Is.Null);
             Assert.That(settings.OwnerIdCustomFieldName, Is.EqualTo("OwnerId"));
             Assert.That(settings.ChangeIdCustomFieldName, Is.EqualTo("ChangeId"));
@@ -290,7 +290,7 @@ internal class DeviceSpecificSettingsGuardicoreTest
     [TestCase("ruleType", "HandleAccessAndIps", "accessAndIPS")]
     [TestCase("positioningAlgorithm", "AllowCategoryEndOfAppSectionDistinguishCommonServices", "allowCategoryEndOfAppSectionDistinguishCommonServices")]
     [TestCase("implementationMode", "RerouteToExternalTicketSystem", "reroute_to_external_ticket_system")]
-    [TestCase("implementationModeOverrideForRules", "RerouteToExternalTicketSystem", "rerouteToExternalTicketSystem")]
+    [TestCase("implementationModeForRules", "RerouteToExternalTicketSystem", "rerouteToExternalTicketSystem")]
     [TestCase("implementationMode", "Automatic", "Automatic")]
     [TestCase("modellingConnectionIdField", "CustomField", "CustomField")]
     public void SerializedValuesMatchContract(string databaseKey, string enumName, string wireValue)

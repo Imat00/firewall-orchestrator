@@ -31,7 +31,7 @@ remains effective and is shown as a dormant override that can be cleared there.
 | ruleZoneFromOverride | string | ANY | All | Global to manager (Fortinet only) |
 | ruleZoneToOverride | string | ANY | All | Global to manager (Fortinet only) |
 | implementationMode | enum | Automatic | All | All |
-| implementationModeOverrideForRules | enum | Automatic | All | All |
+| implementationModeForRules | enum | Automatic | All | All |
 | rerouteToExternalTicketSystem | integer | undefined | All | All |
 | securityProfiles | string array | [] | Device type, manager, gateway | Device type, manager |
 | ownerIdCustomFieldName | string | OwnerId | Global, device type, manager | Global to manager |
@@ -152,3 +152,31 @@ The migration regression probe `roles/tests-integration/files/database/test-upgr
 uses temporary tables and rolls back its transaction. The database integration tests
 (`roles/tests-integration/tasks/test-database.yml`) run it with the upgrade file inserted at
 its two `-- @run-upgrade-9.7.4` markers.
+
+## Upgrade to 9.8.7: implementation modes
+
+`implementationMode` applies to objects, `implementationModeForRules` (formerly `implementationModeOverrideForRules`,
+renamed by the upgrade with its values) to rules; neither falls back to the other. Every level that only had the
+object mode gets it as rule mode as well, as 9.7.4 migrated the object mode only.
+
+The routing of the former setting "Firewall config changes - General" (`fwConfigChangeMgmSettings`) moves into these
+settings, per management and change category (objects, rules):
+
+| Former target | Becomes |
+| --- | --- |
+| Tufin SecureChange system | external ticket system mode, `rerouteToExternalTicketSystem` = that system (the system of the rules wins if both categories use different systems) |
+| Check Point system | Automatic (written by the firewall write library) |
+| Internal Work, Disabled, disabled management, other or unknown ticket system | Manual |
+| no target, management missing in the setting | unchanged, inherited |
+
+As the former setting decided the routing, it wins over a differing device specific setting. A value is only stored on
+the management if the value in effect there (own, device type or global) differs. The former setting and the previous
+values are backed up, then the setting is removed; the backup also marks the migration as done, so a repeated upgrade
+keeps later changes:
+
+```sql
+SELECT config_values FROM public.device_specific_config_backup WHERE version = '9.8.7 implementation modes';
+```
+
+The regression probe `roles/tests-integration/files/database/test-upgrade-9.8.7-impl-mode.sql` runs like the 9.7.4
+probe, with the upgrade file inserted at its two `-- @run-upgrade-9.8.7` markers.

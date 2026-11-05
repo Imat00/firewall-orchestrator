@@ -72,14 +72,14 @@ internal class DeviceSpecificSettingsDataTest
             Assert.That(Field(DeviceSpecificSettingKeys.ImplementationMode).AppliesToLevel(DeviceSpecificScopeType.Management), Is.True);
             Assert.That(Field(DeviceSpecificSettingKeys.ImplementationMode).AppliesToLevel(DeviceSpecificScopeType.Gateway), Is.False);
             Assert.That(Field(DeviceSpecificSettingKeys.RerouteToExternalTicketSystem).AppliesToLevel(DeviceSpecificScopeType.Gateway), Is.False);
-            Assert.That(Field(DeviceSpecificSettingKeys.ImplementationModeOverrideForRules).AppliesToLevel(DeviceSpecificScopeType.Gateway), Is.True);
+            Assert.That(Field(DeviceSpecificSettingKeys.ImplementationModeForRules).AppliesToLevel(DeviceSpecificScopeType.Gateway), Is.True);
         });
     }
 
     [Test]
     public void RuleImplementationMode_OffersExternalTicketSystemUpToTheManagementOnly()
     {
-        DeviceSpecificFieldDefinition field = Field(DeviceSpecificSettingKeys.ImplementationModeOverrideForRules);
+        DeviceSpecificFieldDefinition field = Field(DeviceSpecificSettingKeys.ImplementationModeForRules);
         string automatic = nameof(ProvisioningRuleImplementationMode.Automatic);
         string external = nameof(ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem);
 

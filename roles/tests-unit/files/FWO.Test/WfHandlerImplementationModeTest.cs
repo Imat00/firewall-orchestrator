@@ -72,7 +72,7 @@ namespace FWO.Test
 
         private static void SetExternalTicketSystem(InMemoryDeviceSpecificSettingsApiConnection api, long nodeId, bool withSystem = true)
         {
-            api.SetValue(nodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem);
+            api.SetValue(nodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem);
             api.SetValue(nodeId, DeviceSpecificSettingKeys.ImplementationMode, ProvisioningImplementationMode.RerouteToExternalTicketSystem);
             if (withSystem)
             {
@@ -189,7 +189,7 @@ namespace FWO.Test
         public async Task AccessTask_GatewayWithManualRuleMode_GetsNoTask()
         {
             InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
-            api.SetValue(kGatewayNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.Manual);
+            api.SetValue(kGatewayNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Manual);
             WfHandler handler = CreateHandler(api);
             WfReqTask reqTask = CreateAccessTask(8, kManagementId, kInternalGateways);
 
@@ -215,7 +215,7 @@ namespace FWO.Test
         public async Task GroupTask_RuleModeDoesNotApplyToObjects()
         {
             InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
-            api.SetValue(kGlobalNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.Manual);
+            api.SetValue(kGlobalNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Manual);
             WfHandler handler = CreateHandler(api);
             WfReqTask reqTask = CreateGroupTask(7, kManagementId);
 
@@ -458,7 +458,7 @@ namespace FWO.Test
         {
             InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
             SetExternalTicketSystem(api, kGlobalNodeId);
-            api.SetValue(kManagementNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.Automatic);
+            api.SetValue(kManagementNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Automatic);
             WfHandler handler = CreateHandler(api);
             WfTicket ticket = new() { Id = 5, Tasks = [CreateAccessTask(8, null, kNoGateway)] };
 
@@ -489,7 +489,7 @@ namespace FWO.Test
         public async Task RuleDeleteTask_GatewayWithManualRuleMode_GetsNoTask()
         {
             InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
-            api.SetValue(kGatewayNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.Manual);
+            api.SetValue(kGatewayNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Manual);
             WfHandler handler = CreateHandler(api);
             WfReqTask manualTask = CreateRuleDeleteTask(kFirstGatewayId);
             WfReqTask automaticTask = CreateRuleDeleteTask(kSecondGatewayId);
@@ -508,8 +508,8 @@ namespace FWO.Test
         public async Task AccessTask_NoGatewayFoundWithManualGlobalRuleMode_CreatesNoFallback()
         {
             InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
-            api.SetValue(kGlobalNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.Manual);
-            api.SetValue(kManagementNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.Automatic);
+            api.SetValue(kGlobalNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Manual);
+            api.SetValue(kManagementNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Automatic);
             WfHandler handler = CreateHandler(api);
             handler.PathAnalyzerOverride = new FixedPathAnalyzer(kNoGateway);
             WfReqTask reqTask = CreateAccessTask(8, kManagementId, kNoGateway);
@@ -568,7 +568,7 @@ namespace FWO.Test
             GlobalDeviceSpecificSettings settings = new()
             {
                 ImplementationMode = objectMode,
-                ImplementationModeOverrideForRules = ProvisioningRuleImplementationMode.Manual
+                ImplementationModeForRules = ProvisioningRuleImplementationMode.Manual
             };
 
             Assert.That(settings.GetImplementationMode(false), Is.EqualTo(expected));
@@ -583,7 +583,7 @@ namespace FWO.Test
             GlobalDeviceSpecificSettings settings = new()
             {
                 ImplementationMode = ProvisioningImplementationMode.Manual,
-                ImplementationModeOverrideForRules = ruleMode
+                ImplementationModeForRules = ruleMode
             };
 
             Assert.Multiple(() =>

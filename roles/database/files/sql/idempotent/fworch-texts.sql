@@ -3593,8 +3593,8 @@ INSERT INTO txt VALUES ('dss_time_object_creation', 'German', 'Anlage Zeitobjekt
 INSERT INTO txt VALUES ('dss_time_object_creation', 'English', 'Time object creation');
 INSERT INTO txt VALUES ('dss_label_creation', 'German', 'Anlage Labels');
 INSERT INTO txt VALUES ('dss_label_creation', 'English', 'Label creation');
-INSERT INTO txt VALUES ('dss_implementation_mode_override_for_rules', 'German', 'Umsetzungsmodus f&uuml;r Regeln');
-INSERT INTO txt VALUES ('dss_implementation_mode_override_for_rules', 'English', 'Implementation mode for rules');
+INSERT INTO txt VALUES ('dss_implementation_mode_for_rules', 'German', 'Umsetzungsmodus f&uuml;r Regeln');
+INSERT INTO txt VALUES ('dss_implementation_mode_for_rules', 'English', 'Implementation mode for rules');
 INSERT INTO txt VALUES ('dss_owner_id_custom_field_name', 'German', 'Benutzerdefiniertes Feld f&uuml;r Eigent&uuml;mer-ID');
 INSERT INTO txt VALUES ('dss_owner_id_custom_field_name', 'English', 'Owner ID custom field');
 INSERT INTO txt VALUES ('dss_change_id_custom_field_name', 'German', 'Benutzerdefiniertes Feld f&uuml;r &Auml;nderungs-ID');

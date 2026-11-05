@@ -271,7 +271,7 @@ namespace FWO.Test
             return new GlobalDeviceSpecificSettings
             {
                 ImplementationMode = ProvisioningImplementationMode.RerouteToExternalTicketSystem,
-                ImplementationModeOverrideForRules = ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem,
+                ImplementationModeForRules = ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem,
                 RerouteToExternalTicketSystem = systemId
             };
         }

@@ -6,7 +6,7 @@ using FWO.Logging;
 namespace FWO.Services.Workflow
 {
     /// <summary>
-    /// Applies the device specific settings implementationMode (objects) and implementationModeOverrideForRules
+    /// Applies the device specific settings implementationMode (objects) and implementationModeForRules
     /// (rules) to the creation of implementation tasks: only targets with implementation mode Automatic get one.
     /// Manual gets none. External ticket system gets none either, the request task is handed to that system instead.
     /// </summary>

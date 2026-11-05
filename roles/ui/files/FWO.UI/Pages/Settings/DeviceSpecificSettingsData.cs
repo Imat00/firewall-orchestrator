@@ -179,7 +179,7 @@ namespace FWO.Ui.Pages.Settings
             { "dss_install_on", "H5169" },
             { "dss_time_object_creation", "H5199a" },
             { "dss_label_creation", "H5199b" },
-            { "dss_implementation_mode_override_for_rules", "H5199c" },
+            { "dss_implementation_mode_for_rules", "H5199c" },
             { "dss_owner_id_custom_field_name", "H5199d" },
             { "dss_change_id_custom_field_name", "H5199e" },
             { "dss_reroute_to_external_ticket_system", "H5199f" },
@@ -306,7 +306,7 @@ namespace FWO.Ui.Pages.Settings
                     (ProvisioningImplementationMode.Automatic, "dss_opt_automatic"),
                     (ProvisioningImplementationMode.Manual, "dss_opt_manual"),
                     (ProvisioningImplementationMode.RerouteToExternalTicketSystem, "dss_opt_reroute")), maxLevel: DeviceSpecificScopeType.Management),
-            EnumField(DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, "dss_implementation_mode_override_for_rules", s => s.ImplementationModeOverrideForRules,
+            EnumField(DeviceSpecificSettingKeys.ImplementationModeForRules, "dss_implementation_mode_for_rules", s => s.ImplementationModeForRules,
                 RuleImplementationModeOptions),
             new()
             {

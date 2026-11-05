@@ -29,7 +29,7 @@ public class GlobalDeviceSpecificSettings
 
     public ProvisioningImplementationMode ImplementationMode { get; set; } = ProvisioningImplementationMode.Automatic;
 
-    public ProvisioningRuleImplementationMode ImplementationModeOverrideForRules { get; set; } = ProvisioningRuleImplementationMode.Automatic;
+    public ProvisioningRuleImplementationMode ImplementationModeForRules { get; set; } = ProvisioningRuleImplementationMode.Automatic;
 
     /// <summary>ID of the external ticket system to reroute to; null while undefined.</summary>
     public int? RerouteToExternalTicketSystem { get; set; }
@@ -76,7 +76,7 @@ public class GlobalDeviceSpecificSettings
     }
 
     /// <summary>
-    /// Returns the implementation mode of a kind of task: <see cref="ImplementationModeOverrideForRules"/> for rule
+    /// Returns the implementation mode of a kind of task: <see cref="ImplementationModeForRules"/> for rule
     /// tasks, <see cref="ImplementationMode"/> for objects. Each setting stands alone, there is no fallback between
     /// them. Undefined counts as Automatic, the compiled default.
     /// </summary>
@@ -87,7 +87,7 @@ public class GlobalDeviceSpecificSettings
         {
             return ImplementationMode == ProvisioningImplementationMode.Undefined ? ProvisioningImplementationMode.Automatic : ImplementationMode;
         }
-        return ImplementationModeOverrideForRules switch
+        return ImplementationModeForRules switch
         {
             ProvisioningRuleImplementationMode.Manual => ProvisioningImplementationMode.Manual,
             ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem => ProvisioningImplementationMode.RerouteToExternalTicketSystem,

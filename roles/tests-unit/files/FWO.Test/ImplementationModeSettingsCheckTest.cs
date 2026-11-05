@@ -68,7 +68,7 @@ namespace FWO.Test
 
         private static void UseExternalTicketSystem(GlobalDeviceSpecificSettings settings, int? system)
         {
-            settings.ImplementationModeOverrideForRules = ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem;
+            settings.ImplementationModeForRules = ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem;
             settings.RerouteToExternalTicketSystem = system;
         }
 
@@ -167,7 +167,7 @@ namespace FWO.Test
             Dictionary<DeviceSpecificNode, GlobalDeviceSpecificSettings> settings = DefaultSettings(tree);
             UseExternalTicketSystem(settings[tree.Management], kExternalTicketSystemId);
             settings[tree.Gateway].RerouteToExternalTicketSystem = kExternalTicketSystemId;
-            settings[tree.Gateway].ImplementationModeOverrideForRules = ProvisioningRuleImplementationMode.Manual;
+            settings[tree.Gateway].ImplementationModeForRules = ProvisioningRuleImplementationMode.Manual;
 
             ImplementationModeSettingsCheckResult result = ImplementationModeSettingsCheck.Check(settings, tree.Managements);
 
@@ -179,7 +179,7 @@ namespace FWO.Test
         {
             Tree tree = CreateTree();
             Dictionary<DeviceSpecificNode, GlobalDeviceSpecificSettings> settings = DefaultSettings(tree);
-            settings[tree.Management].ImplementationModeOverrideForRules = ProvisioningRuleImplementationMode.Manual;
+            settings[tree.Management].ImplementationModeForRules = ProvisioningRuleImplementationMode.Manual;
 
             ImplementationModeSettingsCheckResult result = ImplementationModeSettingsCheck.Check(settings, tree.Managements);
 
@@ -219,7 +219,7 @@ namespace FWO.Test
             api.AddNode(kGlobalNodeId, DeviceSpecificScopeType.Global, DeviceSpecificScopePath.GlobalObjectKey, displayName: "Global");
             api.AddNode(kDeviceTypeNodeId, DeviceSpecificScopeType.DeviceType, "9", kGlobalNodeId);
             api.AddNode(kManagementNodeId, DeviceSpecificScopeType.Management, kManagementId.ToString(), kDeviceTypeNodeId);
-            api.SetValue(kManagementNodeId, DeviceSpecificSettingKeys.ImplementationModeOverrideForRules, ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem);
+            api.SetValue(kManagementNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.RerouteToExternalTicketSystem);
 
             ImplementationModeSettingsCheckResult result = await ImplementationModeSettingsCheck.LoadAndCheck(api, tree.Root, tree.Managements);
 
