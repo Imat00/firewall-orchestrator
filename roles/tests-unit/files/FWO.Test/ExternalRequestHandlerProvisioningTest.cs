@@ -21,6 +21,8 @@ namespace FWO.Test
         private const long kTicketId = 5;
         private const int kManagementId = 1;
         private const long kImplTaskId = 10;
+        private const long kSecondImplTaskId = 11;
+        private const long kOtherReqTaskImplTaskId = 20;
         private const int kOpenStateId = 210;
         private const int kDoneStateId = 631;
 
@@ -87,6 +89,65 @@ namespace FWO.Test
                 StateId = implTaskStateId
             });
             return new WfTicket { Id = kTicketId, Title = "Ticket", Tasks = [reqTask] };
+        }
+
+        /// <summary>
+        /// Two request tasks on a management implemented manually: the first with two implementation tasks, the first of
+        /// them written already, the second with one open implementation task.
+        /// </summary>
+        private static WfTicket TicketWithTwoManualRequestTasks(int secondImplTaskStateId = kOpenStateId)
+        {
+            WfTicket ticket = Ticket(kDoneStateId);
+            WfReqTask first = ticket.Tasks[0];
+            first.ImplementationTasks.Add(new WfImplTask
+            {
+                Id = kSecondImplTaskId,
+                ReqTaskId = first.Id,
+                TaskNumber = 2,
+                TaskType = first.TaskType,
+                ManagementId = kManagementId,
+                StateId = secondImplTaskStateId
+            });
+            WfReqTask second = new()
+            {
+                Id = 2,
+                Title = "Other group",
+                TicketId = kTicketId,
+                TaskNumber = 2,
+                TaskType = WfTaskType.group_create.ToString(),
+                ManagementId = kManagementId,
+                StateId = kOpenStateId
+            };
+            second.ImplementationTasks.Add(new WfImplTask
+            {
+                Id = kOtherReqTaskImplTaskId,
+                ReqTaskId = second.Id,
+                TaskNumber = 1,
+                TaskType = second.TaskType,
+                ManagementId = kManagementId,
+                StateId = kOpenStateId
+            });
+            ticket.Tasks.Add(second);
+            return ticket;
+        }
+
+        private static GlobalDeviceSpecificSettings ManualSettings()
+        {
+            return new GlobalDeviceSpecificSettings { ImplementationMode = ProvisioningImplementationMode.Manual };
+        }
+
+        /// <summary>A finished firewall write of the first request task released by a button.</summary>
+        private static ExternalRequest FinishedRequestReleasingTheFirstRequestTask()
+        {
+            return new ExternalRequest
+            {
+                Id = 3,
+                TicketId = kTicketId,
+                TaskNumber = 1,
+                ExtRequestType = WfTaskType.group_create.ToString(),
+                ExtRequestState = ExtStates.ExtReqDone.ToString(),
+                ExtQueryVariables = "{\"ManagementId\":[1],\"ButtonRelease\":[1]}"
+            };
         }
 
         private static ExternalRequestHandler CreateHandler(ProvisioningApiConn apiConnection, GlobalDeviceSpecificSettings settings)
@@ -252,6 +313,81 @@ namespace FWO.Test
             {
                 Assert.That(result, Is.True);
                 Assert.That(apiConnection.CreatedRequests, Has.Count.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public async Task StartProvisioning_ManualTarget_CreatesNothing()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, ManualSettings());
+
+            bool result = await handler.StartProvisioning(kTicketId);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task StartProvisioning_ManualTargetByButton_WritesItAndRemembersTheRelease()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, ManualSettings());
+
+            bool result = await handler.StartProvisioning(kTicketId, null, null, true);
+
+            Assert.That(result, Is.True);
+            Assert.That(apiConnection.CreatedRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(Variable(apiConnection.CreatedRequests[0], "implTaskId"), Is.EqualTo(kImplTaskId));
+                Assert.That(Variable(apiConnection.CreatedRequests[0], "extQueryVariables"), Is.EqualTo("{\"ManagementId\":[1],\"ButtonRelease\":[0]}"));
+            });
+        }
+
+        [Test]
+        public async Task StartProvisioning_ScopeTaskByButton_RemembersItsNumber()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, ManualSettings());
+
+            await handler.StartProvisioning(kTicketId, 1, null, true);
+
+            Assert.That(apiConnection.CreatedRequests, Has.Count.EqualTo(1));
+            Assert.That(Variable(apiConnection.CreatedRequests[0], "extQueryVariables"), Is.EqualTo("{\"ManagementId\":[1],\"ButtonRelease\":[1]}"));
+        }
+
+        [Test]
+        public async Task StartProvisioning_AfterAReleasedRequest_WritesTheNextManualTargetOfTheReleasedRequestTask()
+        {
+            ProvisioningApiConn apiConnection = new(TicketWithTwoManualRequestTasks());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, ManualSettings());
+
+            await handler.StartProvisioning(kTicketId, null, FinishedRequestReleasingTheFirstRequestTask());
+
+            Assert.That(apiConnection.CreatedRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(Variable(apiConnection.CreatedRequests[0], "implTaskId"), Is.EqualTo(kSecondImplTaskId));
+                Assert.That(Variable(apiConnection.CreatedRequests[0], "extQueryVariables"), Is.EqualTo("{\"ManagementId\":[1],\"ButtonRelease\":[1]}"));
+            });
+        }
+
+        [Test]
+        public async Task StartProvisioning_AfterAReleasedRequest_LeavesManualTargetsOfOtherRequestTasksToAPerson()
+        {
+            ProvisioningApiConn apiConnection = new(TicketWithTwoManualRequestTasks(kDoneStateId));
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, ManualSettings());
+
+            bool result = await handler.StartProvisioning(kTicketId, null, FinishedRequestReleasingTheFirstRequestTask());
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
             });
         }
     }

@@ -11,10 +11,10 @@ namespace FWO.Middleware.Server
     public sealed class ExternalRequestProvisioning : IExternalRequestProvisioning
     {
         /// <inheritdoc/>
-        public async Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId)
+        public async Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId, bool byButton = false)
         {
             using ExternalRequestHandler extRequestHandler = new(userConfig, apiConnection);
-            return await extRequestHandler.StartProvisioning(ticketId, scopeReqTaskId);
+            return await extRequestHandler.StartProvisioning(ticketId, scopeReqTaskId, null, byButton);
         }
     }
 }

@@ -28,9 +28,11 @@ namespace FWO.Middleware.Server
         /// <param name="ticketId">Ticket to provision.</param>
         /// <param name="scopeReqTaskId">Request task in the request task scope; null in the ticket scope.</param>
         /// <param name="previousRequest">Request just finished, if the provisioning continues after it; a group change it
-        /// made may let the next request wait some cycles, see <see cref="GetWaitCycles"/>.</param>
+        /// made may let the next request wait some cycles, see <see cref="GetWaitCycles"/>, and a release by a button it
+        /// carries continues.</param>
+        /// <param name="byButton">True if a person pressed a button: the scope is released, see <see cref="ProvisioningRelease"/>.</param>
         /// <returns>true if a request was created or nothing is to be done; false if the provisioning failed.</returns>
-        public async Task<bool> StartProvisioning(long ticketId, long? scopeReqTaskId = null, ExternalRequest? previousRequest = null)
+        public async Task<bool> StartProvisioning(long ticketId, long? scopeReqTaskId = null, ExternalRequest? previousRequest = null, bool byButton = false)
         {
             try
             {
@@ -55,8 +57,9 @@ namespace FWO.Middleware.Server
                         return false;
                     }
                 }
-                ProvisioningWorkList workList = await wfHandler.BuildProvisioningWorkList(ticket, scopeTask);
-                return await CreateRequestForNextEntry(ticket, workList, previousRequest);
+                ProvisioningRelease? release = byButton ? new(scopeTask?.TaskNumber) : ReleaseOf(previousRequest);
+                ProvisioningWorkList workList = await wfHandler.BuildProvisioningWorkList(ticket, scopeTask, release);
+                return await CreateRequestForNextEntry(ticket, workList, previousRequest, release);
             }
             catch (Exception exception)
             {
@@ -65,7 +68,8 @@ namespace FWO.Middleware.Server
             }
         }
 
-        private async Task<bool> CreateRequestForNextEntry(WfTicket ticket, ProvisioningWorkList workList, ExternalRequest? previousRequest)
+        private async Task<bool> CreateRequestForNextEntry(WfTicket ticket, ProvisioningWorkList workList, ExternalRequest? previousRequest,
+            ProvisioningRelease? release)
         {
             ProvisioningWorkItem? next = workList.Next;
             if (next == null)
@@ -82,11 +86,11 @@ namespace FWO.Middleware.Server
             if (next.Way == ProvisioningWay.FirewallWrite && next.ImplTask != null)
             {
                 int waitCycles = GetWaitCycles(next.ImplTask.TaskType, previousRequest, kNoExternalTicketSystem);
-                await CreateFirewallWriteRequest(ticket, next.ReqTask, next.ImplTask, waitCycles);
+                await CreateFirewallWriteRequest(ticket, next.ReqTask, next.ImplTask, waitCycles, release);
             }
             else
             {
-                await CreateExternalTicketSystemRequest(ticket, workList, next, previousRequest);
+                await CreateExternalTicketSystemRequest(ticket, workList, next, previousRequest, release);
             }
             Log.WriteInfo(kProvisioningLogTitle, $"Created the external request for request task {next.ReqTask.TaskNumber}" +
                 $"{(next.ImplTask == null ? "" : $", implementation task {next.ImplTask.TaskNumber}")} of ticket {ticket.Id}.");
@@ -106,13 +110,14 @@ namespace FWO.Middleware.Server
         /// Creates the request writing an implementation task to the firewall. It references the implementation task,
         /// which the sender loads itself, so the request carries no ticket system and no content.
         /// </summary>
-        private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, int waitCycles)
+        private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, int waitCycles, ProvisioningRelease? release)
         {
             Dictionary<string, List<int>> extQueryVariables = [];
             if (implTask.ManagementId is int managementId)
             {
                 extQueryVariables[ExternalVarKeys.ManagementId] = [managementId];
             }
+            AddRelease(extQueryVariables, release);
             var variables = new
             {
                 ownerId = reqTask.Owners.FirstOrDefault()?.Owner.Id ?? ticket.Tasks.FirstOrDefault()?.Owners.FirstOrDefault()?.Owner.Id,
@@ -134,7 +139,8 @@ namespace FWO.Middleware.Server
         /// (connection, ticket templates, response timeout and retries), together with the request tasks it is bundled with.
         /// </summary>
         /// <exception cref="InvalidOperationException">The management has no URL or no credential for Tufin SecureChange.</exception>
-        private async Task CreateExternalTicketSystemRequest(WfTicket ticket, ProvisioningWorkList workList, ProvisioningWorkItem start, ExternalRequest? previousRequest)
+        private async Task CreateExternalTicketSystemRequest(WfTicket ticket, ProvisioningWorkList workList, ProvisioningWorkItem start, ExternalRequest? previousRequest,
+            ProvisioningRelease? release)
         {
             actSystem = ExternalTicketSystem.FromSecureChangeSettings(await GetRequestSettings(start.ReqTask.ManagementId));
             if (string.IsNullOrWhiteSpace(actSystem.Url) || actSystem.CredentialId == null)
@@ -143,7 +149,7 @@ namespace FWO.Middleware.Server
             }
             await ApplySecureChangeTemplates(ticket, start.ReqTask);
             (List<WfReqTask> contentTasks, List<WfReqTask> handledTasks) = await BundleRequestTasks(workList, start);
-            await CreateExtRequest(ticket, contentTasks, handledTasks, GetWaitCycles(start.ReqTask.TaskType, previousRequest, actSystem));
+            await CreateExtRequest(ticket, contentTasks, handledTasks, GetWaitCycles(start.ReqTask.TaskType, previousRequest, actSystem), release);
         }
 
         /// <summary>
@@ -197,6 +203,32 @@ namespace FWO.Middleware.Server
         public async Task<GlobalDeviceSpecificSettings> GetRequestSettings(int? managementId)
         {
             return await wfHandler.GetManagementSettings(managementId);
+        }
+
+        /// <summary>
+        /// Remembers a release by a button with the request, so the provisioning keeps it when it continues afterwards.
+        /// </summary>
+        private static void AddRelease(Dictionary<string, List<int>> extQueryVariables, ProvisioningRelease? release)
+        {
+            if (release != null)
+            {
+                extQueryVariables[ExternalVarKeys.ButtonRelease] = [release.ScopeTaskNumber ?? 0];
+            }
+        }
+
+        /// <summary>The release by a button a finished request carries; null if it carries none.</summary>
+        private static ProvisioningRelease? ReleaseOf(ExternalRequest? request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.ExtQueryVariables))
+            {
+                return null;
+            }
+            Dictionary<string, List<int>>? extQueryVariables = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(request.ExtQueryVariables);
+            if (extQueryVariables == null || !extQueryVariables.TryGetValue(ExternalVarKeys.ButtonRelease, out List<int>? scope) || scope.Count == 0)
+            {
+                return null;
+            }
+            return new ProvisioningRelease(scope[0] > 0 ? scope[0] : null);
         }
 
         private static IEnumerable<ProvisioningWorkItem> OpenEntriesAfter(ProvisioningWorkList workList, ProvisioningWorkItem start)

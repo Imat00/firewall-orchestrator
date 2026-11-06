@@ -9,6 +9,8 @@ namespace FWO.Data
         public const string BundledTasks = "BundledTasks";
         public const string CheckPointInstallPolicyTargets = "CheckPointInstallPolicyTargets";
         public const string ManagementId = "ManagementId";
+        /// <summary>Scope a person released by a button: the request task number, 0 for the whole ticket.</summary>
+        public const string ButtonRelease = "ButtonRelease";
         public const string CheckPointStepIndex = "CheckPointStepIndex";
     }
 

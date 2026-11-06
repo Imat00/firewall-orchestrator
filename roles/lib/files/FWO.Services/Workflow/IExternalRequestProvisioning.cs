@@ -17,7 +17,9 @@ namespace FWO.Services.Workflow
         /// <param name="userConfig">Configuration of the executing state action.</param>
         /// <param name="ticketId">Ticket to provision.</param>
         /// <param name="scopeReqTaskId">Request task in the request task scope; null in the ticket scope.</param>
+        /// <param name="byButton">True if a person pressed a button: implementation tasks on Manual targets in the scope
+        /// are written as well, see <see cref="ProvisioningRelease"/>.</param>
         /// <returns>false if the provisioning failed.</returns>
-        Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId);
+        Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId, bool byButton = false);
     }
 }

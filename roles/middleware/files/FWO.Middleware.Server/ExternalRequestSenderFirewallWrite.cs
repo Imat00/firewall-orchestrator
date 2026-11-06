@@ -109,14 +109,15 @@ namespace FWO.Middleware.Server
         }
 
         /// <summary>
-        /// Closes a request whose implementation task no longer exists and continues the provisioning of the ticket.
+        /// Closes a request whose implementation task no longer exists and continues the provisioning of the ticket,
+        /// keeping a release by a button the request carries.
         /// </summary>
         private static async Task DiscardRequestWithoutImplTask(ExternalRequest request, ExternalRequestHandler extReqHandler)
         {
             Log.WriteWarning(kFirewallWriteLogTitle, $"{RequestInfo(request)}: implementation task {request.ImplTaskId} no longer exists, the request is discarded.");
             request.ExtRequestState = ExtStates.ExtReqDiscarded.ToString();
             await extReqHandler.PatchState(request);
-            await extReqHandler.StartProvisioning(request.TicketId);
+            await extReqHandler.StartProvisioning(request.TicketId, null, request);
         }
 
         private static string DescribeResult(ModifyFirewallResult result)

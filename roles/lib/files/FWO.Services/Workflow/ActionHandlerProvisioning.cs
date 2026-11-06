@@ -17,6 +17,7 @@ public partial class ActionHandler
     /// Starts the provisioning of the ticket: creates the external request for the next entry of its provisioning
     /// work list, i.e. hands a request task to its external ticket system or writes an implementation task to the
     /// firewall. In the request task scope only this task, a bundled task together with its bundle, is provisioned.
+    /// Offered as a button, implementation tasks on Manual targets in the scope are written as well.
     /// Runs in the middleware server only, which processes the external requests.
     /// </summary>
     /// <param name="action">The executed action.</param>
@@ -38,7 +39,7 @@ public partial class ActionHandler
             return;
         }
         long? scopeReqTaskId = scope == WfObjectScopes.RequestTask && statefulObject is WfReqTask reqTask ? reqTask.Id : null;
-        if (!await provisioning.StartProvisioning(apiConnection, wfHandler.userConfig, ticket.Id, scopeReqTaskId))
+        if (!await provisioning.StartProvisioning(apiConnection, wfHandler.userConfig, ticket.Id, scopeReqTaskId, IsOfferedAsButton(action)))
         {
             Log.WriteWarning(kCreateExtRequestsLogTitle, $"Action '{action.Name}' could not start the provisioning of ticket {ticket.Id}.");
         }

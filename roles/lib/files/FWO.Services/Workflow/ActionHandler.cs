@@ -658,7 +658,7 @@ namespace FWO.Services.Workflow
                 return;
             }
             WfReqTask? scopeTask = scope == WfObjectScopes.RequestTask ? statefulObject as WfReqTask : null;
-            int createdCount = await wfHandler.CreateMissingImplTasksForTicket(ticket, scopeTask);
+            int createdCount = await wfHandler.CreateMissingImplTasksForTicket(ticket, scopeTask, IsOfferedAsButton(action));
             Log.WriteDebug("Create Implementation Tasks", $"Action '{action.Name}' created {createdCount} implementation tasks for ticket {ticket.Id}.");
         }
 
@@ -754,6 +754,12 @@ namespace FWO.Services.Workflow
             }
 
             return await apiConnection.SendQueryAsync<List<ComplianceNetworkZone>>(NetworkZoneQueries.getNetworkZonesForMatrix, new { criterionId = matrixId.Value }) ?? [];
+        }
+
+        /// <summary>Whether a person triggered the action by a button instead of a state change.</summary>
+        private static bool IsOfferedAsButton(WfStateAction action)
+        {
+            return action.Event == StateActionEvents.OfferButton.ToString();
         }
 
         private WfTicket? GetTicketForBundling(WfStatefulObject statefulObject, WfObjectScopes scope)

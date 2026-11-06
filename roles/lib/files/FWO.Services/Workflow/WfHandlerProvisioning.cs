@@ -22,8 +22,10 @@ namespace FWO.Services.Workflow
         /// <param name="scopeTask">Request task in the request task scope: only this task, a bundled task together with
         /// its bundle once every member has reached the state of this task. Null in the ticket scope, where every
         /// request task of the ticket is provisioned.</param>
+        /// <param name="release">Scope released by a button, whose implementation tasks on Manual targets are written as
+        /// well; null without release.</param>
         /// <exception cref="InvalidOperationException">The device specific settings could not be resolved.</exception>
-        public async Task<ProvisioningWorkList> BuildProvisioningWorkList(WfTicket ticket, WfReqTask? scopeTask = null)
+        public async Task<ProvisioningWorkList> BuildProvisioningWorkList(WfTicket ticket, WfReqTask? scopeTask = null, ProvisioningRelease? release = null)
         {
             SetTicketEnv(ticket);
             List<WfReqTask> ticketTasks = [.. ActTicket.Tasks];
@@ -34,7 +36,7 @@ namespace FWO.Services.Workflow
             {
                 throw new InvalidOperationException($"The device specific settings could not be resolved; nothing of ticket {ticket.Id} is provisioned.");
             }
-            ProvisioningWorkList workList = ProvisioningWorkList.Build(reqTasks, new ResolvedProvisioningModes(this));
+            ProvisioningWorkList workList = ProvisioningWorkList.Build(reqTasks, new ResolvedProvisioningModes(this), ReleasedReqTaskIds(ticketTasks, release));
             foreach (ProvisioningGap gap in workList.Gaps)
             {
                 await ReportProvisioningGap(gap);
@@ -52,6 +54,24 @@ namespace FWO.Services.Workflow
             List<int> managementIds = managementId is int id && id > 0 ? [id] : kNoIds;
             await EnsureAutoPlanSettings(kNoIds, managementIds);
             return GetResolvedSettings(DeviceSpecificScopeType.Management, managementId);
+        }
+
+        /// <summary>
+        /// The request tasks a release by a button covers: the whole ticket, or the request task it was pressed on with
+        /// its bundle. Empty without release or if the request task no longer exists.
+        /// </summary>
+        private HashSet<long> ReleasedReqTaskIds(List<WfReqTask> ticketTasks, ProvisioningRelease? release)
+        {
+            if (release == null)
+            {
+                return [];
+            }
+            if (release.ScopeTaskNumber == null)
+            {
+                return [.. ticketTasks.Select(task => task.Id)];
+            }
+            WfReqTask? scopeTask = ticketTasks.FirstOrDefault(task => task.TaskNumber == release.ScopeTaskNumber);
+            return scopeTask == null ? [] : [.. TasksOfRequestTaskScope(ticketTasks, scopeTask).Select(task => task.Id)];
         }
 
         private static List<int> ProvisioningManagementIds(List<WfReqTask> reqTasks)

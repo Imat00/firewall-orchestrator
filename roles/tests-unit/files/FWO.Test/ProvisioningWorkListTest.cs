@@ -30,6 +30,9 @@ namespace FWO.Test
         private static readonly List<long?> kOrderedImplTaskIds = [11, 12, 13];
         private static readonly List<long?> kFirstImplTask = [11];
         private static readonly List<long?> kSecondImplTask = [12];
+        private static readonly List<long?> kFirstAndSecondImplTask = [11, 12];
+        private static readonly List<bool> kOnlyFirstReleased = [true, false];
+        private static readonly HashSet<long> kReleasedFirstReqTask = [1];
 
         /// <summary>
         /// Settings for the tests: one management per implementation mode, rules and objects alike.
@@ -83,6 +86,12 @@ namespace FWO.Test
         private static ProvisioningWorkList BuildWithPlanning(params WfReqTask[] reqTasks)
         {
             return ProvisioningWorkList.Build(reqTasks.ToList(), new FixedModes(kPlannedStateId));
+        }
+
+        /// <summary>Builds the work list with the request task 1 released by a button.</summary>
+        private static ProvisioningWorkList BuildReleasingTheFirstRequestTask(params WfReqTask[] reqTasks)
+        {
+            return ProvisioningWorkList.Build(reqTasks.ToList(), new FixedModes(), kReleasedFirstReqTask);
         }
 
         private static List<long?> ImplTaskIds(ProvisioningWorkList workList)
@@ -235,6 +244,52 @@ namespace FWO.Test
             {
                 Assert.That(ImplTaskIds(workList), Is.EqualTo(kSecondImplTask));
                 Assert.That(workList.Gaps, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void Build_ReleasedByAButton_ManualTargetIsWritten()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId);
+            AddImplTask(reqTask, 11, 1, kManualManagementId);
+            AddImplTask(reqTask, 12, 2, kAutomaticManagementId);
+
+            ProvisioningWorkList workList = BuildReleasingTheFirstRequestTask(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ImplTaskIds(workList), Is.EqualTo(kFirstAndSecondImplTask));
+                Assert.That(workList.Items.Select(item => item.Way), Is.All.EqualTo(ProvisioningWay.FirewallWrite));
+                Assert.That(workList.Items.Select(item => item.ReleasedByButton), Is.EqualTo(kOnlyFirstReleased));
+                Assert.That(workList.Next?.ImplTask?.Id, Is.EqualTo(11));
+            });
+        }
+
+        [Test]
+        public void Build_ReleasedByAButton_ManualTargetOfAnotherRequestTaskIsLeftToAPerson()
+        {
+            WfReqTask released = ReqTask(1, 1, kAutomaticManagementId);
+            AddImplTask(released, 11, 1, kManualManagementId);
+            WfReqTask other = ReqTask(2, 2, kAutomaticManagementId);
+            AddImplTask(other, 21, 1, kManualManagementId);
+
+            ProvisioningWorkList workList = BuildReleasingTheFirstRequestTask(released, other);
+
+            Assert.That(ImplTaskIds(workList), Is.EqualTo(kFirstImplTask));
+        }
+
+        [Test]
+        public void Build_ReleasedByAButton_ExternalTargetStaysAGap()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId);
+            AddImplTask(reqTask, 11, 1, kExternalManagementId);
+
+            ProvisioningWorkList workList = BuildReleasingTheFirstRequestTask(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(workList.Gaps, Has.Count.EqualTo(1));
             });
         }
 

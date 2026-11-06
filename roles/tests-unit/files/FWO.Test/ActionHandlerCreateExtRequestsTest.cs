@@ -17,26 +17,33 @@ namespace FWO.Test
         private const long kTicketId = 5;
         private const long kReqTaskId = 7;
 
-        private static readonly List<(long TicketId, long? ScopeReqTaskId)> kTicketScopeCall = [(kTicketId, null)];
-        private static readonly List<(long TicketId, long? ScopeReqTaskId)> kReqTaskScopeCall = [(kTicketId, kReqTaskId)];
+        private static readonly List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> kTicketScopeCall = [(kTicketId, null, false)];
+        private static readonly List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> kReqTaskScopeCall = [(kTicketId, kReqTaskId, false)];
+        private static readonly List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> kReqTaskButtonCall = [(kTicketId, kReqTaskId, true)];
 
         /// <summary>
         /// Records the started provisionings.
         /// </summary>
         private sealed class RecordingProvisioning(bool result = true) : IExternalRequestProvisioning
         {
-            public List<(long TicketId, long? ScopeReqTaskId)> Calls { get; } = [];
+            public List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> Calls { get; } = [];
 
-            public Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId)
+            public Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId, bool byButton = false)
             {
-                Calls.Add((ticketId, scopeReqTaskId));
+                Calls.Add((ticketId, scopeReqTaskId, byButton));
                 return Task.FromResult(result);
             }
         }
 
-        private static WfStateAction Action(WfObjectScopes scope)
+        private static WfStateAction Action(WfObjectScopes scope, StateActionEvents actionEvent = StateActionEvents.OnSet)
         {
-            return new WfStateAction { Name = "Create external requests", ActionType = nameof(StateActionTypes.CreateExtRequests), Scope = scope.ToString() };
+            return new WfStateAction
+            {
+                Name = "Create external requests",
+                ActionType = nameof(StateActionTypes.CreateExtRequests),
+                Scope = scope.ToString(),
+                Event = actionEvent.ToString()
+            };
         }
 
         private static (ActionHandler ActionHandler, WfTicket Ticket, WfReqTask ReqTask) Create(bool useInMwServer, IExternalRequestProvisioning? provisioning)
@@ -71,6 +78,17 @@ namespace FWO.Test
             await actionHandler.CreateExtRequests(Action(WfObjectScopes.RequestTask), reqTask, WfObjectScopes.RequestTask);
 
             Assert.That(provisioning.Calls, Is.EqualTo(kReqTaskScopeCall));
+        }
+
+        [Test]
+        public async Task OfferedAsButton_ReleasesTheScope()
+        {
+            RecordingProvisioning provisioning = new();
+            (ActionHandler actionHandler, _, WfReqTask reqTask) = Create(true, provisioning);
+
+            await actionHandler.CreateExtRequests(Action(WfObjectScopes.RequestTask, StateActionEvents.OfferButton), reqTask, WfObjectScopes.RequestTask);
+
+            Assert.That(provisioning.Calls, Is.EqualTo(kReqTaskButtonCall));
         }
 
         [Test]

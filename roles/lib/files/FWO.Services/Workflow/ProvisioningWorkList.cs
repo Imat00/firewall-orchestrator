@@ -28,8 +28,19 @@ namespace FWO.Services.Workflow
     /// set to done by hand or rejected; a finished entry is not provisioned again.</param>
     /// <param name="WaitsForPlanning">Whether the request task of a firewall write is still being planned. Such an entry is
     /// not written yet and holds back the entries behind it, until the request task reaches the end of the planning phase.</param>
+    /// <param name="ReleasedByButton">Whether a firewall write on a Manual target is only written because a person released
+    /// it by a button.</param>
     public sealed record ProvisioningWorkItem(ProvisioningWay Way, WfReqTask ReqTask, WfImplTask? ImplTask, ExternalTicketSystemKind? ExternalTicketSystem, bool IsFinished,
-        bool WaitsForPlanning = false);
+        bool WaitsForPlanning = false, bool ReleasedByButton = false);
+
+    /// <summary>
+    /// Release of a scope by a person pressing a button: implementation tasks on targets set to Manual are written like
+    /// those on Automatic targets, as the person decides instead of the settings. The release is remembered with the
+    /// external requests it creates, so the provisioning keeps it when it continues after a finished request.
+    /// </summary>
+    /// <param name="ScopeTaskNumber">Number of the request task the button was pressed on, which includes its bundle;
+    /// null for the whole ticket.</param>
+    public sealed record ProvisioningRelease(int? ScopeTaskNumber);
 
     /// <summary>
     /// A request or implementation task nobody implements, as its implementation mode hands it to an external ticket
@@ -87,15 +98,21 @@ namespace FWO.Services.Workflow
         /// </summary>
         /// <param name="reqTasks">Request tasks in the scope of the provisioning.</param>
         /// <param name="modes">Effective settings and states.</param>
-        public static ProvisioningWorkList Build(IEnumerable<WfReqTask> reqTasks, IProvisioningModeSource modes)
+        /// <param name="releasedReqTaskIds">Request tasks released by a button, whose implementation tasks on Manual targets
+        /// are written as well; null or empty without release.</param>
+        public static ProvisioningWorkList Build(IEnumerable<WfReqTask> reqTasks, IProvisioningModeSource modes, IReadOnlySet<long>? releasedReqTaskIds = null)
         {
-            ProvisioningWorkList workList = new();
+            ProvisioningWorkList workList = new() { releasedReqTaskIds = releasedReqTaskIds ?? kNoReleasedReqTasks };
             foreach (WfReqTask reqTask in reqTasks.OrderBy(task => task.TaskNumber))
             {
                 workList.AddRequestTask(reqTask, modes);
             }
             return workList;
         }
+
+        private static readonly HashSet<long> kNoReleasedReqTasks = [];
+
+        private IReadOnlySet<long> releasedReqTaskIds = kNoReleasedReqTasks;
 
         private void AddRequestTask(WfReqTask reqTask, IProvisioningModeSource modes)
         {
@@ -157,6 +174,9 @@ namespace FWO.Services.Workflow
             {
                 case ProvisioningImplementationMode.Automatic:
                     Items.Add(new(ProvisioningWay.FirewallWrite, reqTask, implTask, null, isFinished, IsBeingPlanned(reqTask, modes)));
+                    break;
+                case ProvisioningImplementationMode.Manual when releasedReqTaskIds.Contains(reqTask.Id):
+                    Items.Add(new(ProvisioningWay.FirewallWrite, reqTask, implTask, null, isFinished, IsBeingPlanned(reqTask, modes), true));
                     break;
                 case ProvisioningImplementationMode.RerouteToExternalTicketSystem when !isFinished:
                     Gaps.Add(new(reqTask, implTask, managementId, $"target management {managementId} is set to external ticket system, " +

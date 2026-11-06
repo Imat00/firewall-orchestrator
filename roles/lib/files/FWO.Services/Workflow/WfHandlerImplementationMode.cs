@@ -71,7 +71,7 @@ namespace FWO.Services.Workflow
             foreach (int? deviceId in targets)
             {
                 ProvisioningImplementationMode mode = GetResolvedSettings(DeviceSpecificScopeType.Gateway, deviceId).GetImplementationMode(true);
-                if (mode == ProvisioningImplementationMode.Automatic)
+                if (IsImplementedByFwo(mode))
                 {
                     automaticTargets.Add(deviceId);
                 }
@@ -102,7 +102,7 @@ namespace FWO.Services.Workflow
             foreach (Management target in targets)
             {
                 ProvisioningImplementationMode mode = GetResolvedSettings(DeviceSpecificScopeType.Management, target.Id).GetImplementationMode(false);
-                if (mode == ProvisioningImplementationMode.Automatic)
+                if (IsImplementedByFwo(mode))
                 {
                     automaticTargets.Add(target);
                 }
@@ -118,6 +118,16 @@ namespace FWO.Services.Workflow
                 }
             }
             return automaticTargets;
+        }
+
+        /// <summary>
+        /// Whether a target with the given implementation mode gets an implementation task: Automatic, and Manual as well
+        /// while a person creates the implementation tasks by a button.
+        /// </summary>
+        private bool IsImplementedByFwo(ProvisioningImplementationMode mode)
+        {
+            return mode == ProvisioningImplementationMode.Automatic
+                || (implTaskCreationByButton && mode == ProvisioningImplementationMode.Manual);
         }
 
         private async Task HandleExternalTicketSystemGateway(WfReqTask reqTask, int? deviceId)

@@ -264,7 +264,8 @@ namespace FWO.Middleware.Server
         }
 
 
-        private async Task CreateExtRequest(WfTicket ticket, List<WfReqTask> tasks, List<WfReqTask> handledTasks, int waitCycles)
+        private async Task CreateExtRequest(WfTicket ticket, List<WfReqTask> tasks, List<WfReqTask> handledTasks, int waitCycles,
+            ProvisioningRelease? release = null)
         {
             // the copy stored with the request only references the credential, the header is built for each call
             actSystem.Authorization = null;
@@ -275,6 +276,7 @@ namespace FWO.Middleware.Server
             }
             string taskContent = await ConstructContent(tasks, ticket.Requester);
             Dictionary<string, List<int>> handledTaskNumbers = BuildExtQueryVariables(tasks, handledTasks);
+            AddRelease(handledTaskNumbers, release);
             string extQueryVars = handledTaskNumbers.Count > 0
                 ? JsonSerializer.Serialize(handledTaskNumbers)
                 : "";
