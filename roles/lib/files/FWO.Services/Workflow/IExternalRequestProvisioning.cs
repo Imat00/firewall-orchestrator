@@ -21,5 +21,17 @@ namespace FWO.Services.Workflow
         /// are written as well, see <see cref="ProvisioningRelease"/>.</param>
         /// <returns>false if the provisioning failed.</returns>
         Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId, bool byButton = false);
+
+        /// <summary>
+        /// Creates the external request writing a single implementation task to the firewall, unless a request of the
+        /// ticket is still being processed, the task is finished or not written by FWO. Nothing follows the request.
+        /// </summary>
+        /// <param name="apiConnection">Api connection of the executing state action.</param>
+        /// <param name="userConfig">Configuration of the executing state action.</param>
+        /// <param name="ticketId">Ticket of the implementation task.</param>
+        /// <param name="implTaskId">Implementation task to write.</param>
+        /// <param name="byButton">True if a person pressed a button: the task is written on a Manual target as well.</param>
+        /// <returns>false if the provisioning failed.</returns>
+        Task<bool> ProvisionImplTask(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long implTaskId, bool byButton = false);
     }
 }

@@ -16,5 +16,12 @@ namespace FWO.Middleware.Server
             using ExternalRequestHandler extRequestHandler = new(userConfig, apiConnection);
             return await extRequestHandler.StartProvisioning(ticketId, scopeReqTaskId, null, byButton);
         }
+
+        /// <inheritdoc/>
+        public async Task<bool> ProvisionImplTask(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long implTaskId, bool byButton = false)
+        {
+            using ExternalRequestHandler extRequestHandler = new(userConfig, apiConnection);
+            return await extRequestHandler.ProvisionImplTask(ticketId, implTaskId, byButton);
+        }
     }
 }

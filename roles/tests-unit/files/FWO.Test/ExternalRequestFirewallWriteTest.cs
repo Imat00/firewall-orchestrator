@@ -150,7 +150,10 @@ namespace FWO.Test
             });
         }
 
-        private static ExternalRequest Request(long? implTaskId = kImplTaskId, string? state = null, int attempts = 0, int waitCycles = 0)
+        private const string kSingleImplTaskVariables = "{\"ManagementId\":[1],\"SingleImplTask\":[1]}";
+
+        private static ExternalRequest Request(long? implTaskId = kImplTaskId, string? state = null, int attempts = 0, int waitCycles = 0,
+            string extQueryVariables = "{\"ManagementId\":[1]}")
         {
             return new ExternalRequest
             {
@@ -160,7 +163,7 @@ namespace FWO.Test
                 ImplTaskId = implTaskId,
                 ExtRequestType = WfTaskType.group_create.ToString(),
                 ExtRequestState = state ?? ExtStates.ExtReqInitialized.ToString(),
-                ExtQueryVariables = "{\"ManagementId\":[1]}",
+                ExtQueryVariables = extQueryVariables,
                 Attempts = attempts,
                 WaitCycles = waitCycles,
                 Locked = true
@@ -393,6 +396,40 @@ namespace FWO.Test
                 Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kDoneStateId));
                 Assert.That(ticket.Tasks.Single(task => task.Id == kFirstReqTaskId).StateId, Is.Not.EqualTo(kDoneStateId));
                 Assert.That(Variable(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest).Single(), "implTaskId"), Is.EqualTo(kNextImplTaskId));
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_SingleImplementationTaskDone_NothingFollows()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.PatchState(Request(state: ExtStates.ExtReqDone.ToString(), extQueryVariables: kSingleImplTaskVariables));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kDoneStateId));
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestFinal), Does.Contain(ExtStates.ExtReqAcknowledged.ToString()));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_SingleImplementationTaskRejected_LeavesTheFollowingRequestTasks()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.PatchState(Request(state: ExtStates.ExtReqRejected.ToString(), extQueryVariables: kSingleImplTaskVariables));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(ticket.Tasks.Single(task => task.Id == kSecondReqTaskId).StateId, Is.EqualTo(kOpenStateId));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
             }
         }
 

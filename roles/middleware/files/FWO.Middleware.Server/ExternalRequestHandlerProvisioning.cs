@@ -34,6 +34,11 @@ namespace FWO.Middleware.Server
         /// <returns>true if a request was created or nothing is to be done; false if the provisioning failed.</returns>
         public async Task<bool> StartProvisioning(long ticketId, long? scopeReqTaskId = null, ExternalRequest? previousRequest = null, bool byButton = false)
         {
+            if (IsSingleImplTaskRequest(previousRequest))
+            {
+                Log.WriteInfo(kProvisioningLogTitle, $"External request {previousRequest?.Id} wrote a single implementation task of ticket {ticketId}; nothing follows it.");
+                return true;
+            }
             try
             {
                 WfTicket? ticket = await InitAndResolve(ticketId);
@@ -64,6 +69,50 @@ namespace FWO.Middleware.Server
             catch (Exception exception)
             {
                 Log.WriteError(kProvisioningLogTitle, $"Provisioning of ticket {ticketId} failed: ", exception);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Creates the external request writing a single implementation task to the firewall, see
+        /// <see cref="WfHandler.BuildProvisioningOfImplTask"/>. The request is marked, so that nothing follows it.
+        /// </summary>
+        /// <param name="ticketId">Ticket of the implementation task.</param>
+        /// <param name="implTaskId">Implementation task to write.</param>
+        /// <param name="byButton">True if a person pressed a button: the task is written on a Manual target as well.</param>
+        /// <returns>true if the request was created or nothing is to be done; false if the provisioning failed.</returns>
+        public async Task<bool> ProvisionImplTask(long ticketId, long implTaskId, bool byButton = false)
+        {
+            try
+            {
+                WfTicket? ticket = await InitAndResolve(ticketId);
+                (WfReqTask? reqTask, WfImplTask? implTask) = FindImplTask(ticket, implTaskId);
+                if (ticket == null || reqTask == null || implTask == null)
+                {
+                    Log.WriteWarning(kProvisioningLogTitle, $"Implementation task {implTaskId} not found in ticket {ticketId}.");
+                    return false;
+                }
+                if (await HasUnfinishedRequest(ticket.Id))
+                {
+                    Log.WriteWarning(kProvisioningLogTitle, $"Ticket {ticket.Id} still has an external request being processed; " +
+                        $"implementation task {implTaskId} is not written, start it again when the request is finished.");
+                    return true;
+                }
+                ProvisioningWorkItem? item = await wfHandler.BuildProvisioningOfImplTask(ticket, implTaskId, byButton);
+                if (item == null || item.Way != ProvisioningWay.FirewallWrite || item.IsFinished || item.WaitsForPlanning)
+                {
+                    Log.WriteInfo(kProvisioningLogTitle, $"Implementation task {implTaskId} of ticket {ticket.Id} is not written: it is finished, " +
+                        "still being planned, or not written by FWO in its implementation mode.");
+                    return true;
+                }
+                await CreateFirewallWriteRequest(ticket, reqTask, implTask, 0, null, true);
+                Log.WriteInfo(kProvisioningLogTitle, $"Created the external request for implementation task {implTask.TaskNumber} " +
+                    $"of request task {reqTask.TaskNumber} of ticket {ticket.Id}.");
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Log.WriteError(kProvisioningLogTitle, $"Writing implementation task {implTaskId} of ticket {ticketId} failed: ", exception);
                 return false;
             }
         }
@@ -110,7 +159,8 @@ namespace FWO.Middleware.Server
         /// Creates the request writing an implementation task to the firewall. It references the implementation task,
         /// which the sender loads itself, so the request carries no ticket system and no content.
         /// </summary>
-        private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, int waitCycles, ProvisioningRelease? release)
+        private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, int waitCycles, ProvisioningRelease? release,
+            bool singleImplTask = false)
         {
             Dictionary<string, List<int>> extQueryVariables = [];
             if (implTask.ManagementId is int managementId)
@@ -118,6 +168,10 @@ namespace FWO.Middleware.Server
                 extQueryVariables[ExternalVarKeys.ManagementId] = [managementId];
             }
             AddRelease(extQueryVariables, release);
+            if (singleImplTask)
+            {
+                extQueryVariables[ExternalVarKeys.SingleImplTask] = [1];
+            }
             var variables = new
             {
                 ownerId = reqTask.Owners.FirstOrDefault()?.Owner.Id ?? ticket.Tasks.FirstOrDefault()?.Owners.FirstOrDefault()?.Owner.Id,
@@ -219,16 +273,28 @@ namespace FWO.Middleware.Server
         /// <summary>The release by a button a finished request carries; null if it carries none.</summary>
         private static ProvisioningRelease? ReleaseOf(ExternalRequest? request)
         {
+            List<int>? scope = ExtQueryVariable(request, ExternalVarKeys.ButtonRelease);
+            if (scope == null || scope.Count == 0)
+            {
+                return null;
+            }
+            return new ProvisioningRelease(scope[0] > 0 ? scope[0] : null);
+        }
+
+        /// <summary>Whether a request wrote a single implementation task started by its own action, which nothing follows.</summary>
+        private static bool IsSingleImplTaskRequest(ExternalRequest? request)
+        {
+            return ExtQueryVariable(request, ExternalVarKeys.SingleImplTask) != null;
+        }
+
+        private static List<int>? ExtQueryVariable(ExternalRequest? request, string key)
+        {
             if (string.IsNullOrWhiteSpace(request?.ExtQueryVariables))
             {
                 return null;
             }
             Dictionary<string, List<int>>? extQueryVariables = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(request.ExtQueryVariables);
-            if (extQueryVariables == null || !extQueryVariables.TryGetValue(ExternalVarKeys.ButtonRelease, out List<int>? scope) || scope.Count == 0)
-            {
-                return null;
-            }
-            return new ProvisioningRelease(scope[0] > 0 ? scope[0] : null);
+            return extQueryVariables != null && extQueryVariables.TryGetValue(key, out List<int>? values) ? values : null;
         }
 
         private static IEnumerable<ProvisioningWorkItem> OpenEntriesAfter(ProvisioningWorkList workList, ProvisioningWorkItem start)

@@ -390,5 +390,135 @@ namespace FWO.Test
                 Assert.That(apiConnection.CreatedRequests, Is.Empty);
             });
         }
+
+        [Test]
+        public async Task ProvisionImplTask_AutomaticTarget_CreatesARequestNothingFollows()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, new GlobalDeviceSpecificSettings());
+
+            bool result = await handler.ProvisionImplTask(kTicketId, kImplTaskId);
+
+            Assert.That(result, Is.True);
+            Assert.That(apiConnection.CreatedRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(Variable(apiConnection.CreatedRequests[0], "implTaskId"), Is.EqualTo(kImplTaskId));
+                Assert.That(Variable(apiConnection.CreatedRequests[0], "extQueryVariables"), Is.EqualTo("{\"ManagementId\":[1],\"SingleImplTask\":[1]}"));
+            });
+        }
+
+        [Test]
+        public async Task ProvisionImplTask_WritesItBeforeOpenTasksOfLowerNumbers()
+        {
+            ProvisioningApiConn apiConnection = new(TicketWithTwoManualRequestTasks());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, new GlobalDeviceSpecificSettings());
+
+            await handler.ProvisionImplTask(kTicketId, kOtherReqTaskImplTaskId);
+
+            Assert.That(apiConnection.CreatedRequests, Has.Count.EqualTo(1));
+            Assert.That(Variable(apiConnection.CreatedRequests[0], "implTaskId"), Is.EqualTo(kOtherReqTaskImplTaskId));
+        }
+
+        [Test]
+        public async Task ProvisionImplTask_ManualTarget_IsWrittenByButtonOnly()
+        {
+            ProvisioningApiConn withoutButton = new(Ticket());
+            ProvisioningApiConn byButton = new(Ticket());
+            using ExternalRequestHandler handlerWithoutButton = CreateHandler(withoutButton, ManualSettings());
+            using ExternalRequestHandler handlerByButton = CreateHandler(byButton, ManualSettings());
+
+            await handlerWithoutButton.ProvisionImplTask(kTicketId, kImplTaskId);
+            await handlerByButton.ProvisionImplTask(kTicketId, kImplTaskId, true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(withoutButton.CreatedRequests, Is.Empty);
+                Assert.That(byButton.CreatedRequests, Has.Count.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public async Task ProvisionImplTask_ExternalManagement_IsNotWritten()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, ExternalTicketSystemSettings());
+
+            bool result = await handler.ProvisionImplTask(kTicketId, kImplTaskId, true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task ProvisionImplTask_FinishedTask_IsNotWrittenAgain()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket(kDoneStateId));
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, new GlobalDeviceSpecificSettings());
+
+            bool result = await handler.ProvisionImplTask(kTicketId, kImplTaskId, true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task ProvisionImplTask_RequestOfTheTicketStillRunning_CreatesNothing()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            apiConnection.UnfinishedRequests.Add(new ExternalRequest { Id = 3, TicketId = kTicketId });
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, new GlobalDeviceSpecificSettings());
+
+            bool result = await handler.ProvisionImplTask(kTicketId, kImplTaskId, true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task ProvisionImplTask_UnknownImplementationTask_Fails()
+        {
+            ProvisioningApiConn apiConnection = new(Ticket());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, new GlobalDeviceSpecificSettings());
+
+            bool result = await handler.ProvisionImplTask(kTicketId, 99);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.False);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task StartProvisioning_AfterASingleImplementationTask_CreatesNothing()
+        {
+            ProvisioningApiConn apiConnection = new(TicketWithTwoManualRequestTasks());
+            using ExternalRequestHandler handler = CreateHandler(apiConnection, new GlobalDeviceSpecificSettings());
+            ExternalRequest previousRequest = new()
+            {
+                Id = 3,
+                TicketId = kTicketId,
+                ExtRequestState = ExtStates.ExtReqDone.ToString(),
+                ExtQueryVariables = "{\"ManagementId\":[1],\"SingleImplTask\":[1]}"
+            };
+
+            bool result = await handler.StartProvisioning(kTicketId, null, previousRequest);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.True);
+                Assert.That(apiConnection.CreatedRequests, Is.Empty);
+            });
+        }
     }
 }

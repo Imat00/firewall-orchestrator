@@ -37,7 +37,8 @@ namespace FWO.Middleware.Server
         /// Takes over the result of a finished firewall write: the implementation task gets the internal state of the
         /// request and a history entry, unless it already reached the end state of the implementation phase otherwise.
         /// A rejected write rejects the following request tasks as before; otherwise the next entry of the provisioning
-        /// work list of the ticket follows.
+        /// work list of the ticket follows. Nothing follows the write of a single implementation task started by its own
+        /// action, and a rejection of it leaves the other tasks to the person who started it.
         /// </summary>
         private async Task HandleImplTaskStateChange(WfTicket ticket, ExternalRequest request)
         {
@@ -57,12 +58,12 @@ namespace FWO.Middleware.Server
                 Log.WriteWarning(kFirewallWriteLogTitle, $"Implementation task {request.ImplTaskId} of external request {request.Id} not found in ticket {ticket.Id}.");
             }
             await Acknowledge(request);
-            if (rejected)
+            if (rejected && !IsSingleImplTaskRequest(request))
             {
                 await RejectFollowingTasks(ticket, request.TaskNumber);
                 Log.WriteInfo($"External Request {request.Id} rejected", $"Reject Following Tasks for internal ticket {ticket.Id}");
             }
-            else
+            else if (!rejected)
             {
                 await StartProvisioning(ticket.Id, null, request);
             }

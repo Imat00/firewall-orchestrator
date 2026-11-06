@@ -8,7 +8,8 @@ namespace FWO.Test
 {
     /// <summary>
     /// Tests that the state action "Create external requests" starts the provisioning of the ticket in the scope of
-    /// the action, and does nothing outside the middleware server.
+    /// the action, writes a single implementation task in the implementation task scope, and does nothing outside the
+    /// middleware server.
     /// </summary>
     [TestFixture]
     [Parallelizable]
@@ -16,10 +17,12 @@ namespace FWO.Test
     {
         private const long kTicketId = 5;
         private const long kReqTaskId = 7;
+        private const long kImplTaskId = 9;
 
         private static readonly List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> kTicketScopeCall = [(kTicketId, null, false)];
         private static readonly List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> kReqTaskScopeCall = [(kTicketId, kReqTaskId, false)];
         private static readonly List<(long TicketId, long? ScopeReqTaskId, bool ByButton)> kReqTaskButtonCall = [(kTicketId, kReqTaskId, true)];
+        private static readonly List<(long TicketId, long ImplTaskId, bool ByButton)> kImplTaskButtonCall = [(kTicketId, kImplTaskId, true)];
 
         /// <summary>
         /// Records the started provisionings.
@@ -31,6 +34,14 @@ namespace FWO.Test
             public Task<bool> StartProvisioning(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long? scopeReqTaskId, bool byButton = false)
             {
                 Calls.Add((ticketId, scopeReqTaskId, byButton));
+                return Task.FromResult(result);
+            }
+
+            public List<(long TicketId, long ImplTaskId, bool ByButton)> ImplTaskCalls { get; } = [];
+
+            public Task<bool> ProvisionImplTask(ApiConnection apiConnection, UserConfig userConfig, long ticketId, long implTaskId, bool byButton = false)
+            {
+                ImplTaskCalls.Add((ticketId, implTaskId, byButton));
                 return Task.FromResult(result);
             }
         }
@@ -109,15 +120,41 @@ namespace FWO.Test
         }
 
         [Test]
-        public async Task ImplementationTaskScope_StartsNothing()
+        public async Task ImplementationTaskScope_WritesOnlyThisImplementationTask()
         {
             RecordingProvisioning provisioning = new();
             (ActionHandler actionHandler, _, WfReqTask reqTask) = Create(true, provisioning);
-            WfImplTask implTask = new(reqTask);
+            WfImplTask implTask = new(reqTask) { Id = kImplTaskId };
+
+            await actionHandler.CreateExtRequests(Action(WfObjectScopes.ImplementationTask, StateActionEvents.OfferButton), implTask, WfObjectScopes.ImplementationTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(provisioning.ImplTaskCalls, Is.EqualTo(kImplTaskButtonCall));
+                Assert.That(provisioning.Calls, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task ImplementationTaskScope_WithoutTicket_StartsNothing()
+        {
+            RecordingProvisioning provisioning = new();
+            (ActionHandler actionHandler, WfTicket ticket, _) = Create(true, provisioning);
+            ticket.Id = 0;
+            WfImplTask implTask = new() { Id = kImplTaskId };
 
             await actionHandler.CreateExtRequests(Action(WfObjectScopes.ImplementationTask), implTask, WfObjectScopes.ImplementationTask);
 
-            Assert.That(provisioning.Calls, Is.Empty);
+            Assert.That(provisioning.ImplTaskCalls, Is.Empty);
+        }
+
+        [Test]
+        public void ImplementationTaskScope_OutsideTheMiddlewareServer_DoesNothing()
+        {
+            (ActionHandler actionHandler, _, WfReqTask reqTask) = Create(false, null);
+            WfImplTask implTask = new(reqTask) { Id = kImplTaskId };
+
+            Assert.DoesNotThrowAsync(() => actionHandler.CreateExtRequests(Action(WfObjectScopes.ImplementationTask), implTask, WfObjectScopes.ImplementationTask));
         }
     }
 }

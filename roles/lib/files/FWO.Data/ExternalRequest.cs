@@ -11,6 +11,8 @@ namespace FWO.Data
         public const string ManagementId = "ManagementId";
         /// <summary>Scope a person released by a button: the request task number, 0 for the whole ticket.</summary>
         public const string ButtonRelease = "ButtonRelease";
+        /// <summary>Marks a firewall write of a single implementation task started by its own action: nothing follows it.</summary>
+        public const string SingleImplTask = "SingleImplTask";
         public const string CheckPointStepIndex = "CheckPointStepIndex";
     }
 

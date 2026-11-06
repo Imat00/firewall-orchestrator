@@ -30,18 +30,50 @@ namespace FWO.Services.Workflow
             SetTicketEnv(ticket);
             List<WfReqTask> ticketTasks = [.. ActTicket.Tasks];
             List<WfReqTask> reqTasks = scopeTask == null ? ticketTasks : TasksOfRequestTaskScope(ticketTasks, scopeTask);
+            ProvisioningWorkList workList = await BuildWorkList(ticket, reqTasks, ReleasedReqTaskIds(ticketTasks, release));
+            foreach (ProvisioningGap gap in workList.Gaps)
+            {
+                await ReportProvisioningGap(gap);
+            }
+            return workList;
+        }
+
+        /// <summary>
+        /// The work list entry of a single implementation task, with the device specific settings in effect now; its
+        /// bundle and the other tasks of the ticket do not matter. A gap of the task is reported with an alert.
+        /// </summary>
+        /// <param name="ticket">Ticket with its request and implementation tasks.</param>
+        /// <param name="implTaskId">Implementation task to write.</param>
+        /// <param name="byButton">True if a person pressed a button: the task is written on a Manual target as well.</param>
+        /// <returns>The entry; null if the task is not in the ticket or not written by FWO.</returns>
+        /// <exception cref="InvalidOperationException">The device specific settings could not be resolved.</exception>
+        public async Task<ProvisioningWorkItem?> BuildProvisioningOfImplTask(WfTicket ticket, long implTaskId, bool byButton = false)
+        {
+            SetTicketEnv(ticket);
+            WfReqTask? reqTask = ActTicket.Tasks.FirstOrDefault(task => task.ImplementationTasks.Any(implTask => implTask.Id == implTaskId));
+            if (reqTask == null)
+            {
+                return null;
+            }
+            List<WfReqTask> reqTasks = [reqTask];
+            HashSet<long> releasedReqTaskIds = byButton ? [reqTask.Id] : [];
+            ProvisioningWorkList workList = await BuildWorkList(ticket, reqTasks, releasedReqTaskIds);
+            foreach (ProvisioningGap gap in workList.Gaps.Where(gap => gap.ImplTask?.Id == implTaskId))
+            {
+                await ReportProvisioningGap(gap);
+            }
+            return workList.Items.FirstOrDefault(item => item.ImplTask?.Id == implTaskId);
+        }
+
+        private async Task<ProvisioningWorkList> BuildWorkList(WfTicket ticket, List<WfReqTask> reqTasks, HashSet<long> releasedReqTaskIds)
+        {
             ResetAutoPlanCache();
             await EnsureAutoPlanSettings(kNoIds, ProvisioningManagementIds(reqTasks));
             if (AutoPlanSettingsOverride == null && (autoPlanResolveFailed || !autoPlanCache.ContainsKey((DeviceSpecificScopeType.Global, null))))
             {
                 throw new InvalidOperationException($"The device specific settings could not be resolved; nothing of ticket {ticket.Id} is provisioned.");
             }
-            ProvisioningWorkList workList = ProvisioningWorkList.Build(reqTasks, new ResolvedProvisioningModes(this), ReleasedReqTaskIds(ticketTasks, release));
-            foreach (ProvisioningGap gap in workList.Gaps)
-            {
-                await ReportProvisioningGap(gap);
-            }
-            return workList;
+            return ProvisioningWorkList.Build(reqTasks, new ResolvedProvisioningModes(this), releasedReqTaskIds);
         }
 
         /// <summary>
