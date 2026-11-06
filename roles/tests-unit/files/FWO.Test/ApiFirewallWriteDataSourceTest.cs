@@ -72,10 +72,27 @@ namespace FWO.Test
         }
 
         [Test]
+        public async Task WithoutManagementTakesTheManagementOfTheGateway()
+        {
+            WfImplTask task = Task(WfTaskType.rule_delete);
+            task.ManagementId = null;
+            FirewallWriteContext context = await new ApiFirewallWriteDataSource(Api()).LoadContext(task);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(context.Management.Id, Is.EqualTo(kManagementId));
+                Assert.That(context.Gateway?.Id, Is.EqualTo(kGatewayId));
+            }
+        }
+
+        [Test]
         public void MissingManagementOrForeignGatewayFails()
         {
             WfImplTask withoutManagement = Task(WfTaskType.group_delete);
             withoutManagement.ManagementId = null;
+            withoutManagement.DeviceId = null;
+            WfImplTask unknownGatewayWithoutManagement = Task(WfTaskType.rule_delete);
+            unknownGatewayWithoutManagement.ManagementId = null;
+            unknownGatewayWithoutManagement.DeviceId = 999;
             WfImplTask unknownManagement = Task(WfTaskType.group_delete);
             unknownManagement.ManagementId = 999;
             WfImplTask foreignGateway = Task(WfTaskType.group_delete);
@@ -84,6 +101,8 @@ namespace FWO.Test
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(Assert.ThrowsAsync<FirewallWriteException>(() => dataSource.LoadContext(withoutManagement))?.Error.Kind,
+                    Is.EqualTo(FirewallWriteErrorKind.InvalidTaskData));
+                Assert.That(Assert.ThrowsAsync<FirewallWriteException>(() => dataSource.LoadContext(unknownGatewayWithoutManagement))?.Error.Kind,
                     Is.EqualTo(FirewallWriteErrorKind.InvalidTaskData));
                 Assert.That(Assert.ThrowsAsync<FirewallWriteException>(() => dataSource.LoadContext(unknownManagement))?.Error.Kind,
                     Is.EqualTo(FirewallWriteErrorKind.InvalidTaskData));

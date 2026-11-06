@@ -21,19 +21,36 @@ namespace FWO.ExternalSystems.FirewallWrite
     /// </summary>
     public sealed class ApiFirewallWriteDataSource(ApiConnection apiConnection) : IFirewallWriteDataSource
     {
+        /// <summary>
+        /// The management of the gateway of a task stored without management, e.g. a rule task created before the
+        /// management was stored with it.
+        /// </summary>
+        private async Task<int> ManagementOfGateway(WfImplTask implTask)
+        {
+            if (implTask.DeviceId is not int gatewayId)
+            {
+                throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData, $"Implementation task {implTask.Id} has no management.");
+            }
+            List<Device> gateways = await apiConnection.SendQueryAsync<List<Device>>(DeviceQueries.getRulePositioningTarget, new { gatewayId });
+            int managementId = gateways.FirstOrDefault()?.Management?.Id ?? 0;
+            if (managementId <= 0)
+            {
+                throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
+                    $"Implementation task {implTask.Id} has no management, and its gateway {gatewayId} has none either.");
+            }
+            return managementId;
+        }
+
         /// <inheritdoc/>
         public async Task<FirewallWriteContext> LoadContext(WfImplTask implTask)
         {
             ArgumentNullException.ThrowIfNull(implTask);
-            if (implTask.ManagementId == null)
-            {
-                throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData, $"Implementation task {implTask.Id} has no management.");
-            }
+            int managementId = implTask.ManagementId ?? await ManagementOfGateway(implTask);
 
-            List<Management> managements = await apiConnection.SendQueryAsync<List<Management>>(DeviceQueries.getManagementById, new { id = implTask.ManagementId.Value });
+            List<Management> managements = await apiConnection.SendQueryAsync<List<Management>>(DeviceQueries.getManagementById, new { id = managementId });
             Management management = managements.FirstOrDefault()
                 ?? throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
-                    $"Management {implTask.ManagementId} of implementation task {implTask.Id} not found.");
+                    $"Management {managementId} of implementation task {implTask.Id} not found.");
             Device? gateway = null;
             if (implTask.DeviceId != null)
             {

@@ -1,6 +1,7 @@
 using FWO.Data;
 using FWO.Data.DeviceSpecificSettings;
 using FWO.Data.Workflow;
+using FWO.ExternalSystems.FirewallWrite;
 using FWO.Logging;
 
 namespace FWO.Services.Workflow
@@ -68,7 +69,7 @@ namespace FWO.Services.Workflow
         private async Task<ProvisioningWorkList> BuildWorkList(WfTicket ticket, List<WfReqTask> reqTasks, HashSet<long> releasedReqTaskIds)
         {
             ResetAutoPlanCache();
-            await EnsureAutoPlanSettings(kNoIds, ProvisioningManagementIds(reqTasks));
+            await EnsureAutoPlanSettings(ProvisioningGatewayIds(reqTasks), ProvisioningManagementIds(reqTasks));
             if (AutoPlanSettingsOverride == null && (autoPlanResolveFailed || !autoPlanCache.ContainsKey((DeviceSpecificScopeType.Global, null))))
             {
                 throw new InvalidOperationException($"The device specific settings could not be resolved; nothing of ticket {ticket.Id} is provisioned.");
@@ -106,6 +107,20 @@ namespace FWO.Services.Workflow
             return scopeTask == null ? [] : [.. TasksOfRequestTaskScope(ticketTasks, scopeTask).Select(task => task.Id)];
         }
 
+        /// <summary>The gateways of the rule implementation tasks, whose implementation mode for rules applies.</summary>
+        private static List<int> ProvisioningGatewayIds(List<WfReqTask> reqTasks)
+        {
+            IEnumerable<WfImplTask> ruleImplTasks = reqTasks.Where(task => IsRuleTaskType(task.TaskType)).SelectMany(task => task.ImplementationTasks);
+            return [.. ruleImplTasks.Select(implTask => implTask.DeviceId).OfType<int>().Where(id => id > 0).Distinct()];
+        }
+
+        /// <summary>Whether rules are written to the management of a gateway, by the device type of the management.</summary>
+        private bool WritesRulesToGateway(int gatewayId)
+        {
+            int deviceTypeId = Devices.FirstOrDefault(device => device.Id == gatewayId)?.Management?.DeviceType?.Id ?? 0;
+            return FirewallVendors.WritesRules(deviceTypeId);
+        }
+
         private static List<int> ProvisioningManagementIds(List<WfReqTask> reqTasks)
         {
             IEnumerable<int?> reqTaskManagementIds = reqTasks.Select(task => task.ManagementId);
@@ -137,6 +152,16 @@ namespace FWO.Services.Workflow
             public ProvisioningImplementationMode GetImplementationMode(int managementId, bool isRuleTask)
             {
                 return handler.GetResolvedSettings(DeviceSpecificScopeType.Management, managementId).GetImplementationMode(isRuleTask);
+            }
+
+            public ProvisioningImplementationMode GetRuleImplementationMode(int gatewayId)
+            {
+                return handler.GetResolvedSettings(DeviceSpecificScopeType.Gateway, gatewayId).GetImplementationMode(true);
+            }
+
+            public bool WritesRules(int gatewayId)
+            {
+                return handler.WritesRulesToGateway(gatewayId);
             }
 
             public ExternalTicketSystemKind GetExternalTicketSystem(int managementId)

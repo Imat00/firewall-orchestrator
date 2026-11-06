@@ -1,6 +1,7 @@
 using FWO.Api.Client.Queries;
 using FWO.Data;
 using FWO.Data.DeviceSpecificSettings;
+using FWO.Data.RulePositioning.CheckPoint;
 using FWO.Data.Workflow;
 using FWO.Services.Workflow;
 using NUnit.Framework;
@@ -23,6 +24,11 @@ namespace FWO.Test
         private const long kAutomaticManagementNodeId = 3;
         private const long kExternalManagementNodeId = 4;
         private const long kManualManagementNodeId = 5;
+        private const long kManualGatewayNodeId = 6;
+        private const int kManualGatewayId = 1;
+        private const int kAutomaticGatewayId = 2;
+        private const int kOtherVendorGatewayId = 3;
+        private const int kOtherVendorDeviceTypeId = 99;
         private const int kDeviceTypeId = 9;
         private const int kAutomaticManagementId = 20;
         private const int kExternalManagementId = 30;
@@ -35,6 +41,9 @@ namespace FWO.Test
         private static readonly List<ProvisioningWay> kFirewallWriteThenExternal = [ProvisioningWay.FirewallWrite, ProvisioningWay.ExternalTicketSystem];
         private static readonly List<long> kBundleReqTaskIds = [1, 2];
         private static readonly List<long> kSecondReqTaskId = [2];
+        private static readonly List<long?> kAutomaticGatewayImplTask = [kAutomaticGatewayId * 100];
+        private static readonly CheckPointRulePosition kPosition =
+            new("layer-uid", CheckPointPositionAnchorKind.Bottom, null, ProvisioningPositioningAlgorithm.DefaultEndOfRulebase);
 
         private static InMemoryDeviceSpecificSettingsApiConnection CreateApi()
         {
@@ -89,6 +98,57 @@ namespace FWO.Test
                 ManagementId = managementId,
                 StateId = kOpenStateId
             });
+            return reqTask;
+        }
+
+        /// <summary>
+        /// A handler knowing three gateways of the automatic management: one with the implementation mode Manual for
+        /// rules, one inheriting Automatic, and one whose management has a device type rules are not written to.
+        /// </summary>
+        private static WfHandler CreateRuleHandler(InMemoryDeviceSpecificSettingsApiConnection api)
+        {
+            api.AddNode(kManualGatewayNodeId, DeviceSpecificScopeType.Gateway, kManualGatewayId.ToString(), kAutomaticManagementNodeId);
+            api.SetValue(kManualGatewayNodeId, DeviceSpecificSettingKeys.ImplementationModeForRules, ProvisioningRuleImplementationMode.Manual);
+            WfHandler handler = CreateHandler(api);
+            FieldInfo field = typeof(WfHandler).GetField("stateMatrixDict", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new MissingFieldException(nameof(WfHandler), "stateMatrixDict");
+            ((StateMatrixDict)field.GetValue(handler)!).Matrices[WfTaskType.access.ToString()] = new StateMatrix { ImplementationLowestEndState = kEndStateId };
+            Management checkPoint = new() { Id = kAutomaticManagementId, Name = "cp1", DeviceType = new DeviceType { Id = kDeviceTypeId, Name = "Check Point", Version = "R8x" } };
+            Management otherVendor = new() { Id = kAutomaticManagementId, Name = "cp1", DeviceType = new DeviceType { Id = kOtherVendorDeviceTypeId, Name = "Other" } };
+            handler.Devices =
+            [
+                new Device { Id = kManualGatewayId, Name = "gw-manual", Management = checkPoint },
+                new Device { Id = kAutomaticGatewayId, Name = "gw-automatic", Management = checkPoint },
+                new Device { Id = kOtherVendorGatewayId, Name = "gw-other", Management = otherVendor }
+            ];
+            return handler;
+        }
+
+        private static WfReqTask AccessTask(params int[] gatewayIds)
+        {
+            WfReqTask reqTask = new()
+            {
+                Id = 7,
+                TicketId = kTicketId,
+                TaskNumber = 1,
+                TaskType = WfTaskType.access.ToString(),
+                ManagementId = kAutomaticManagementId,
+                StateId = kOpenStateId
+            };
+            foreach (int gatewayId in gatewayIds)
+            {
+                reqTask.ImplementationTasks.Add(new WfImplTask
+                {
+                    Id = gatewayId * 100,
+                    ReqTaskId = reqTask.Id,
+                    TaskNumber = reqTask.ImplementationTasks.Count + 1,
+                    TaskType = reqTask.TaskType,
+                    ManagementId = kAutomaticManagementId,
+                    DeviceId = gatewayId,
+                    StateId = kOpenStateId,
+                    RulePosition = kPosition
+                });
+            }
             return reqTask;
         }
 
@@ -151,6 +211,36 @@ namespace FWO.Test
                 Assert.That(workList.Items, Is.Empty);
                 Assert.That(descriptions, Has.Count.EqualTo(1));
                 Assert.That(descriptions[0], Does.Contain($"Ticket {kTicketId}, request task 1, implementation task 10: not provisioned"));
+            });
+        }
+
+        [Test]
+        public async Task BuildProvisioningWorkList_RuleTasks_TakeTheModeOfTheirGateway()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
+            WfHandler handler = CreateRuleHandler(api);
+
+            ProvisioningWorkList workList = await handler.BuildProvisioningWorkList(Ticket(AccessTask(kManualGatewayId, kAutomaticGatewayId)));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items.Select(item => item.ImplTask?.Id), Is.EqualTo(kAutomaticGatewayImplTask));
+                Assert.That(workList.Gaps, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task BuildProvisioningWorkList_RuleTaskOfAnotherVendor_RaisesAnAlert()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
+            WfHandler handler = CreateRuleHandler(api);
+
+            ProvisioningWorkList workList = await handler.BuildProvisioningWorkList(Ticket(AccessTask(kOtherVendorGatewayId)));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(AlertDescriptions(api), Has.Some.Contains("rules are not written to the vendor of gateway 3"));
             });
         }
 

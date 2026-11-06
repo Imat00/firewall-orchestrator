@@ -21,7 +21,10 @@ namespace FWO.ExternalSystems.FirewallWrite
         private const string kDefaultVdom = "root";
         private const string kFwoRuleCollectionGroup = "FWO";
 
-        private static readonly FirewallVendorProfile CheckPoint = new("Any", "Accept", "Drop", "Log", "None", true, false);
+        private static readonly FirewallVendorProfile CheckPoint = new("Any", "Accept", "Drop", "Log", "None", true, false)
+        {
+            WritesRules = true
+        };
         private static readonly FirewallVendorProfile FortiOs = new("ALL", "accept", "deny", "all", "disable", false, false)
         {
             WritesMembersIndividually = true
@@ -51,6 +54,12 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// the alias utility changes only literal entries, so groups are created the same way).
         /// </summary>
         public bool GroupsHoldAddresses { get; init; }
+
+        /// <summary>
+        /// Whether rules are written to the vendor. A new rule needs its position, which the rule positioning only
+        /// calculates for Check Point so far; the rules of other vendors are left to a person.
+        /// </summary>
+        public bool WritesRules { get; init; }
 
         /// <summary>
         /// Layer used when neither the rule position nor the imported rulebase links name one, instead of the gateway's

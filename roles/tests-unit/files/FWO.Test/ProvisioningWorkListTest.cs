@@ -1,4 +1,5 @@
 using FWO.Data.DeviceSpecificSettings;
+using FWO.Data.RulePositioning.CheckPoint;
 using FWO.Data.Workflow;
 using FWO.Services.Workflow;
 using NUnit.Framework;
@@ -16,6 +17,7 @@ namespace FWO.Test
         private const int kExternalManagementId = 2;
         private const int kManualManagementId = 3;
         private const int kExternalWithoutSystemManagementId = 4;
+        private const int kGatewayWithoutRuleWritesId = 5;
         private const int kOpenStateId = 210;
         private const int kEndStateId = 249;
         private const int kDoneStateId = 631;
@@ -33,6 +35,8 @@ namespace FWO.Test
         private static readonly List<long?> kFirstAndSecondImplTask = [11, 12];
         private static readonly List<bool> kOnlyFirstReleased = [true, false];
         private static readonly HashSet<long> kReleasedFirstReqTask = [1];
+        private static readonly CheckPointRulePosition kPosition =
+            new("layer-uid", CheckPointPositionAnchorKind.Bottom, null, ProvisioningPositioningAlgorithm.DefaultEndOfRulebase);
 
         /// <summary>
         /// Settings for the tests: one management per implementation mode, rules and objects alike.
@@ -47,6 +51,17 @@ namespace FWO.Test
                     kManualManagementId => ProvisioningImplementationMode.Manual,
                     _ => ProvisioningImplementationMode.Automatic
                 };
+            }
+
+            /// <summary>Gateways take the mode of the management with the same id.</summary>
+            public ProvisioningImplementationMode GetRuleImplementationMode(int gatewayId)
+            {
+                return GetImplementationMode(gatewayId, true);
+            }
+
+            public bool WritesRules(int gatewayId)
+            {
+                return gatewayId != kGatewayWithoutRuleWritesId;
             }
 
             public ExternalTicketSystemKind GetExternalTicketSystem(int managementId)
@@ -74,6 +89,15 @@ namespace FWO.Test
         {
             WfImplTask implTask = new() { Id = id, ReqTaskId = reqTask.Id, TaskNumber = taskNumber, TaskType = reqTask.TaskType, ManagementId = managementId, StateId = stateId };
             reqTask.ImplementationTasks.Add(implTask);
+            return implTask;
+        }
+
+        /// <summary>Adds a rule implementation task on a gateway, with a calculated position unless stated otherwise.</summary>
+        private static WfImplTask AddRuleImplTask(WfReqTask reqTask, long id, int gatewayId, bool positioned = true, int stateId = kOpenStateId)
+        {
+            WfImplTask implTask = AddImplTask(reqTask, id, reqTask.ImplementationTasks.Count + 1, kAutomaticManagementId, stateId);
+            implTask.DeviceId = gatewayId;
+            implTask.RulePosition = positioned ? kPosition : null;
             return implTask;
         }
 
@@ -305,7 +329,116 @@ namespace FWO.Test
         }
 
         [Test]
-        public void Build_RuleImplementationTasks_AreNotWrittenYet()
+        public void Build_NewRuleWithPositionOnAnAutomaticGateway_IsWritten()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.access));
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ImplTaskIds(workList), Is.EqualTo(kFirstImplTask));
+                Assert.That(workList.Items[0].Way, Is.EqualTo(ProvisioningWay.FirewallWrite));
+                Assert.That(workList.Gaps, Is.Empty);
+            });
+        }
+
+        [Test]
+        public void Build_NewRuleWithoutPosition_IsReportedAndNotWritten()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.access));
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId, false);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(workList.Gaps, Has.Count.EqualTo(1));
+                Assert.That(workList.Gaps[0].Reason, Does.Contain("no rule position"));
+            });
+        }
+
+        [TestCase(nameof(WfTaskType.rule_modify))]
+        [TestCase(nameof(WfTaskType.rule_delete))]
+        public void Build_ChangedOrDeletedRule_IsWrittenWithoutPosition(string taskType)
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, taskType);
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId, false);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.That(ImplTaskIds(workList), Is.EqualTo(kFirstImplTask));
+        }
+
+        [Test]
+        public void Build_RuleOnAVendorWithoutRuleWrites_IsReportedAndNotWritten()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.rule_modify));
+            AddRuleImplTask(reqTask, 11, kGatewayWithoutRuleWritesId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(workList.Gaps, Has.Count.EqualTo(1));
+                Assert.That(workList.Gaps[0].Reason, Does.Contain("not written to the vendor"));
+            });
+        }
+
+        [Test]
+        public void Build_FinishedRuleWithoutPosition_IsNotReported()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.access));
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId, false, kDoneStateId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Gaps, Is.Empty);
+                Assert.That(workList.Next, Is.Null);
+            });
+        }
+
+        [Test]
+        public void Build_RuleOnAManualGateway_IsWrittenOnlyWhenReleased()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.access));
+            AddRuleImplTask(reqTask, 11, kManualManagementId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+            ProvisioningWorkList released = BuildReleasingTheFirstRequestTask(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(workList.Gaps, Is.Empty);
+                Assert.That(ImplTaskIds(released), Is.EqualTo(kFirstImplTask));
+                Assert.That(released.Items[0].ReleasedByButton, Is.True);
+            });
+        }
+
+        [Test]
+        public void Build_RuleOnAnExternalGateway_IsReported()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.access));
+            AddRuleImplTask(reqTask, 11, kExternalManagementId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(workList.Gaps, Has.Count.EqualTo(1));
+                Assert.That(workList.Gaps[0].Reason, Does.Contain("external ticket system"));
+            });
+        }
+
+        [Test]
+        public void Build_RuleWithoutGateway_IsLeftToAPerson()
         {
             WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.access));
             AddImplTask(reqTask, 11, 1, kAutomaticManagementId);

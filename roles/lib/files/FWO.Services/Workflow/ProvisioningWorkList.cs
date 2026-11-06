@@ -60,6 +60,12 @@ namespace FWO.Services.Workflow
         /// <summary>Implementation mode of a management for rules or for objects.</summary>
         ProvisioningImplementationMode GetImplementationMode(int managementId, bool isRuleTask);
 
+        /// <summary>Implementation mode for rules of a gateway.</summary>
+        ProvisioningImplementationMode GetRuleImplementationMode(int gatewayId);
+
+        /// <summary>Whether rules are written to the management of a gateway, see FirewallVendorProfile.WritesRules.</summary>
+        bool WritesRules(int gatewayId);
+
         /// <summary>External ticket system selected for a management; undefined if none is selected.</summary>
         ExternalTicketSystemKind GetExternalTicketSystem(int managementId);
 
@@ -78,7 +84,8 @@ namespace FWO.Services.Workflow
     /// are provisioned one after another, the next one is the first entry not finished. With an active planning phase an
     /// implementation task is only written once its request task is planned; a request task handed to an external ticket
     /// system is handed over in any state, as the external ticket system approves and plans it itself.
-    /// Rules are not provisioned by firewall writes yet, only objects.
+    /// The implementation mode of a rule task is the one of its gateway; a rule is only written to a vendor that writes
+    /// rules, and a new rule only with its calculated position, otherwise the task is reported.
     /// </summary>
     public sealed class ProvisioningWorkList
     {
@@ -161,7 +168,7 @@ namespace FWO.Services.Workflow
         {
             if (isRuleTask)
             {
-                Log.WriteInfo(kLogTitle, $"Implementation task {implTask.Id} of request task {reqTask.Id} is not provisioned: rules are not written to firewalls yet.");
+                AddRuleImplTask(reqTask, implTask, modes);
                 return;
             }
             if (implTask.ManagementId is not int managementId || managementId <= 0)
@@ -186,6 +193,58 @@ namespace FWO.Services.Workflow
                     Log.WriteDebug(kLogTitle, $"Implementation task {implTask.Id} of request task {reqTask.Id} is implemented manually.");
                     break;
             }
+        }
+
+        /// <summary>
+        /// Adds a rule implementation task along the implementation mode for rules of its gateway. A task without gateway
+        /// is left to a person, as nothing tells where to write the rule.
+        /// </summary>
+        private void AddRuleImplTask(WfReqTask reqTask, WfImplTask implTask, IProvisioningModeSource modes)
+        {
+            if (implTask.DeviceId is not int gatewayId || gatewayId <= 0)
+            {
+                Log.WriteDebug(kLogTitle, $"Implementation task {implTask.Id} of request task {reqTask.Id} has no gateway to write the rule to.");
+                return;
+            }
+            bool isFinished = implTask.StateId >= modes.GetImplementationEndState(implTask.TaskType);
+            ProvisioningImplementationMode mode = modes.GetRuleImplementationMode(gatewayId);
+            bool released = mode == ProvisioningImplementationMode.Manual && releasedReqTaskIds.Contains(reqTask.Id);
+            int managementId = implTask.ManagementId ?? reqTask.ManagementId ?? 0;
+            if (mode == ProvisioningImplementationMode.RerouteToExternalTicketSystem)
+            {
+                if (!isFinished)
+                {
+                    Gaps.Add(new(reqTask, implTask, managementId, $"gateway {gatewayId} is set to external ticket system, " +
+                        "but the implementation task can only be written to the firewall or implemented manually."));
+                }
+                return;
+            }
+            if (mode != ProvisioningImplementationMode.Automatic && !released)
+            {
+                Log.WriteDebug(kLogTitle, $"Implementation task {implTask.Id} of request task {reqTask.Id} is implemented manually.");
+                return;
+            }
+            string? notWrittenReason = isFinished ? null : RuleNotWrittenReason(implTask, gatewayId, modes);
+            if (notWrittenReason != null)
+            {
+                Gaps.Add(new(reqTask, implTask, managementId, notWrittenReason));
+                return;
+            }
+            Items.Add(new(ProvisioningWay.FirewallWrite, reqTask, implTask, null, isFinished, IsBeingPlanned(reqTask, modes), released));
+        }
+
+        /// <summary>Why a rule cannot be written; null if it can.</summary>
+        private static string? RuleNotWrittenReason(WfImplTask implTask, int gatewayId, IProvisioningModeSource modes)
+        {
+            if (!modes.WritesRules(gatewayId))
+            {
+                return $"rules are not written to the vendor of gateway {gatewayId} yet.";
+            }
+            if (implTask.TaskType == nameof(WfTaskType.access) && implTask.RulePosition == null)
+            {
+                return $"no rule position was calculated for gateway {gatewayId}, so the new rule is not written.";
+            }
+            return null;
         }
 
         private static bool IsBeingPlanned(WfReqTask reqTask, IProvisioningModeSource modes)

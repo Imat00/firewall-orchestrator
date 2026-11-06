@@ -301,6 +301,37 @@ namespace FWO.Test
         }
 
         [Test]
+        public async Task AccessTask_ImplementationTasksGetTheManagementOfTheirGateway()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
+            api.SetValue(kGlobalNodeId, DeviceSpecificSettingKeys.AutoPlanImplementationForRules, true);
+            WfReqTask reqTask = CreateAccessTask(kBothGateways);
+            reqTask.ManagementId = null;
+
+            await InvokeAutoCreateImplTasks(CreateHandler(api), reqTask);
+
+            Assert.That(reqTask.ImplementationTasks.Select(implTask => implTask.ManagementId), Is.All.EqualTo(kManagementId));
+        }
+
+        [Test]
+        public async Task RuleModifyTask_GetsTheGatewayAndManagementOfTheRule()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
+            api.SetValue(kGlobalNodeId, DeviceSpecificSettingKeys.AutoPlanImplementationForRules, true);
+            WfReqTask reqTask = new() { Id = 10, TaskType = WfTaskType.rule_modify.ToString(), StateId = kOpenStateId, Title = "Modify" };
+            reqTask.Elements.Add(new WfReqElement { Field = ElemFieldType.rule.ToString(), DeviceId = kFirstGatewayId, RuleUid = "uid-1" });
+
+            await InvokeAutoCreateImplTasks(CreateHandler(api), reqTask);
+
+            WfImplTask implTask = reqTask.ImplementationTasks.Single();
+            Assert.Multiple(() =>
+            {
+                Assert.That(implTask.DeviceId, Is.EqualTo(kFirstGatewayId));
+                Assert.That(implTask.ManagementId, Is.EqualTo(kManagementId));
+            });
+        }
+
+        [Test]
         public async Task RuleDeleteTask_FollowsSettingsOfRuleGateway()
         {
             WfHandler manualHandler = CreateHandler(CreateApi());
