@@ -32,7 +32,7 @@ namespace FWO.Middleware.Server
 
         private readonly UserConfig userConfig;
         private readonly SCClient? InjScClient;
-        private readonly Func<WfImplTask, Task<ModifyFirewallResult>> modifyFirewall;
+        private readonly Func<WfImplTask, IReadOnlyList<int>?, Task<ModifyFirewallResult>> modifyFirewall;
         ExternalTicketSystem? ExtTicketSystem;
         private bool disposed = false;
 
@@ -57,14 +57,14 @@ namespace FWO.Middleware.Server
         /// <param name="injScClient">SecureChange client replacing the real one (unit testing only)</param>
         /// <param name="injFirewallWrite">Firewall write replacing the write library (unit testing only)</param>
         public ExternalRequestSender(ApiConnection apiConnection, GlobalConfig globalConfig, SCClient? injScClient = null,
-            Func<WfImplTask, Task<ModifyFirewallResult>>? injFirewallWrite = null)
+            Func<WfImplTask, IReadOnlyList<int>?, Task<ModifyFirewallResult>>? injFirewallWrite = null)
         {
             this.apiConnection = apiConnection;
             this.globalConfig = globalConfig;
             userConfig = UserConfig.ForGlobalSettings(globalConfig, apiConnection);
             InjScClient = injScClient;
-            modifyFirewall = injFirewallWrite ?? (implTask => new FirewallWriter(new ApiFirewallWriteDataSource(apiConnection),
-                placementProvider: new RulePositionPlacementProvider()).ModifyFirewall(implTask));
+            modifyFirewall = injFirewallWrite ?? ((implTask, installOnGatewayIds) => new FirewallWriter(new ApiFirewallWriteDataSource(apiConnection),
+                placementProvider: new RulePositionPlacementProvider()).ModifyFirewall(implTask, installOnGatewayIds));
         }
 
         /// <summary>

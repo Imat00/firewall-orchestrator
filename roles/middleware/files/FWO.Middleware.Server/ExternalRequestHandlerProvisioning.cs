@@ -105,7 +105,13 @@ namespace FWO.Middleware.Server
                         "still being planned, or not written by FWO in its implementation mode.");
                     return true;
                 }
-                await CreateFirewallWriteRequest(ticket, reqTask, implTask, 0, null, true);
+                if (IsCoveredByUnfinishedTask(reqTask, implTask, item.Rule))
+                {
+                    Log.WriteInfo(kProvisioningLogTitle, $"Implementation task {implTask.TaskNumber} of request task {reqTask.TaskNumber} of ticket {ticket.Id} " +
+                        $"is not written: its rule is written by implementation task {item.Rule!.WriterTaskNumber}, which is to be written first.");
+                    return true;
+                }
+                await CreateFirewallWriteRequest(ticket, reqTask, implTask, 0, null, true, item.Rule);
                 Log.WriteInfo(kProvisioningLogTitle, $"Created the external request for implementation task {implTask.TaskNumber} " +
                     $"of request task {reqTask.TaskNumber} of ticket {ticket.Id}.");
                 return true;
@@ -135,7 +141,7 @@ namespace FWO.Middleware.Server
             if (next.Way == ProvisioningWay.FirewallWrite && next.ImplTask != null)
             {
                 int waitCycles = GetWaitCycles(next.ImplTask.TaskType, previousRequest, kNoExternalTicketSystem);
-                await CreateFirewallWriteRequest(ticket, next.ReqTask, next.ImplTask, waitCycles, release);
+                await CreateFirewallWriteRequest(ticket, next.ReqTask, next.ImplTask, waitCycles, release, sharedRule: next.Rule);
             }
             else
             {
@@ -160,7 +166,7 @@ namespace FWO.Middleware.Server
         /// which the sender loads itself, so the request carries no ticket system and no content.
         /// </summary>
         private async Task CreateFirewallWriteRequest(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, int waitCycles, ProvisioningRelease? release,
-            bool singleImplTask = false)
+            bool singleImplTask = false, SharedRule? sharedRule = null)
         {
             Dictionary<string, List<int>> extQueryVariables = [];
             if (implTask.ManagementId is int managementId)
@@ -172,6 +178,7 @@ namespace FWO.Middleware.Server
             {
                 extQueryVariables[ExternalVarKeys.SingleImplTask] = [1];
             }
+            AddSharedRule(extQueryVariables, implTask, sharedRule);
             var variables = new
             {
                 ownerId = reqTask.Owners.FirstOrDefault()?.Owner.Id ?? ticket.Tasks.FirstOrDefault()?.Owners.FirstOrDefault()?.Owner.Id,
@@ -270,6 +277,38 @@ namespace FWO.Middleware.Server
             }
         }
 
+        /// <summary>Whether a task is covered by the shared rule of another task that is not finished yet.</summary>
+        private bool IsCoveredByUnfinishedTask(WfReqTask reqTask, WfImplTask implTask, SharedRule? sharedRule)
+        {
+            if (sharedRule == null || implTask.TaskNumber == sharedRule.WriterTaskNumber)
+            {
+                return false;
+            }
+            WfImplTask? writer = reqTask.ImplementationTasks.FirstOrDefault(task => task.TaskNumber == sharedRule.WriterTaskNumber);
+            return writer != null && writer.StateId < wfHandler.StateMatrix(writer.TaskType).ImplementationLowestEndState;
+        }
+
+        /// <summary>
+        /// Remembers a new rule shared by several implementation tasks with the request: the writing task carries the
+        /// gateways to install the rule on and the tasks it covers, a covered task the number of the writing task.
+        /// </summary>
+        private static void AddSharedRule(Dictionary<string, List<int>> extQueryVariables, WfImplTask implTask, SharedRule? sharedRule)
+        {
+            if (sharedRule == null)
+            {
+                return;
+            }
+            if (implTask.TaskNumber == sharedRule.WriterTaskNumber)
+            {
+                extQueryVariables[ExternalVarKeys.InstallOnGateways] = [.. sharedRule.InstallOnGatewayIds];
+                extQueryVariables[ExternalVarKeys.CoveredTasks] = [.. sharedRule.CoveredTaskNumbers];
+            }
+            else
+            {
+                extQueryVariables[ExternalVarKeys.CoveredBy] = [sharedRule.WriterTaskNumber];
+            }
+        }
+
         /// <summary>The release by a button a finished request carries; null if it carries none.</summary>
         private static ProvisioningRelease? ReleaseOf(ExternalRequest? request)
         {
@@ -287,7 +326,7 @@ namespace FWO.Middleware.Server
             return ExtQueryVariable(request, ExternalVarKeys.SingleImplTask) != null;
         }
 
-        private static List<int>? ExtQueryVariable(ExternalRequest? request, string key)
+        internal static List<int>? ExtQueryVariable(ExternalRequest? request, string key)
         {
             if (string.IsNullOrWhiteSpace(request?.ExtQueryVariables))
             {

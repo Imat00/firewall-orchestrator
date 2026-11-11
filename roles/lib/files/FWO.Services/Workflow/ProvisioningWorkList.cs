@@ -30,8 +30,20 @@ namespace FWO.Services.Workflow
     /// not written yet and holds back the entries behind it, until the request task reaches the end of the planning phase.</param>
     /// <param name="ReleasedByButton">Whether a firewall write on a Manual target is only written because a person released
     /// it by a button.</param>
+    /// <param name="Rule">For a new rule shared by several implementation tasks: whether this task writes it for all of
+    /// them or is covered by the task writing it; null if the task writes its rule alone.</param>
     public sealed record ProvisioningWorkItem(ProvisioningWay Way, WfReqTask ReqTask, WfImplTask? ImplTask, ExternalTicketSystemKind? ExternalTicketSystem, bool IsFinished,
-        bool WaitsForPlanning = false, bool ReleasedByButton = false);
+        bool WaitsForPlanning = false, bool ReleasedByButton = false, SharedRule? Rule = null);
+
+    /// <summary>
+    /// A new rule several implementation tasks of one request task would write to the same rulebase (Check Point: the
+    /// same layer), e.g. for gateways sharing a policy: only the task with the lowest number writes it, installed on the
+    /// gateways of all of them; the others are covered and take over its result.
+    /// </summary>
+    /// <param name="WriterTaskNumber">Number of the implementation task writing the rule.</param>
+    /// <param name="InstallOnGatewayIds">Gateways of all tasks sharing the rule.</param>
+    /// <param name="CoveredTaskNumbers">Numbers of the implementation tasks covered by the rule.</param>
+    public sealed record SharedRule(int WriterTaskNumber, IReadOnlyList<int> InstallOnGatewayIds, IReadOnlyList<int> CoveredTaskNumbers);
 
     /// <summary>
     /// Release of a scope by a person pressing a button: implementation tasks on targets set to Manual are written like
@@ -124,8 +136,48 @@ namespace FWO.Services.Workflow
             {
                 workList.AddRequestTask(reqTask, modes);
             }
+            workList.ShareNewRulesOfTheSameRulebase();
             return workList;
         }
+
+        /// <summary>
+        /// Lets the new rules of the implementation tasks of a request task that are written to the same rulebase of the
+        /// same management be written once, see <see cref="SharedRule"/>. Only tasks the work list writes take part; a
+        /// task left to a person keeps its own rule.
+        /// </summary>
+        private void ShareNewRulesOfTheSameRulebase()
+        {
+            List<IGrouping<(long ReqTaskId, int ManagementId, string RulebaseKey), int>> groups = [.. Enumerable.Range(0, Items.Count)
+                .Where(index => RulebaseKeyOf(Items[index]) != null)
+                .GroupBy(index => (Items[index].ReqTask.Id, ManagementOf(Items[index]), RulebaseKeyOf(Items[index])!))
+                .Where(group => group.Count() > 1)];
+            foreach (IGrouping<(long ReqTaskId, int ManagementId, string RulebaseKey), int> group in groups)
+            {
+                List<int> indexes = [.. group.OrderBy(index => Items[index].ImplTask!.TaskNumber)];
+                int writerTaskNumber = Items[indexes[0]].ImplTask!.TaskNumber;
+                List<int> gatewayIds = [.. indexes.Select(index => Items[index].ImplTask!.DeviceId).OfType<int>().Distinct()];
+                List<int> coveredTaskNumbers = [.. indexes.Skip(1).Select(index => Items[index].ImplTask!.TaskNumber)];
+                SharedRule sharedRule = new(writerTaskNumber, gatewayIds, coveredTaskNumbers);
+                foreach (int index in indexes)
+                {
+                    Items[index] = Items[index] with { Rule = sharedRule };
+                }
+            }
+        }
+
+        /// <summary>The rulebase a new rule of a firewall write goes to; null for other entries or without position.</summary>
+        private static string? RulebaseKeyOf(ProvisioningWorkItem item)
+        {
+            if (item.Way != ProvisioningWay.FirewallWrite || item.ImplTask is not WfImplTask implTask
+                || implTask.TaskType != nameof(WfTaskType.access) || implTask.DeviceId is not > 0)
+            {
+                return null;
+            }
+            string? rulebaseKey = implTask.RulePosition?.GetRulebaseKey();
+            return string.IsNullOrWhiteSpace(rulebaseKey) ? null : rulebaseKey;
+        }
+
+        private static int ManagementOf(ProvisioningWorkItem item) => item.ImplTask?.ManagementId ?? item.ReqTask.ManagementId ?? 0;
 
         private static readonly HashSet<long> kNoReleasedReqTasks = [];
 

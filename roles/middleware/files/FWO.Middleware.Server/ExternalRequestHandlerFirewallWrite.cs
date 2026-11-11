@@ -1,3 +1,4 @@
+using FWO.Api.Client.Queries;
 using FWO.Basics;
 using FWO.Data;
 using FWO.Data.Modelling;
@@ -8,6 +9,19 @@ using FWO.Services.Modelling;
 
 namespace FWO.Middleware.Server
 {
+    /// <summary>How the request of an implementation task covered by the shared rule of another task is finished.</summary>
+    public enum CoveringResult
+    {
+        /// <summary>The task is not covered and writes its own rule.</summary>
+        NotCovered,
+        /// <summary>The covering write succeeded: the task is done without writing.</summary>
+        Done,
+        /// <summary>The covering write was rejected: the task is rejected as well.</summary>
+        Rejected,
+        /// <summary>The covering task is not written yet: nothing is written now.</summary>
+        WriterPending
+    }
+
     /// <summary>
     /// Handling of the external requests writing an implementation task to the firewall, see <see cref="ExternalRequest.ImplTaskId"/>.
     /// </summary>
@@ -15,6 +29,9 @@ namespace FWO.Middleware.Server
     {
         private const string kFirewallWriteLogTitle = "Firewall Write Request";
         private const string kFirewallWriteRequester = "Firewall write";
+        private const int kMaxWriterRequests = 100;
+        private static readonly List<string> DoneStates = [ExtStates.ExtReqDone.ToString(), ExtStates.ExtReqAcknowledged.ToString()];
+        private static readonly List<string> RejectedStates = [ExtStates.ExtReqRejected.ToString(), ExtStates.ExtReqAckRejected.ToString()];
 
         /// <summary>
         /// Loads the implementation task a firewall write request references, with its elements.
@@ -95,6 +112,45 @@ namespace FWO.Middleware.Server
                 await LogImplTaskChange(reqTask, implTask, ModellingTypes.ChangeType.Implement);
             }
         }
+
+        /// <summary>
+        /// The result a task takes over whose new rule is written by another task of its request task, see
+        /// <see cref="ExternalVarKeys.CoveredBy"/>: the result of the write of that task, if that write covered this task.
+        /// A task added after the write is not covered and writes its own rule, as the written rule is not installed on its
+        /// gateway.
+        /// </summary>
+        /// <returns>How the request of the task is to be finished, and the number of the writing task.</returns>
+        public async Task<(CoveringResult Result, int WriterTaskNumber)> GetCoveringResult(ExternalRequest request, WfImplTask implTask)
+        {
+            List<int>? coveredBy = ExtQueryVariable(request, ExternalVarKeys.CoveredBy);
+            if (coveredBy is not [int writerTaskNumber])
+            {
+                return (CoveringResult.NotCovered, 0);
+            }
+            WfTicket? ticket = await InitAndResolve(request.TicketId);
+            WfReqTask? reqTask = ticket?.Tasks.FirstOrDefault(task => task.ImplementationTasks.Any(candidate => candidate.Id == implTask.Id));
+            WfImplTask? writer = reqTask?.ImplementationTasks.FirstOrDefault(task => task.TaskNumber == writerTaskNumber);
+            if (writer == null)
+            {
+                return (CoveringResult.NotCovered, writerTaskNumber);
+            }
+            if (writer.StateId < wfHandler.StateMatrix(writer.TaskType).ImplementationLowestEndState)
+            {
+                return (CoveringResult.WriterPending, writerTaskNumber);
+            }
+            List<ExternalRequest> writerRequests = await ApiConnection.SendQueryAsync<List<ExternalRequest>>(ExtRequestQueries.getRequestsOfImplTask,
+                new { implTaskId = writer.Id, limit = kMaxWriterRequests });
+            ExternalRequest? coveringRequest = writerRequests.FirstOrDefault(writerRequest => IsFinishedWrite(writerRequest)
+                && (ExtQueryVariable(writerRequest, ExternalVarKeys.CoveredTasks)?.Contains(implTask.TaskNumber) ?? false));
+            if (coveringRequest == null)
+            {
+                return (CoveringResult.NotCovered, writerTaskNumber);
+            }
+            return (RejectedStates.Contains(coveringRequest.ExtRequestState) ? CoveringResult.Rejected : CoveringResult.Done, writerTaskNumber);
+        }
+
+        private static bool IsFinishedWrite(ExternalRequest request) =>
+            DoneStates.Contains(request.ExtRequestState) || RejectedStates.Contains(request.ExtRequestState);
 
         private static (WfReqTask? ReqTask, WfImplTask? ImplTask) FindImplTask(WfTicket? ticket, long? implTaskId)
         {

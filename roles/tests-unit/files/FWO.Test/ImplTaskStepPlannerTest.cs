@@ -537,6 +537,29 @@ namespace FWO.Test
             Assert.That(InstallOn(group).Value, Is.EqualTo("[\"uid-b\",\"uid-c\"]"));
         }
 
+        private const int kSecondGatewayId = 300;
+        private static readonly List<int> kSharedRuleGatewayIds = [kGatewayId, kSecondGatewayId];
+        private static readonly List<int> kForeignGatewayIds = [999];
+        private static readonly List<int> kNoGatewayIds = [];
+
+        [Test]
+        public void InstallOn_SharedRuleIsInstalledOnTheGatewaysOfAllItsTasks()
+        {
+            FirewallWriteContext context = Context(FirewallVendors.kCheckPointR8x, InstallOnSetting(ProvisioningInstallOn.GatewaysInPath));
+            Device secondGateway = new() { Id = kSecondGatewayId, Uid = "uid-c", Name = "gw-c" };
+            context.Management.Devices = [.. context.Management.Devices, secondGateway];
+            context.Gateway!.Uid = "uid-b";
+            FirewallWriteContext shared = context.WithInstallOnGateways(kSharedRuleGatewayIds);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(InstallOn(shared).Value, Is.EqualTo("[\"uid-b\",\"uid-c\"]"));
+                Assert.That(shared.Gateway, Is.SameAs(context.Gateway));
+                Assert.That(context.WithInstallOnGateways(kNoGatewayIds), Is.SameAs(context));
+                Assert.That(context.WithInstallOnGateways(null), Is.SameAs(context));
+                Assert.Throws<FirewallWriteException>(() => context.WithInstallOnGateways(kForeignGatewayIds));
+            }
+        }
+
         [Test]
         public void InstallOn_GatewaysInPathWithoutGatewayHasNoValue()
         {

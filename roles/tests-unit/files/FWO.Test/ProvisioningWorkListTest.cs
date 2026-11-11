@@ -590,6 +590,80 @@ namespace FWO.Test
             }
         }
 
+        private const int kSecondAutomaticGatewayId = 6;
+        private const int kThirdAutomaticGatewayId = 7;
+        private static readonly CheckPointRulePosition kOtherLayerPosition =
+            new("other-layer-uid", CheckPointPositionAnchorKind.Bottom, null, ProvisioningPositioningAlgorithm.DefaultEndOfRulebase);
+        private static readonly List<int> kSharedRuleGateways = [kAutomaticManagementId, kSecondAutomaticGatewayId];
+        private static readonly List<int> kSecondTaskCovered = [2];
+        private static readonly List<int> kSharedRuleWithReleasedManualGateway = [kAutomaticManagementId, kManualManagementId];
+
+        private static WfReqTask NewRuleTask(long id, int taskNumber) => ReqTask(id, taskNumber, kAutomaticManagementId, nameof(WfTaskType.access));
+
+        [Test]
+        public void Build_NewRulesOfOneRequestTaskInTheSameLayer_AreWrittenOnce()
+        {
+            WfReqTask reqTask = NewRuleTask(1, 1);
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId);
+            AddRuleImplTask(reqTask, 12, kSecondAutomaticGatewayId);
+            AddRuleImplTask(reqTask, 13, kThirdAutomaticGatewayId).RulePosition = kOtherLayerPosition;
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            SharedRule? sharedRule = workList.Items[0].Rule;
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTaskIds(workList), Is.EqualTo(kOrderedImplTaskIds));
+                Assert.That(sharedRule?.WriterTaskNumber, Is.EqualTo(1));
+                Assert.That(sharedRule?.InstallOnGatewayIds, Is.EqualTo(kSharedRuleGateways));
+                Assert.That(sharedRule?.CoveredTaskNumbers, Is.EqualTo(kSecondTaskCovered));
+                Assert.That(workList.Items[1].Rule, Is.SameAs(sharedRule));
+                Assert.That(workList.Items[2].Rule, Is.Null);
+            }
+        }
+
+        [Test]
+        public void Build_NewRulesOfDifferentRequestTasks_AreWrittenSeparately()
+        {
+            WfReqTask first = NewRuleTask(1, 1);
+            AddRuleImplTask(first, 11, kAutomaticManagementId);
+            WfReqTask second = NewRuleTask(2, 2);
+            AddRuleImplTask(second, 12, kSecondAutomaticGatewayId);
+
+            ProvisioningWorkList workList = Build(first, second);
+
+            Assert.That(workList.Items.Select(item => item.Rule), Is.All.Null);
+        }
+
+        [Test]
+        public void Build_ManualTaskInTheSameLayer_JoinsTheSharedRuleOnlyWhenReleased()
+        {
+            WfReqTask reqTask = NewRuleTask(1, 1);
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId);
+            AddRuleImplTask(reqTask, 12, kManualManagementId);
+
+            ProvisioningWorkList notReleased = Build(reqTask);
+            ProvisioningWorkList released = BuildReleasingTheFirstRequestTask(reqTask);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(notReleased.Items.Single().Rule, Is.Null);
+                Assert.That(released.Items[0].Rule?.InstallOnGatewayIds, Is.EqualTo(kSharedRuleWithReleasedManualGateway));
+            }
+        }
+
+        [Test]
+        public void Build_ChangedRulesOfOneRequestTask_AreNotShared()
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.rule_modify));
+            AddRuleImplTask(reqTask, 11, kAutomaticManagementId);
+            AddRuleImplTask(reqTask, 12, kSecondAutomaticGatewayId);
+
+            ProvisioningWorkList workList = Build(reqTask);
+
+            Assert.That(workList.Items.Select(item => item.Rule), Is.All.Null);
+        }
+
         [Test]
         public void Next_IsNullWhenEverythingIsFinished()
         {

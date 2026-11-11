@@ -30,6 +30,34 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// <summary>Layer uid of each existing rule of the task by rule uid, from the imported configuration.</summary>
         public IReadOnlyDictionary<string, string> RuleLayerUids { get; init; } = new Dictionary<string, string>();
 
+        /// <summary>
+        /// Returns the context with the gateways of the management a new rule is installed on; no gateway ids keep it.
+        /// </summary>
+        /// <exception cref="FirewallWriteException">Thrown for a gateway that does not belong to the management.</exception>
+        public FirewallWriteContext WithInstallOnGateways(IReadOnlyList<int>? gatewayIds)
+        {
+            if (gatewayIds == null || gatewayIds.Count == 0)
+            {
+                return this;
+            }
+            List<Device> gateways = [];
+            foreach (int gatewayId in gatewayIds.Distinct())
+            {
+                gateways.Add(Management.Devices.FirstOrDefault(device => device.Id == gatewayId)
+                    ?? throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
+                        $"Gateway {gatewayId} to install the rule on does not belong to management {Management.Id}."));
+            }
+            return new FirewallWriteContext
+            {
+                Management = Management,
+                Gateway = Gateway,
+                Settings = Settings,
+                Rulebases = Rulebases,
+                RuleLayerUids = RuleLayerUids,
+                InstallOnGateways = gateways
+            };
+        }
+
         public int DeviceTypeId => Management.DeviceType.Id;
 
         public FirewallVendor Vendor => FirewallVendors.FromDeviceTypeId(DeviceTypeId);

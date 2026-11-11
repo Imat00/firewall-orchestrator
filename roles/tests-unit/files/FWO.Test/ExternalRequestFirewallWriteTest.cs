@@ -59,12 +59,19 @@ namespace FWO.Test
             /// <summary>Rules with the gateways they take effect on, returned for the query of the enforcing gateways.</summary>
             public List<Rule> EnforcingRules { get; } = [];
 
+            /// <summary>Requests of the implementation task writing a shared rule, returned newest first.</summary>
+            public List<ExternalRequest> WriterRequests { get; } = [];
+
             public override async Task<QueryResponseType> SendQueryAsync<QueryResponseType>(string query, object? variables = null, string? operationName = null, QueryChunkingOptions? chunkingOptions = null)
             {
                 Calls.Add((query, variables));
                 if (query == ExtRequestQueries.getAndLockOpenRequests)
                 {
                     return (QueryResponseType)(object)new ExternalRequestDataHelper { ExternalRequests = OpenRequests };
+                }
+                if (query == ExtRequestQueries.getRequestsOfImplTask)
+                {
+                    return (QueryResponseType)(object)WriterRequests;
                 }
                 if (query == RuleQueries.getRuleEnforcingGateways)
                 {
@@ -186,9 +193,12 @@ namespace FWO.Test
         {
             public List<long> WrittenImplTaskIds { get; } = [];
 
-            public Task<ModifyFirewallResult> Write(WfImplTask implTask)
+            public List<IReadOnlyList<int>?> InstallOnGatewayIds { get; } = [];
+
+            public Task<ModifyFirewallResult> Write(WfImplTask implTask, IReadOnlyList<int>? installOnGatewayIds)
             {
                 WrittenImplTaskIds.Add(implTask.Id);
+                InstallOnGatewayIds.Add(installOnGatewayIds);
                 return Task.FromResult(result);
             }
         }
@@ -288,6 +298,98 @@ namespace FWO.Test
                 Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.Not.Contain("takes effect on"));
                 Assert.That(apiConnection.Calls.Any(call => call.Query == RuleQueries.getRuleEnforcingGateways), Is.False);
             }
+        }
+
+        private const string kCoveredByFirstTask = "{\"ManagementId\":[1],\"CoveredBy\":[1]}";
+        private static readonly List<int> kSharedRuleGateways = [200, 300];
+
+        private static ExternalRequest WriterRequest(string state, string coveredTasks) => new()
+        {
+            Id = 1,
+            TicketId = kTicketId,
+            ImplTaskId = kImplTaskId,
+            ExtRequestState = state,
+            ExtQueryVariables = $"{{\"ManagementId\":[1],\"InstallOnGateways\":[200,300],\"CoveredTasks\":{coveredTasks}}}"
+        };
+
+        [Test]
+        public async Task Run_TaskCoveredByAWrittenSharedRule_IsDoneWithoutWriting()
+        {
+            WfTicket ticket = Ticket(kDoneStateId);
+            FirewallWriteApiConn apiConnection = new(ticket);
+            apiConnection.WriterRequests.Add(WriterRequest(ExtStates.ExtReqAcknowledged.ToString(), "[2]"));
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(kNextImplTaskId, extQueryVariables: kCoveredByFirstTask), Success());
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).First();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(Variable(creation, "extRequestState"), Is.EqualTo(ExtStates.ExtReqDone.ToString()));
+                Assert.That(Variable(creation, "creationResponse"), Is.EqualTo("Covered by the rule of implementation task 1; nothing written."));
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kDoneStateId));
+            }
+        }
+
+        [Test]
+        public async Task Run_TaskCoveredByARejectedSharedRule_IsRejectedWithoutWriting()
+        {
+            WfTicket ticket = Ticket(kRejectedStateId);
+            FirewallWriteApiConn apiConnection = new(ticket);
+            apiConnection.WriterRequests.Add(WriterRequest(ExtStates.ExtReqAckRejected.ToString(), "[2]"));
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(kNextImplTaskId, extQueryVariables: kCoveredByFirstTask), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(States(apiConnection, ExtRequestQueries.updateExtRequestCreation), Is.EqualTo(kRejectedOnly));
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+            }
+        }
+
+        [Test]
+        public async Task Run_TaskAddedAfterTheSharedRuleWasWritten_WritesItsOwnRule()
+        {
+            WfTicket ticket = Ticket(kDoneStateId);
+            FirewallWriteApiConn apiConnection = new(ticket);
+            apiConnection.WriterRequests.Add(WriterRequest(ExtStates.ExtReqAcknowledged.ToString(), "[3]"));
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(kNextImplTaskId, extQueryVariables: kCoveredByFirstTask), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds.Single(), Is.EqualTo(kNextImplTaskId));
+                Assert.That(writer.InstallOnGatewayIds.Single(), Is.Null);
+            }
+        }
+
+        [Test]
+        public async Task Run_TaskCoveredByAnUnwrittenSharedRule_IsDiscarded()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(kNextImplTaskId, extQueryVariables: kCoveredByFirstTask), Success());
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(writer.WrittenImplTaskIds, Is.Empty);
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kOpenStateId));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task Run_WriterOfASharedRule_InstallsItOnTheGatewaysOfAllItsTasks()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            const string writerVariables = "{\"ManagementId\":[1],\"InstallOnGateways\":[200,300],\"CoveredTasks\":[2]}";
+
+            RecordingWriter writer = await RunSender(apiConnection, Request(extQueryVariables: writerVariables), Success());
+
+            Assert.That(writer.InstallOnGatewayIds.Single(), Is.EqualTo(kSharedRuleGateways));
         }
 
         [Test]

@@ -71,10 +71,16 @@ namespace FWO.Middleware.Server
         /// </summary>
         private async Task<bool> WriteImplTask(ExternalRequest request, WfImplTask implTask, ExternalRequestHandler extReqHandler)
         {
+            (CoveringResult covering, int writerTaskNumber) = await extReqHandler.GetCoveringResult(request, implTask);
+            if (covering != CoveringResult.NotCovered)
+            {
+                return await TakeOverCoveringResult(request, covering, writerTaskNumber, extReqHandler);
+            }
             Log.WriteInfo(kFirewallWriteLogTitle, $"Writing implementation task {implTask.Id} of {RequestInfo(request)}");
             request.Attempts++;
             string gatewaysNote = await EnforcingGatewaysNote(implTask);
-            ModifyFirewallResult result = await modifyFirewall(implTask);
+            List<int>? installOnGatewayIds = ExternalRequestHandler.ExtQueryVariable(request, ExternalVarKeys.InstallOnGateways);
+            ModifyFirewallResult result = await modifyFirewall(implTask, installOnGatewayIds);
             request.LastMessage = DescribeResult(result) + gatewaysNote;
             if (result.Success)
             {
@@ -91,6 +97,32 @@ namespace FWO.Middleware.Server
                 return false;
             }
             request.ExtRequestState = ExtStates.ExtReqRejected.ToString();
+            return true;
+        }
+
+        /// <summary>
+        /// Finishes the request of a task covered by the shared rule of another task without writing: it takes over the
+        /// result of that write. If that task is not written yet, which the order of the work list prevents, the request
+        /// is discarded and the provisioning continues with the next entry. Returns false if the request is already stored.
+        /// </summary>
+        private static async Task<bool> TakeOverCoveringResult(ExternalRequest request, CoveringResult covering, int writerTaskNumber,
+            ExternalRequestHandler extReqHandler)
+        {
+            if (covering == CoveringResult.WriterPending)
+            {
+                Log.WriteWarning(kFirewallWriteLogTitle, $"{RequestInfo(request)}: the rule is written by implementation task {writerTaskNumber}, " +
+                    "which is not finished yet; the request is discarded.");
+                request.ExtRequestState = ExtStates.ExtReqDiscarded.ToString();
+                await extReqHandler.PatchState(request);
+                await extReqHandler.StartProvisioning(request.TicketId, null, request);
+                return false;
+            }
+            bool rejected = covering == CoveringResult.Rejected;
+            request.LastMessage = rejected
+                ? $"Rejected with implementation task {writerTaskNumber}, whose rule covers this task; nothing written."
+                : $"Covered by the rule of implementation task {writerTaskNumber}; nothing written.";
+            request.ExtRequestState = rejected ? ExtStates.ExtReqRejected.ToString() : ExtStates.ExtReqDone.ToString();
+            Log.WriteInfo(kFirewallWriteLogTitle, $"{RequestInfo(request)}: {request.LastMessage}");
             return true;
         }
 

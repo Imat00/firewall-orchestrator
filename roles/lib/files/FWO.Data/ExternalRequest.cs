@@ -12,6 +12,12 @@ namespace FWO.Data
         public const string ButtonRelease = "ButtonRelease";
         /// <summary>Marks a firewall write of a single implementation task started by its own action: nothing follows it.</summary>
         public const string SingleImplTask = "SingleImplTask";
+        /// <summary>Gateways a new rule is installed on, written for all tasks of its group: their gateway ids.</summary>
+        public const string InstallOnGateways = "InstallOnGateways";
+        /// <summary>Implementation tasks of the same request task whose new rule the write covers: their task numbers.</summary>
+        public const string CoveredTasks = "CoveredTasks";
+        /// <summary>Marks the request of a task covered by the rule of another task: the task number of that task.</summary>
+        public const string CoveredBy = "CoveredBy";
     }
 
     public class ExternalRequest
