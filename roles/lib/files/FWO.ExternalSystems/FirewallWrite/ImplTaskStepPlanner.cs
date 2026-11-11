@@ -89,7 +89,33 @@ namespace FWO.ExternalSystems.FirewallWrite
                 .SetText(FirewallWritePlaceholders.TaskId, implTask.Id.ToString(CultureInfo.InvariantCulture))
                 .SetText(FirewallWritePlaceholders.TaskNumber, implTask.TaskNumber.ToString(CultureInfo.InvariantCulture))
                 .SetJson(FirewallWritePlaceholders.RulePosition, effectivePlacement.ToJson());
+            SetInstallOn(values, context, profile);
             return values.Values;
+        }
+
+        /// <summary>
+        /// Sets the install-on list of a new rule along the install-on setting: with gateways in path the uids (else names)
+        /// of the gateways to install on, otherwise the vendor's value for all targets of the policy (Check Point: "Policy
+        /// Targets"). A vendor without such a value gets the gateways as well.
+        /// </summary>
+        private static void SetInstallOn(FirewallWriteStep values, FirewallWriteContext context, FirewallVendorProfile profile)
+        {
+            if (context.Settings.InstallOn != ProvisioningInstallOn.GatewaysInPath && profile.AllTargetsInstallOn != null)
+            {
+                List<string> allTargets = [profile.AllTargetsInstallOn];
+                values.SetStringList(FirewallWritePlaceholders.InstallOn, allTargets);
+                return;
+            }
+            List<string> gateways = [.. context.EffectiveInstallOnGateways
+                .Select(gateway => FirstNonBlank(gateway.Uid, gateway.Name))
+                .OfType<string>()
+                .Distinct()];
+            if (gateways.Count == 0)
+            {
+                values.SetMissing(FirewallWritePlaceholders.InstallOn, kNoGateway);
+                return;
+            }
+            values.SetStringList(FirewallWritePlaceholders.InstallOn, gateways);
         }
 
         private static List<FirewallWriteStep> PlanObjectTask(WfImplTask implTask, FirewallVendorProfile profile)

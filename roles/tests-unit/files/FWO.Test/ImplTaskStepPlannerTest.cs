@@ -1,3 +1,4 @@
+using FWO.Data;
 using FWO.Data.DeviceSpecificSettings;
 using FWO.Data.Workflow;
 using FWO.ExternalSystems.FirewallWrite;
@@ -489,6 +490,81 @@ namespace FWO.Test
                 Assert.That(new FirewallRulePlacement(FirewallRuleAnchor.Below, "u").ToJson(), Is.EqualTo("{\"below\":\"u\"}"));
                 Assert.Throws<InvalidOperationException>(() => new FirewallRulePlacement(FirewallRuleAnchor.Above).ToJson());
                 Assert.That(new EndOfRulebasePlacementProvider().GetPlacement(new WfImplTask()), Is.Null);
+            }
+        }
+
+        private static FirewallPlaceholderValue InstallOn(FirewallWriteContext context) =>
+            ImplTaskStepPlanner.ContextValues(Task(WfTaskType.access), context, null)[FirewallWritePlaceholders.InstallOn];
+
+        private static GatewayDeviceSpecificSettings InstallOnSetting(ProvisioningInstallOn installOn) => new() { InstallOn = installOn };
+
+        [TestCase(ProvisioningInstallOn.Any)]
+        [TestCase(ProvisioningInstallOn.Undefined)]
+        public void InstallOn_AnyUsesPolicyTargetsOnCheckPoint(ProvisioningInstallOn installOn)
+        {
+            FirewallWriteContext context = Context(FirewallVendors.kCheckPointR8x, InstallOnSetting(installOn));
+            Assert.That(InstallOn(context).Value, Is.EqualTo("[\"Policy Targets\"]"));
+        }
+
+        [Test]
+        public void InstallOn_GatewaysInPathUsesGatewayUidElseName()
+        {
+            FirewallWriteContext withUid = Context(FirewallVendors.kCheckPointR8x, InstallOnSetting(ProvisioningInstallOn.GatewaysInPath));
+            withUid.Gateway!.Uid = "gw-uid";
+            FirewallWriteContext withoutUid = Context(FirewallVendors.kCheckPointR8x, InstallOnSetting(ProvisioningInstallOn.GatewaysInPath));
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(InstallOn(withUid).Value, Is.EqualTo("[\"gw-uid\"]"));
+                Assert.That(InstallOn(withoutUid).Value, Is.EqualTo("[\"gw1_vd1\"]"));
+            }
+        }
+
+        [Test]
+        public void InstallOn_GatewaysInPathUsesAllInstallOnGateways()
+        {
+            FirewallWriteContext single = Context(FirewallVendors.kCheckPointR8x, InstallOnSetting(ProvisioningInstallOn.GatewaysInPath));
+            Device first = new() { Id = 1, Uid = "uid-b", Name = "gw-b" };
+            Device second = new() { Id = 2, Uid = "uid-c", Name = "gw-c" };
+            Device sameAsFirst = new() { Id = 3, Uid = "uid-b", Name = "gw-b-again" };
+            List<Device> installOnGateways = [first, second, sameAsFirst];
+            FirewallWriteContext group = new()
+            {
+                Management = single.Management,
+                Gateway = single.Gateway,
+                Settings = single.Settings,
+                InstallOnGateways = installOnGateways
+            };
+            Assert.That(InstallOn(group).Value, Is.EqualTo("[\"uid-b\",\"uid-c\"]"));
+        }
+
+        [Test]
+        public void InstallOn_GatewaysInPathWithoutGatewayHasNoValue()
+        {
+            FirewallWriteContext withGateway = Context(FirewallVendors.kCheckPointR8x, InstallOnSetting(ProvisioningInstallOn.GatewaysInPath));
+            FirewallWriteContext withoutGateway = new() { Management = withGateway.Management, Settings = withGateway.Settings };
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(InstallOn(withoutGateway).MissingReason, Does.Contain("no gateway"));
+                Assert.That(withoutGateway.EffectiveInstallOnGateways, Is.Empty);
+            }
+        }
+
+        [Test]
+        public void InstallOn_VendorWithoutAllTargetsValueUsesGateways()
+        {
+            FirewallWriteContext context = Context(FirewallVendors.kOpnSense, InstallOnSetting(ProvisioningInstallOn.Any));
+            Assert.That(InstallOn(context).Value, Is.EqualTo("[\"gw1_vd1\"]"));
+        }
+
+        [Test]
+        public void InstallOn_CheckPointRuleCreateTemplateUsesPlaceholder()
+        {
+            string? ruleCreate = FirewallWriteDefaults.GetTemplate(FirewallVendors.kCheckPointR8x, FirewallWriteOperation.RuleCreate);
+            string? ruleModify = FirewallWriteDefaults.GetTemplate(FirewallVendors.kCheckPointR8x, FirewallWriteOperation.RuleModify);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ruleCreate, Does.Contain("\"install-on\":" + FirewallWritePlaceholders.InstallOn));
+                Assert.That(ruleModify, Does.Not.Contain(FirewallWritePlaceholders.InstallOn));
             }
         }
 

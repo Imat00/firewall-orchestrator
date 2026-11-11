@@ -13,6 +13,15 @@ namespace FWO.ExternalSystems.FirewallWrite
 
         public Device? Gateway { get; init; }
 
+        /// <summary>
+        /// Gateways a new rule is installed on when the install-on setting is gateways in path; empty means the gateway of
+        /// the task.
+        /// </summary>
+        public List<Device> InstallOnGateways { get; init; } = [];
+
+        /// <summary>The gateways a new rule is installed on: <see cref="InstallOnGateways"/>, else the gateway of the task.</summary>
+        public List<Device> EffectiveInstallOnGateways => InstallOnGateways.Count > 0 || Gateway == null ? InstallOnGateways : [Gateway];
+
         public required GlobalDeviceSpecificSettings Settings { get; init; }
 
         /// <summary>Policy package and first access layer of the gateway from its imported rulebase links.</summary>

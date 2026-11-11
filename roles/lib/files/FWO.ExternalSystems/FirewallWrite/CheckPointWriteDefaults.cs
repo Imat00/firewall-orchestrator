@@ -15,7 +15,7 @@ namespace FWO.ExternalSystems.FirewallWrite
         private const string kRuleCreateBody = """
             {"layer":"@@LAYER_NAME@@","position":@@RULE_POSITION@@,"name":"@@RULE_NAME@@",
              "source":@@RULE_SOURCES@@,"destination":@@RULE_DESTINATIONS@@,"service":@@RULE_SERVICES@@,
-             "action":"@@RULE_ACTION@@","track":{"type":"@@RULE_TRACKING@@"},"comments":"@@RULE_COMMENT@@"}
+             "action":"@@RULE_ACTION@@","track":{"type":"@@RULE_TRACKING@@"},"install-on":@@INSTALL_ON@@,"comments":"@@RULE_COMMENT@@"}
             """;
 
         private const string kRuleModifyBody = """

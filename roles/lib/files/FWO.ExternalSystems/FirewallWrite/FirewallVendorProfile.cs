@@ -21,9 +21,12 @@ namespace FWO.ExternalSystems.FirewallWrite
         private const string kDefaultVdom = "root";
         private const string kFwoRuleCollectionGroup = "FWO";
 
+        private const string kCheckPointPolicyTargets = "Policy Targets";
+
         private static readonly FirewallVendorProfile CheckPoint = new("Any", "Accept", "Drop", "Log", "None", true, false)
         {
-            WritesRules = true
+            WritesRules = true,
+            AllTargetsInstallOn = kCheckPointPolicyTargets
         };
         private static readonly FirewallVendorProfile FortiOs = new("ALL", "accept", "deny", "all", "disable", false, false)
         {
@@ -66,6 +69,12 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// rulebase; Azure writes into a rule collection group of its own.
         /// </summary>
         public string? DefaultLayerName { get; init; }
+
+        /// <summary>
+        /// Install-on value of a rule that applies to all targets of its policy (Check Point: "Policy Targets"); null for
+        /// vendors whose rules have no install-on.
+        /// </summary>
+        public string? AllTargetsInstallOn { get; init; }
 
         /// <summary>Returns the profile of a vendor family.</summary>
         public static FirewallVendorProfile For(FirewallVendor vendor) => vendor switch
