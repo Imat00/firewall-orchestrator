@@ -43,6 +43,16 @@ namespace FWO.Test
         /// </summary>
         private sealed class FixedModes(int? planningEndState = null) : IProvisioningModeSource
         {
+            private static readonly List<int> kNoGateways = [];
+
+            /// <summary>Gateways the rules of an implementation task take effect on, by implementation task id.</summary>
+            public Dictionary<long, List<int>> EnforcingGateways { get; } = [];
+
+            public IReadOnlyList<int> GetRuleEnforcingGateways(WfImplTask implTask)
+            {
+                return EnforcingGateways.TryGetValue(implTask.Id, out List<int>? gatewayIds) ? gatewayIds : kNoGateways;
+            }
+
             public ProvisioningImplementationMode GetImplementationMode(int managementId, bool isRuleTask)
             {
                 return managementId switch
@@ -524,6 +534,60 @@ namespace FWO.Test
             ProvisioningWorkList workList = Build(reqTask);
 
             Assert.That(workList.Next?.WaitsForPlanning, Is.False);
+        }
+
+        /// <summary>Builds the work list of one rule_delete task on an automatic gateway whose rule takes effect on further gateways.</summary>
+        private static (ProvisioningWorkList WorkList, WfImplTask ImplTask) BuildRuleDeleteEnforcedOn(List<int> enforcingGatewayIds, bool released = false)
+        {
+            WfReqTask reqTask = ReqTask(1, 1, kAutomaticManagementId, nameof(WfTaskType.rule_delete));
+            WfImplTask implTask = AddRuleImplTask(reqTask, 11, kAutomaticManagementId, positioned: false);
+            FixedModes modes = new();
+            modes.EnforcingGateways[implTask.Id] = enforcingGatewayIds;
+            List<WfReqTask> reqTasks = [reqTask];
+            ProvisioningWorkList workList = released
+                ? ProvisioningWorkList.Build(reqTasks, modes, kReleasedFirstReqTask)
+                : ProvisioningWorkList.Build(reqTasks, modes);
+            return (workList, implTask);
+        }
+
+        private static readonly List<int> kEnforcedOnAutomaticGateways = [kAutomaticManagementId];
+        private static readonly List<int> kEnforcedOnManualGateway = [kAutomaticManagementId, kManualManagementId];
+        private static readonly List<int> kEnforcedOnExternalGateway = [kManualManagementId, kExternalManagementId];
+
+        [Test]
+        public void Build_ExistingRuleOnAutomaticGatewaysOnly_IsWritten()
+        {
+            (ProvisioningWorkList workList, WfImplTask implTask) = BuildRuleDeleteEnforcedOn(kEnforcedOnAutomaticGateways);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(workList.Items.Single().ImplTask, Is.SameAs(implTask));
+                Assert.That(workList.Gaps, Is.Empty);
+            }
+        }
+
+        [Test]
+        public void Build_ExistingRuleAlsoOnManualGateway_IsLeftToAPersonUnlessReleased()
+        {
+            (ProvisioningWorkList notReleased, _) = BuildRuleDeleteEnforcedOn(kEnforcedOnManualGateway);
+            (ProvisioningWorkList released, _) = BuildRuleDeleteEnforcedOn(kEnforcedOnManualGateway, true);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(notReleased.Items, Is.Empty);
+                Assert.That(notReleased.Gaps.Single().Reason, Does.StartWith($"the rule also takes effect on gateway {kManualManagementId}, which is set to manual"));
+                Assert.That(released.Items.Single().ReleasedByButton, Is.True);
+                Assert.That(released.Gaps, Is.Empty);
+            }
+        }
+
+        [Test]
+        public void Build_ExistingRuleAlsoOnExternalGateway_IsAGapNamingThatGateway()
+        {
+            (ProvisioningWorkList workList, _) = BuildRuleDeleteEnforcedOn(kEnforcedOnExternalGateway, true);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(workList.Items, Is.Empty);
+                Assert.That(workList.Gaps.Single().Reason, Does.StartWith($"gateway {kExternalManagementId} is set to external ticket system"));
+            }
         }
 
         [Test]

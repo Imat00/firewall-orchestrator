@@ -66,6 +66,12 @@ namespace FWO.Services.Workflow
         /// <summary>Whether rules are written to the management of a gateway, see FirewallVendorProfile.WritesRules.</summary>
         bool WritesRules(int gatewayId);
 
+        /// <summary>
+        /// Gateways the existing rules of a rule_modify or rule_delete task take effect on according to the import; empty
+        /// for other tasks or rules not found.
+        /// </summary>
+        IReadOnlyList<int> GetRuleEnforcingGateways(WfImplTask implTask);
+
         /// <summary>External ticket system selected for a management; undefined if none is selected.</summary>
         ExternalTicketSystemKind GetExternalTicketSystem(int managementId);
 
@@ -84,7 +90,8 @@ namespace FWO.Services.Workflow
     /// are provisioned one after another, the next one is the first entry not finished. With an active planning phase an
     /// implementation task is only written once its request task is planned; a request task handed to an external ticket
     /// system is handed over in any state, as the external ticket system approves and plans it itself.
-    /// The implementation mode of a rule task is the one of its gateway; a rule is only written to a vendor that writes
+    /// The implementation mode of a rule task is the one of its gateway, for a rule to modify or delete the strictest one of
+    /// all gateways the rule takes effect on; a rule is only written to a vendor that writes
     /// rules, and a new rule only with its calculated position, otherwise the task is reported.
     /// </summary>
     public sealed class ProvisioningWorkList
@@ -94,7 +101,10 @@ namespace FWO.Services.Workflow
         /// <summary>Entries in the order of provisioning, finished ones included.</summary>
         public List<ProvisioningWorkItem> Items { get; } = [];
 
-        /// <summary>Tasks nobody implements, to be reported with an alert.</summary>
+        /// <summary>
+        /// Tasks to be reported with an alert: tasks nobody implements, and rules left to a person because they also take
+        /// effect on a gateway set to manual.
+        /// </summary>
         public List<ProvisioningGap> Gaps { get; } = [];
 
         /// <summary>The entry to provision next; null if every entry is finished.</summary>
@@ -207,20 +217,26 @@ namespace FWO.Services.Workflow
                 return;
             }
             bool isFinished = implTask.StateId >= modes.GetImplementationEndState(implTask.TaskType);
-            ProvisioningImplementationMode mode = modes.GetRuleImplementationMode(gatewayId);
+            (ProvisioningImplementationMode mode, int decidingGatewayId) = StrictestRuleMode(gatewayId, implTask, modes);
             bool released = mode == ProvisioningImplementationMode.Manual && releasedReqTaskIds.Contains(reqTask.Id);
             int managementId = implTask.ManagementId ?? reqTask.ManagementId ?? 0;
             if (mode == ProvisioningImplementationMode.RerouteToExternalTicketSystem)
             {
                 if (!isFinished)
                 {
-                    Gaps.Add(new(reqTask, implTask, managementId, $"gateway {gatewayId} is set to external ticket system, " +
+                    Gaps.Add(new(reqTask, implTask, managementId, $"gateway {decidingGatewayId} is set to external ticket system, " +
                         "but the implementation task can only be written to the firewall or implemented manually."));
                 }
                 return;
             }
             if (mode != ProvisioningImplementationMode.Automatic && !released)
             {
+                if (!isFinished && decidingGatewayId != gatewayId)
+                {
+                    Gaps.Add(new(reqTask, implTask, managementId, $"the rule also takes effect on gateway {decidingGatewayId}, which is set to manual, " +
+                        "so it is not written automatically; release it by button or implement it manually."));
+                    return;
+                }
                 Log.WriteDebug(kLogTitle, $"Implementation task {implTask.Id} of request task {reqTask.Id} is implemented manually.");
                 return;
             }
@@ -232,6 +248,28 @@ namespace FWO.Services.Workflow
             }
             Items.Add(new(ProvisioningWay.FirewallWrite, reqTask, implTask, null, isFinished, IsBeingPlanned(reqTask, modes), released));
         }
+
+        /// <summary>
+        /// The implementation mode for rules that applies to a task, with the gateway it comes from: the mode of its
+        /// gateway, and for an existing rule the strictest mode of all gateways the rule takes effect on, as changing the
+        /// rule changes it on all of them. External ticket system is the strictest, then manual, then automatic; on equal
+        /// modes the gateway of the task decides.
+        /// </summary>
+        private static (ProvisioningImplementationMode Mode, int GatewayId) StrictestRuleMode(int gatewayId, WfImplTask implTask,
+            IProvisioningModeSource modes)
+        {
+            List<int> gatewayIds = [gatewayId, .. modes.GetRuleEnforcingGateways(implTask).Where(id => id != gatewayId).Distinct()];
+            return gatewayIds
+                .Select(id => (Mode: modes.GetRuleImplementationMode(id), GatewayId: id))
+                .MaxBy(entry => Strictness(entry.Mode));
+        }
+
+        private static int Strictness(ProvisioningImplementationMode mode) => mode switch
+        {
+            ProvisioningImplementationMode.Automatic => 0,
+            ProvisioningImplementationMode.RerouteToExternalTicketSystem => 2,
+            _ => 1
+        };
 
         /// <summary>Why a rule cannot be written; null if it can.</summary>
         private static string? RuleNotWrittenReason(WfImplTask implTask, int gatewayId, IProvisioningModeSource modes)

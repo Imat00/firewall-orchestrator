@@ -14,6 +14,9 @@ namespace FWO.Services.Workflow
     {
         private const string kProvisioningLogTitle = "Provisioning";
 
+        /// <summary>Gateways the rules of each rule_modify and rule_delete task take effect on, by implementation task id.</summary>
+        private Dictionary<long, List<int>> ruleEnforcingGatewayIds = [];
+
         /// <summary>
         /// Builds the provisioning work list of a ticket with the device specific settings in effect now. Tasks nobody
         /// implements are reported with an alert. If the settings cannot be resolved, nothing is provisioned, as the
@@ -69,7 +72,9 @@ namespace FWO.Services.Workflow
         private async Task<ProvisioningWorkList> BuildWorkList(WfTicket ticket, List<WfReqTask> reqTasks, HashSet<long> releasedReqTaskIds)
         {
             ResetAutoPlanCache();
-            await EnsureAutoPlanSettings(ProvisioningGatewayIds(reqTasks), ProvisioningManagementIds(reqTasks));
+            await LoadRuleEnforcingGateways(ticket, reqTasks);
+            List<int> gatewayIds = [.. ProvisioningGatewayIds(reqTasks).Concat(ruleEnforcingGatewayIds.Values.SelectMany(ids => ids)).Distinct()];
+            await EnsureAutoPlanSettings(gatewayIds, ProvisioningManagementIds(reqTasks));
             if (AutoPlanSettingsOverride == null && (autoPlanResolveFailed || !autoPlanCache.ContainsKey((DeviceSpecificScopeType.Global, null))))
             {
                 throw new InvalidOperationException($"The device specific settings could not be resolved; nothing of ticket {ticket.Id} is provisioned.");
@@ -112,6 +117,56 @@ namespace FWO.Services.Workflow
         {
             IEnumerable<WfImplTask> ruleImplTasks = reqTasks.Where(task => IsRuleTaskType(task.TaskType)).SelectMany(task => task.ImplementationTasks);
             return [.. ruleImplTasks.Select(implTask => implTask.DeviceId).OfType<int>().Where(id => id > 0).Distinct()];
+        }
+
+        /// <summary>
+        /// Loads the gateways the existing rules of the rule_modify and rule_delete tasks take effect on, whose
+        /// implementation modes apply as well. Without them a rule could be changed on a gateway left to a person, so the
+        /// work list is not built if they cannot be loaded.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The gateways of the rules could not be loaded.</exception>
+        private async Task LoadRuleEnforcingGateways(WfTicket ticket, List<WfReqTask> reqTasks)
+        {
+            ruleEnforcingGatewayIds = [];
+            List<WfImplTask> implTasks = [.. reqTasks.SelectMany(task => task.ImplementationTasks)
+                .Where(implTask => RuleEnforcingGateways.NamesExistingRules(implTask.TaskType))];
+            if (implTasks.Count == 0 || apiConnection == null)
+            {
+                return;
+            }
+            try
+            {
+                await EnsureDevicesLoaded();
+                foreach (IGrouping<int, WfImplTask> managementTasks in implTasks.GroupBy(ManagementOfRuleTask).Where(group => group.Key > 0))
+                {
+                    List<string> ruleUids = [.. managementTasks.SelectMany(RuleEnforcingGateways.RuleUids).Distinct()];
+                    Dictionary<string, List<Device>> gatewaysByRuleUid = await RuleEnforcingGateways.Load(apiConnection, managementTasks.Key, ruleUids);
+                    foreach (WfImplTask implTask in managementTasks)
+                    {
+                        ruleEnforcingGatewayIds[implTask.Id] = GatewayIdsOfRules(RuleEnforcingGateways.RuleUids(implTask), gatewaysByRuleUid);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"The gateways of the rules to modify or delete could not be loaded; nothing of ticket {ticket.Id} is provisioned.", exception);
+            }
+        }
+
+        private int ManagementOfRuleTask(WfImplTask implTask) =>
+            implTask.ManagementId ?? Devices.FirstOrDefault(device => device.Id == implTask.DeviceId)?.Management?.Id ?? 0;
+
+        private static List<int> GatewayIdsOfRules(List<string> ruleUids, Dictionary<string, List<Device>> gatewaysByRuleUid)
+        {
+            List<int> gatewayIds = [];
+            foreach (string ruleUid in ruleUids)
+            {
+                if (gatewaysByRuleUid.TryGetValue(ruleUid, out List<Device>? gateways))
+                {
+                    gatewayIds.AddRange(gateways.Select(gateway => gateway.Id));
+                }
+            }
+            return [.. gatewayIds.Distinct()];
         }
 
         /// <summary>Whether rules are written to the management of a gateway, by the device type of the management.</summary>
@@ -162,6 +217,11 @@ namespace FWO.Services.Workflow
             public bool WritesRules(int gatewayId)
             {
                 return handler.WritesRulesToGateway(gatewayId);
+            }
+
+            public IReadOnlyList<int> GetRuleEnforcingGateways(WfImplTask implTask)
+            {
+                return handler.ruleEnforcingGatewayIds.TryGetValue(implTask.Id, out List<int>? gatewayIds) ? gatewayIds : kNoIds;
             }
 
             public ExternalTicketSystemKind GetExternalTicketSystem(int managementId)

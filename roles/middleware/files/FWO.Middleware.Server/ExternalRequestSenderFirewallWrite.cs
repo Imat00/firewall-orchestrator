@@ -3,6 +3,7 @@ using FWO.Data.DeviceSpecificSettings;
 using FWO.Data.Workflow;
 using FWO.ExternalSystems.FirewallWrite;
 using FWO.Logging;
+using FWO.Services.Workflow;
 
 namespace FWO.Middleware.Server
 {
@@ -72,8 +73,9 @@ namespace FWO.Middleware.Server
         {
             Log.WriteInfo(kFirewallWriteLogTitle, $"Writing implementation task {implTask.Id} of {RequestInfo(request)}");
             request.Attempts++;
+            string gatewaysNote = await EnforcingGatewaysNote(implTask);
             ModifyFirewallResult result = await modifyFirewall(implTask);
-            request.LastMessage = DescribeResult(result);
+            request.LastMessage = DescribeResult(result) + gatewaysNote;
             if (result.Success)
             {
                 request.ExtRequestState = ExtStates.ExtReqDone.ToString();
@@ -118,6 +120,29 @@ namespace FWO.Middleware.Server
             request.ExtRequestState = ExtStates.ExtReqDiscarded.ToString();
             await extReqHandler.PatchState(request);
             await extReqHandler.StartProvisioning(request.TicketId, null, request);
+        }
+
+        /// <summary>
+        /// Names the gateways an existing rule to modify or delete takes effect on according to the import, as the change
+        /// applies to all of them, not only to the gateway of the task. Empty for other tasks; a failure to read them only
+        /// leaves the note out.
+        /// </summary>
+        private async Task<string> EnforcingGatewaysNote(WfImplTask implTask)
+        {
+            if (!RuleEnforcingGateways.NamesExistingRules(implTask.TaskType) || implTask.ManagementId is not int managementId)
+            {
+                return "";
+            }
+            try
+            {
+                List<Device> gateways = await RuleEnforcingGateways.LoadOfImplTask(apiConnection, managementId, implTask);
+                return gateways.Count == 0 ? "" : $" The rule takes effect on the gateways: {string.Join(", ", gateways.Select(gateway => gateway.Name))}.";
+            }
+            catch (Exception exception)
+            {
+                Log.WriteWarning(kFirewallWriteLogTitle, $"The gateways of the rules of implementation task {implTask.Id} could not be read: {exception.Message}");
+                return "";
+            }
         }
 
         private static string DescribeResult(ModifyFirewallResult result)

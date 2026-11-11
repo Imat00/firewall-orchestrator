@@ -16,6 +16,7 @@ namespace FWO.ExternalSystems.FirewallWrite
     {
         private const string kSessionHeader = "X-chkp-sid";
         private const string kIgnoreWarnings = "ignore-warnings";
+        private const string kShowAccessLayer = "show-access-layer";
 
         private static readonly List<FirewallWriteOperation> RetryableOperations =
             [FirewallWriteOperation.HostCreate, FirewallWriteOperation.NetworkCreate, FirewallWriteOperation.AddressRangeCreate];
@@ -165,6 +166,25 @@ namespace FWO.ExternalSystems.FirewallWrite
                 FirewallWriteOperation.AddressRangeCreate or FirewallWriteOperation.Ipv6AddressRangeCreate => CheckPointObjectComparison.AddressRangeMatches(requested, existing),
                 _ => true
             };
+        }
+
+        /// <summary>
+        /// A rule uid is only valid within its layer, so "not found" may also mean the layer is wrong. The rule only counts
+        /// as deleted if the layer of the delete call exists.
+        /// </summary>
+        protected override async Task<bool> IsRuleAlreadyDeleted(RenderedFirewallRequest request)
+        {
+            JsonNode? body = ParseJson(request.Body);
+            string? layer = body?["layer"] is JsonValue layerValue && layerValue.TryGetValue(out string? text) ? text : null;
+            if (string.IsNullOrWhiteSpace(layer))
+            {
+                return false;
+            }
+            JsonObject layerReference = Guid.TryParse(layer, out _) ? new JsonObject { ["uid"] = layer } : new JsonObject { ["name"] = layer };
+            RestRequest showRequest = new(kShowAccessLayer, Method.Post);
+            showRequest.AddStringBody(layerReference.ToJsonString(), ContentType.Json);
+            RestResponse response = await SendAuthenticated(showRequest);
+            return response.IsSuccessful;
         }
 
         private static bool IsDuplicateAddressWarning(string content) =>

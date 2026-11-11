@@ -56,12 +56,19 @@ namespace FWO.Test
 
             public List<(string Query, object? Variables)> Calls { get; } = [];
 
+            /// <summary>Rules with the gateways they take effect on, returned for the query of the enforcing gateways.</summary>
+            public List<Rule> EnforcingRules { get; } = [];
+
             public override async Task<QueryResponseType> SendQueryAsync<QueryResponseType>(string query, object? variables = null, string? operationName = null, QueryChunkingOptions? chunkingOptions = null)
             {
                 Calls.Add((query, variables));
                 if (query == ExtRequestQueries.getAndLockOpenRequests)
                 {
                     return (QueryResponseType)(object)new ExternalRequestDataHelper { ExternalRequests = OpenRequests };
+                }
+                if (query == RuleQueries.getRuleEnforcingGateways)
+                {
+                    return (QueryResponseType)(object)EnforcingRules;
                 }
                 if (query == ExtRequestQueries.getUnfinishedRequestsOfTicket)
                 {
@@ -245,6 +252,41 @@ namespace FWO.Test
                 Assert.That(createdRequests, Has.Count.EqualTo(1));
                 Assert.That(Variable(createdRequests[0], "implTaskId"), Is.EqualTo(kNextImplTaskId));
                 Assert.That(Variable(createdRequests[0], "waitCycles"), Is.EqualTo(0));
+            }
+        }
+
+        [Test]
+        public async Task Run_RuleDelete_NamesTheGatewaysTheRuleTakesEffectOn()
+        {
+            WfTicket ticket = Ticket();
+            WfImplTask implTask = ImplTask(ticket, kImplTaskId);
+            implTask.TaskType = WfTaskType.rule_delete.ToString();
+            implTask.ImplElements.Add(new WfImplElement { Field = ElemFieldType.rule.ToString(), RuleUid = "r1" });
+            FirewallWriteApiConn apiConnection = new(ticket);
+            DeviceWrapper gatewayB = new() { Content = new Device { Id = 2, Name = "gw-b" } };
+            DeviceWrapper gatewayC = new() { Content = new Device { Id = 3, Name = "gw-c" } };
+            DeviceWrapper[] gateways = [gatewayB, gatewayC];
+            apiConnection.EnforcingRules.Add(new Rule { Uid = "r1", EnforcingGateways = gateways });
+
+            await RunSender(apiConnection, Request(), Success());
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).First();
+            Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.EndWith("The rule takes effect on the gateways: gw-b, gw-c."));
+        }
+
+        [Test]
+        public async Task Run_ObjectTask_NamesNoGateways()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+
+            await RunSender(apiConnection, Request(), Success());
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).First();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.Not.Contain("takes effect on"));
+                Assert.That(apiConnection.Calls.Any(call => call.Query == RuleQueries.getRuleEnforcingGateways), Is.False);
             }
         }
 

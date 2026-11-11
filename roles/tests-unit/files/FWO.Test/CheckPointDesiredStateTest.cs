@@ -140,6 +140,77 @@ namespace FWO.Test
             }
         }
 
+        private static async Task<(FirewallStepResult Result, FirewallSimulation Simulation)> DeleteMissingRule(string body, bool layerExists)
+        {
+            FirewallSimulation simulation = new()
+            {
+                Handler = recorded => recorded.Resource switch
+                {
+                    "login" => Ok(kCheckPointLogin),
+                    "show-access-layer" when layerExists => Ok("{\"name\":\"Network\"}"),
+                    _ => Response(HttpStatusCode.NotFound, "{\"code\":\"generic_err_object_not_found\"}")
+                }
+            };
+            SimulatedCheckPointWriteClient client = new(Management(FirewallVendors.kCheckPointR8x), simulation);
+            await client.Login();
+            return (await client.Execute(Request(FirewallWriteOperation.RuleDelete, "delete-access-rule", body)), simulation);
+        }
+
+        [Test]
+        public async Task RuleAlreadyDeletedInAnExistingLayer_CountsAsDeleted()
+        {
+            const string layerUid = "8f1c2a7e-3b4d-4c5e-9f60-1a2b3c4d5e6f";
+            (FirewallStepResult result, FirewallSimulation simulation) = await DeleteMissingRule(
+                $"{{\"uid\":\"r1\",\"layer\":\"{layerUid}\"}}", true);
+            RecordedFirewallRequest layerCheck = simulation.Requests.Single(request => request.Resource == "show-access-layer");
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(result.Success, Is.True, result.Message);
+                Assert.That(result.Message, Does.StartWith("Already deleted."));
+                Assert.That(JsonNode.Parse(layerCheck.Body!)!["uid"]!.GetValue<string>(), Is.EqualTo(layerUid));
+            }
+        }
+
+        [Test]
+        public async Task RuleNotFoundInAMissingLayer_FailsAsNotFound()
+        {
+            (FirewallStepResult result, FirewallSimulation simulation) = await DeleteMissingRule("{\"uid\":\"r1\",\"layer\":\"Network\"}", false);
+            RecordedFirewallRequest layerCheck = simulation.Requests.Single(request => request.Resource == "show-access-layer");
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(result.Success, Is.False);
+                Assert.That(result.Error?.Kind, Is.EqualTo(FirewallWriteErrorKind.NotFound));
+                Assert.That(JsonNode.Parse(layerCheck.Body!)!["name"]!.GetValue<string>(), Is.EqualTo("Network"));
+            }
+        }
+
+        [Test]
+        public async Task RuleDeleteWithoutLayer_IsNotChecked()
+        {
+            (FirewallStepResult result, FirewallSimulation simulation) = await DeleteMissingRule("{\"uid\":\"r1\"}", true);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(result.Error?.Kind, Is.EqualTo(FirewallWriteErrorKind.NotFound));
+                Assert.That(simulation.Requests.Any(request => request.Resource == "show-access-layer"), Is.False);
+            }
+        }
+
+        [Test]
+        public async Task OtherVendor_KeepsTheNotFoundErrorOfARuleDelete()
+        {
+            FirewallSimulation simulation = new() { Handler = _ => Response(HttpStatusCode.NotFound, "{}") };
+            SimulatedFortiOsWriteClient client = new(Management(FirewallVendors.kFortiOsGateway), simulation);
+            await client.Login();
+
+            FirewallStepResult result = await client.Execute(Request(FirewallWriteOperation.RuleDelete, "api/v2/cmdb/firewall/policy/1", "{}"));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(result.Error?.Kind, Is.EqualTo(FirewallWriteErrorKind.NotFound));
+                Assert.That(simulation.Requests, Has.Count.EqualTo(1));
+            }
+        }
+
         [TestCase("{\"ipv4-address\":\"10.0.0.1\"}", true)]
         [TestCase("{\"ipv6-address\":\"10.0.0.1\"}", true)]
         [TestCase("{\"ipv4-address\":\"10.0.0.2\"}", false)]

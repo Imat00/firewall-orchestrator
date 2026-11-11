@@ -27,6 +27,9 @@ internal sealed class InMemoryDeviceSpecificSettingsApiConnection : SimulatedApi
     /// <summary>Answer of the query for the imported layers of rules.</summary>
     public FirewallRuleLayerQueryResult RuleLayers { get; set; } = new();
 
+    /// <summary>Rules with the gateways they take effect on, returned for the query of the enforcing gateways.</summary>
+    public List<Rule> EnforcingRules { get; } = [];
+
     public string? FailingQuery { get; set; }
 
     public Exception? Failure { get; set; }
@@ -148,6 +151,7 @@ internal sealed class InMemoryDeviceSpecificSettingsApiConnection : SimulatedApi
             _ when query == DeviceQueries.getGatewayRulebaseLinks => GatewaysById(variables),
             _ when query == DeviceQueries.getRulePositioningTarget => GatewaysWithManagement(variables),
             _ when query == RuleQueries.getRuleLayers => RuleLayers,
+            _ when query == RuleQueries.getRuleEnforcingGateways => EnforcingRules,
             _ when query == DeviceSpecificSettingsQueries.upsertNode => UpsertNode(variables),
             _ when query == DeviceSpecificSettingsQueries.applyPatch => ApplyPatch(variables),
             _ when query == DeviceSpecificSettingsQueries.deleteOverrides => DeleteOverrides(variables),

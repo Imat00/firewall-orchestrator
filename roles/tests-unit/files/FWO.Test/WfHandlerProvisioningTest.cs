@@ -244,6 +244,58 @@ namespace FWO.Test
             });
         }
 
+        /// <summary>A rule_delete task on the automatic gateway deleting the rule "r1".</summary>
+        private static WfReqTask RuleDeleteTask(WfHandler handler)
+        {
+            FieldInfo field = typeof(WfHandler).GetField("stateMatrixDict", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new MissingFieldException(nameof(WfHandler), "stateMatrixDict");
+            ((StateMatrixDict)field.GetValue(handler)!).Matrices[WfTaskType.rule_delete.ToString()] = new StateMatrix { ImplementationLowestEndState = kEndStateId };
+            WfReqTask reqTask = AccessTask(kAutomaticGatewayId);
+            reqTask.TaskType = WfTaskType.rule_delete.ToString();
+            WfImplTask implTask = reqTask.ImplementationTasks[0];
+            implTask.TaskType = reqTask.TaskType;
+            implTask.RulePosition = null;
+            implTask.ImplElements.Add(new WfImplElement { Field = ElemFieldType.rule.ToString(), RuleUid = "r1" });
+            return reqTask;
+        }
+
+        private static Rule EnforcedRule(params int[] gatewayIds) => new()
+        {
+            Uid = "r1",
+            EnforcingGateways = [.. gatewayIds.Select(id => new DeviceWrapper { Content = new Device { Id = id, Name = $"gw-{id}" } })]
+        };
+
+        [Test]
+        public async Task BuildProvisioningWorkList_ExistingRuleAlsoOnAManualGateway_IsLeftToAPerson()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
+            WfHandler handler = CreateRuleHandler(api);
+            WfReqTask onAutomaticOnly = RuleDeleteTask(handler);
+            api.EnforcingRules.Add(EnforcedRule(kAutomaticGatewayId));
+            ProvisioningWorkList written = await handler.BuildProvisioningWorkList(Ticket(onAutomaticOnly));
+            api.EnforcingRules.Clear();
+            api.EnforcingRules.Add(EnforcedRule(kAutomaticGatewayId, kManualGatewayId));
+
+            ProvisioningWorkList leftToAPerson = await handler.BuildProvisioningWorkList(Ticket(RuleDeleteTask(handler)));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(written.Items.Select(item => item.ImplTask?.Id), Is.EqualTo(kAutomaticGatewayImplTask));
+                Assert.That(leftToAPerson.Items, Is.Empty);
+                Assert.That(AlertDescriptions(api), Has.Some.Contains($"the rule also takes effect on gateway {kManualGatewayId}, which is set to manual"));
+            });
+        }
+
+        [Test]
+        public void BuildProvisioningWorkList_GatewaysOfTheRulesCannotBeLoaded_ProvisionsNothing()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = CreateApi();
+            api.FailingQuery = RuleQueries.getRuleEnforcingGateways;
+            WfHandler handler = CreateRuleHandler(api);
+
+            Assert.ThrowsAsync<InvalidOperationException>(() => handler.BuildProvisioningWorkList(Ticket(RuleDeleteTask(handler))));
+        }
+
         [Test]
         public void BuildProvisioningWorkList_SettingsCannotBeResolved_ProvisionsNothing()
         {

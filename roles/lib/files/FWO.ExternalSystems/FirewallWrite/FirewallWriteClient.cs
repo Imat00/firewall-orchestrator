@@ -63,8 +63,21 @@ namespace FWO.ExternalSystems.FirewallWrite
                 Log.WriteInfo(kLogCategory, $"{request.Operation} on '{request.Step.TargetName}': the object already exists as requested.");
                 return result with { Success = true, Error = null, Message = $"Already present as requested. {result.Message}" };
             }
+            if (result.Error?.Kind == FirewallWriteErrorKind.NotFound && request.Operation == FirewallWriteOperation.RuleDelete
+                && await IsRuleAlreadyDeleted(request))
+            {
+                Log.WriteInfo(kLogCategory, $"{request.Operation} on '{request.Step.TargetName}': the rule is already deleted.");
+                return result with { Success = true, Error = null, Message = $"Already deleted. {result.Message}" };
+            }
             return result;
         }
+
+        /// <summary>
+        /// Whether the rule a delete call failed for, because it is not found, is really gone, e.g. deleted by a previous
+        /// attempt whose answer was lost or by hand; the call then counts as successful. A rule addressed in a wrong place
+        /// must not count as deleted, so vendors that cannot verify this keep the default: false, the call fails.
+        /// </summary>
+        protected virtual Task<bool> IsRuleAlreadyDeleted(RenderedFirewallRequest request) => Task.FromResult(false);
 
         /// <summary>
         /// Whether the object a create call failed for, because it already exists, is already present on the firewall as
