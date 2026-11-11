@@ -63,7 +63,8 @@ namespace FWO.Middleware.Server
             this.globalConfig = globalConfig;
             userConfig = UserConfig.ForGlobalSettings(globalConfig, apiConnection);
             InjScClient = injScClient;
-            modifyFirewall = injFirewallWrite ?? (implTask => new FirewallWriter(new ApiFirewallWriteDataSource(apiConnection)).ModifyFirewall(implTask));
+            modifyFirewall = injFirewallWrite ?? (implTask => new FirewallWriter(new ApiFirewallWriteDataSource(apiConnection),
+                placementProvider: new RulePositionPlacementProvider()).ModifyFirewall(implTask));
         }
 
         /// <summary>

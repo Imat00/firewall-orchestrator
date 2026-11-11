@@ -65,7 +65,42 @@ namespace FWO.ExternalSystems.FirewallWrite
             List<DeviceSpecificScopePath> paths = [path];
             List<GlobalDeviceSpecificSettings> settings = await new DeviceSpecificSettingsManager(apiConnection).LoadEffectiveSettingsAsync(paths);
             FirewallGatewayRulebases rulebases = gateway == null ? FirewallGatewayRulebases.None : await LoadRulebases(gateway);
-            return new FirewallWriteContext { Management = management, Gateway = gateway, Settings = settings[0], Rulebases = rulebases };
+            Dictionary<string, string> ruleLayerUids = await LoadRuleLayers(implTask, management);
+            return new FirewallWriteContext
+            {
+                Management = management,
+                Gateway = gateway,
+                Settings = settings[0],
+                Rulebases = rulebases,
+                RuleLayerUids = ruleLayerUids
+            };
+        }
+
+        /// <summary>
+        /// Loads the layers of the existing rules a rule_modify or rule_delete task names from the imported configuration,
+        /// only for vendors that address rules in their layer; other tasks name no existing rule.
+        /// </summary>
+        private async Task<Dictionary<string, string>> LoadRuleLayers(WfImplTask implTask, Management management)
+        {
+            bool namesExistingRules = implTask.TaskType is nameof(WfTaskType.rule_modify) or nameof(WfTaskType.rule_delete);
+            FirewallVendor vendor = FirewallVendors.FromDeviceTypeId(management.DeviceType.Id);
+            if (!namesExistingRules || vendor == FirewallVendor.Unsupported || !FirewallVendorProfile.For(vendor).AddressesRulesInImportedLayer)
+            {
+                return [];
+            }
+            int managementId = management.Id;
+            List<string> ruleUids = [.. implTask.GetRuleElements()
+                .Select(rule => rule.RuleUid)
+                .OfType<string>()
+                .Where(uid => !string.IsNullOrWhiteSpace(uid))
+                .Distinct()];
+            if (ruleUids.Count == 0)
+            {
+                return [];
+            }
+            FirewallRuleLayerQueryResult result = await apiConnection.SendQueryAsync<FirewallRuleLayerQueryResult>(RuleQueries.getRuleLayers,
+                new { managementId, ruleUids, ruleLimit = FirewallRuleLayers.kMaxRules + 1, linkLimit = FirewallRuleLayers.kMaxSectionLinks + 1 });
+            return FirewallRuleLayers.Resolve(result);
         }
 
         /// <summary>

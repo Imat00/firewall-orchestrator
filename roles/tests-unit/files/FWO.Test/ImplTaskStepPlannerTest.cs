@@ -568,6 +568,56 @@ namespace FWO.Test
             }
         }
 
+        private static readonly Dictionary<string, string> kNoRuleLayers = [];
+
+        private static FirewallWriteContext WithRuleLayers(int deviceTypeId, Dictionary<string, string> ruleLayerUids)
+        {
+            FirewallWriteContext context = Context(deviceTypeId);
+            return new FirewallWriteContext
+            {
+                Management = context.Management,
+                Gateway = context.Gateway,
+                Settings = context.Settings,
+                RuleLayerUids = ruleLayerUids
+            };
+        }
+
+        [Test]
+        public void ExistingRules_AreAddressedInTheirImportedLayer()
+        {
+            Dictionary<string, string> ruleLayerUids = new() { { "a", "layer-a" }, { "b", "layer-b" } };
+            FirewallWriteContext context = WithRuleLayers(FirewallVendors.kCheckPointR8x, ruleLayerUids);
+            List<FirewallWriteStep> deleteSteps = ImplTaskStepPlanner.Plan(Task(WfTaskType.rule_delete, Rule("a"), Rule("b")), context, null);
+            FirewallWriteStep modifyStep = ImplTaskStepPlanner.Plan(Task(WfTaskType.rule_modify, Rule("b")), context, null).Single();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Value(deleteSteps[0], FirewallWritePlaceholders.LayerName), Is.EqualTo("layer-a"));
+                Assert.That(Value(deleteSteps[1], FirewallWritePlaceholders.LayerName), Is.EqualTo("layer-b"));
+                Assert.That(Value(modifyStep, FirewallWritePlaceholders.LayerName), Is.EqualTo("layer-b"));
+            }
+        }
+
+        [Test]
+        public void ExistingRule_MissingInTheImportIsNotWritten()
+        {
+            Dictionary<string, string> ruleLayerUids = new() { { "a", "layer-a" } };
+            FirewallWriteContext context = WithRuleLayers(FirewallVendors.kCheckPointR8x, ruleLayerUids);
+            FirewallWriteStep step = ImplTaskStepPlanner.Plan(Task(WfTaskType.rule_delete, Rule("gone")), context, null).Single();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Missing(step, FirewallWritePlaceholders.LayerName), Does.Contain("'gone' is not found in the imported configuration"));
+                Assert.That(step.Values[FirewallWritePlaceholders.LayerName].MissingKind, Is.EqualTo(FirewallWriteErrorKind.Configuration));
+            }
+        }
+
+        [Test]
+        public void ExistingRule_OfVendorWithoutImportedLayerKeepsTheContextLayer()
+        {
+            FirewallWriteContext context = WithRuleLayers(FirewallVendors.kOpnSense, kNoRuleLayers);
+            FirewallWriteStep step = ImplTaskStepPlanner.Plan(Task(WfTaskType.rule_delete, Rule("a")), context, null).Single();
+            Assert.That(Value(step, FirewallWritePlaceholders.LayerName), Is.EqualTo("Network"));
+        }
+
         [Test]
         public void MemberMerge_KeepsOrderAndIgnoresCase()
         {

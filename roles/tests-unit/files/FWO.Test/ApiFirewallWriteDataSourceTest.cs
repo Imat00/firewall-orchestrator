@@ -85,6 +85,38 @@ namespace FWO.Test
         }
 
         [Test]
+        public async Task LoadsTheImportedLayersOfTheRulesToModifyOrDelete()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = Api();
+            Rulebase layer = new() { Id = 1, Uid = "layer-uid" };
+            Rulebase section = new() { Id = 2, Uid = "section-uid" };
+            List<Rule> rules = [FirewallRuleLayersTest.RuleIn("a", section)];
+            List<RulebaseLink> sectionLinks = [FirewallRuleLayersTest.SectionLink(layer, section)];
+            api.RuleLayers = new FirewallRuleLayerQueryResult { Rules = rules, SectionLinks = sectionLinks };
+            ApiFirewallWriteDataSource dataSource = new(api);
+
+            FirewallWriteContext deleteContext = await dataSource.LoadContext(Task(WfTaskType.rule_delete, Rule("a")));
+            FirewallWriteContext accessContext = await dataSource.LoadContext(Task(WfTaskType.access, Rule("a")));
+            int ruleLayerQueries = api.Calls.Count(call => call.Query == FWO.Api.Client.Queries.RuleQueries.getRuleLayers);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(deleteContext.RuleLayerUids["a"], Is.EqualTo("layer-uid"));
+                Assert.That(accessContext.RuleLayerUids, Is.Empty);
+                Assert.That(ruleLayerQueries, Is.EqualTo(1));
+            }
+        }
+
+        [Test]
+        public async Task LoadsNoRuleLayersForVendorsThatDoNotAddressRulesInTheirLayer()
+        {
+            InMemoryDeviceSpecificSettingsApiConnection api = Api();
+            api.Managements[0].DeviceType = new DeviceType { Id = FirewallVendors.kOpnSense, Name = "OPNsense" };
+            api.FailingQuery = FWO.Api.Client.Queries.RuleQueries.getRuleLayers;
+            FirewallWriteContext context = await new ApiFirewallWriteDataSource(api).LoadContext(Task(WfTaskType.rule_delete, Rule("a")));
+            Assert.That(context.RuleLayerUids, Is.Empty);
+        }
+
+        [Test]
         public void MissingManagementOrForeignGatewayFails()
         {
             WfImplTask withoutManagement = Task(WfTaskType.group_delete);

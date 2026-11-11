@@ -27,6 +27,9 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// <summary>Policy package and first access layer of the gateway from its imported rulebase links.</summary>
         public FirewallGatewayRulebases Rulebases { get; init; } = FirewallGatewayRulebases.None;
 
+        /// <summary>Layer uid of each existing rule of the task by rule uid, from the imported configuration.</summary>
+        public IReadOnlyDictionary<string, string> RuleLayerUids { get; init; } = new Dictionary<string, string>();
+
         public int DeviceTypeId => Management.DeviceType.Id;
 
         public FirewallVendor Vendor => FirewallVendors.FromDeviceTypeId(DeviceTypeId);

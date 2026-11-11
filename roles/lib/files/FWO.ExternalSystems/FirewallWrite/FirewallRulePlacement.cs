@@ -1,3 +1,5 @@
+using FWO.Data.RulePositioning;
+using FWO.Data.RulePositioning.CheckPoint;
 using FWO.Data.Workflow;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -59,5 +61,36 @@ namespace FWO.ExternalSystems.FirewallWrite
     {
         /// <inheritdoc/>
         public FirewallRulePlacement? GetPlacement(WfImplTask implTask) => null;
+    }
+
+    /// <summary>
+    /// Places a rule at the position the rule positioning calculated and stored with the implementation task
+    /// (<see cref="WfImplTask.RulePosition"/>). A task without position is placed at the end of the rulebase; a position
+    /// type the library cannot write fails, so that no rule is written to a guessed place.
+    /// </summary>
+    public sealed class RulePositionPlacementProvider : IFirewallRulePlacementProvider
+    {
+        /// <inheritdoc/>
+        /// <exception cref="FirewallWriteException">Thrown for a position type the library cannot write.</exception>
+        public FirewallRulePlacement? GetPlacement(WfImplTask implTask)
+        {
+            ArgumentNullException.ThrowIfNull(implTask);
+            return implTask.RulePosition switch
+            {
+                null => null,
+                CheckPointRulePosition checkPointPosition => new FirewallRulePlacement(ToAnchor(checkPointPosition.AnchorKind),
+                    checkPointPosition.AnchorRuleUid, checkPointPosition.LayerUid),
+                RulePosition otherPosition => throw new FirewallWriteException(FirewallWriteErrorKind.Unsupported,
+                    $"The rule position type '{otherPosition.PositionType}' of implementation task {implTask.Id} cannot be written to a firewall.")
+            };
+        }
+
+        private static FirewallRuleAnchor ToAnchor(CheckPointPositionAnchorKind anchorKind) => anchorKind switch
+        {
+            CheckPointPositionAnchorKind.Top => FirewallRuleAnchor.Top,
+            CheckPointPositionAnchorKind.Above => FirewallRuleAnchor.Above,
+            CheckPointPositionAnchorKind.Below => FirewallRuleAnchor.Below,
+            _ => FirewallRuleAnchor.Bottom
+        };
     }
 }

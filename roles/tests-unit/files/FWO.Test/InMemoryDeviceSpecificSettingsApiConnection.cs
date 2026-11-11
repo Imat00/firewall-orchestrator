@@ -5,6 +5,7 @@ using FWO.Config.Api.Data;
 using FWO.Config.Api.DeviceSpecificSettings;
 using FWO.Data;
 using FWO.Data.DeviceSpecificSettings;
+using FWO.ExternalSystems.FirewallWrite;
 using Newtonsoft.Json.Linq;
 
 namespace FWO.Test;
@@ -22,6 +23,9 @@ internal sealed class InMemoryDeviceSpecificSettingsApiConnection : SimulatedApi
     public List<Management> Managements { get; } = [];
 
     public List<DeviceSpecificSettingsApiCall> Calls { get; } = [];
+
+    /// <summary>Answer of the query for the imported layers of rules.</summary>
+    public FirewallRuleLayerQueryResult RuleLayers { get; set; } = new();
 
     public string? FailingQuery { get; set; }
 
@@ -143,6 +147,7 @@ internal sealed class InMemoryDeviceSpecificSettingsApiConnection : SimulatedApi
             _ when query == DeviceQueries.getManagementById => ManagementsById(variables),
             _ when query == DeviceQueries.getGatewayRulebaseLinks => GatewaysById(variables),
             _ when query == DeviceQueries.getRulePositioningTarget => GatewaysWithManagement(variables),
+            _ when query == RuleQueries.getRuleLayers => RuleLayers,
             _ when query == DeviceSpecificSettingsQueries.upsertNode => UpsertNode(variables),
             _ when query == DeviceSpecificSettingsQueries.applyPatch => ApplyPatch(variables),
             _ when query == DeviceSpecificSettingsQueries.deleteOverrides => DeleteOverrides(variables),

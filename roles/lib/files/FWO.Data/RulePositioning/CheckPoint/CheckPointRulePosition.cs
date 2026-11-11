@@ -53,6 +53,9 @@ public sealed class CheckPointRulePosition : RulePosition, IJsonOnDeserialized
         Validate(layerUid, anchorKind, anchorRuleUid, positioningAlgorithm);
     }
 
+    /// <summary>Returns the uid of the target layer, the rulebase the rule is written to.</summary>
+    public override string? GetRulebaseKey() => LayerUid;
+
     /// <summary>
     /// Supports serializer construction before invariant validation callbacks run.
     /// </summary>

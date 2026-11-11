@@ -26,7 +26,8 @@ namespace FWO.ExternalSystems.FirewallWrite
         private static readonly FirewallVendorProfile CheckPoint = new("Any", "Accept", "Drop", "Log", "None", true, false)
         {
             WritesRules = true,
-            AllTargetsInstallOn = kCheckPointPolicyTargets
+            AllTargetsInstallOn = kCheckPointPolicyTargets,
+            AddressesRulesInImportedLayer = true
         };
         private static readonly FirewallVendorProfile FortiOs = new("ALL", "accept", "deny", "all", "disable", false, false)
         {
@@ -75,6 +76,12 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// vendors whose rules have no install-on.
         /// </summary>
         public string? AllTargetsInstallOn { get; init; }
+
+        /// <summary>
+        /// Whether an existing rule is modified or deleted in the layer it lies in according to the imported configuration
+        /// (Check Point: a rule uid is only valid within its layer); a rule missing in the import is then not written.
+        /// </summary>
+        public bool AddressesRulesInImportedLayer { get; init; }
 
         /// <summary>Returns the profile of a vendor family.</summary>
         public static FirewallVendorProfile For(FirewallVendor vendor) => vendor switch
