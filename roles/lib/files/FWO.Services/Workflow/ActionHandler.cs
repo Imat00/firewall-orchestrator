@@ -626,7 +626,7 @@ namespace FWO.Services.Workflow
             }
 
             string timeObjectPrecision = FlowIntegrationConfig.Parse(wfHandler.userConfig.ReqFlowIntegration).TimeObjectPrecision;
-            FlowDbCreator flowDbCreator = new(apiConnection, timeObjectPrecision);
+            FlowDbCreator flowDbCreator = new(apiConnection, timeObjectPrecision, wfHandler.userConfig.ReqTimeObjectOriginSuffixes);
             bool? success = await flowDbCreator.CreateFlowInFlowDb(action, statefulObject, scope, owner, ticketId);
             if (success != null)
             {
@@ -672,7 +672,7 @@ namespace FWO.Services.Workflow
             }
 
             BundleTasksActionParams bundleParams = BundleTasksActionParams.FromExternalParams(action.ExternalParams);
-            List<ComplianceNetworkZone> networkZones = await LoadBundleNetworkZones(bundleParams);
+            List<NetworkZone> networkZones = await LoadBundleNetworkZones(bundleParams);
             RequestTaskBundler bundler = new();
             LogUnresolvedCleanZoneTasks(action, ticket.Tasks, bundleParams, networkZones, bundler);
             Dictionary<long, string> bundleAssignments = bundler.BuildBundleAssignments(ticket.Tasks, bundleParams.BundleType,
@@ -718,7 +718,7 @@ namespace FWO.Services.Workflow
         /// Logs clean-zone bundling candidates whose source or destination IPs do not resolve to configured zones.
         /// </summary>
         private static void LogUnresolvedCleanZoneTasks(WfStateAction action, IEnumerable<WfReqTask> requestTasks,
-            BundleTasksActionParams bundleParams, List<ComplianceNetworkZone> networkZones, RequestTaskBundler bundler)
+            BundleTasksActionParams bundleParams, List<NetworkZone> networkZones, RequestTaskBundler bundler)
         {
             List<long> unresolvedTaskIds = bundler.FindTasksWithUnresolvedCleanZones(requestTasks, bundleParams.CleanZones, networkZones);
             if (unresolvedTaskIds.Count > 0)
@@ -736,7 +736,7 @@ namespace FWO.Services.Workflow
                 + $"{string.Join(", ", unresolvedTaskIds)} because source or destination IPs could not be resolved to configured matrix zones.";
         }
 
-        private async Task<List<ComplianceNetworkZone>> LoadBundleNetworkZones(BundleTasksActionParams bundleParams)
+        private async Task<List<NetworkZone>> LoadBundleNetworkZones(BundleTasksActionParams bundleParams)
         {
             if (!bundleParams.CleanZones || bundleParams.PolicyId == null || bundleParams.PolicyId <= 0)
             {
@@ -753,7 +753,7 @@ namespace FWO.Services.Workflow
                 return [];
             }
 
-            return await apiConnection.SendQueryAsync<List<ComplianceNetworkZone>>(NetworkZoneQueries.getNetworkZonesForMatrix, new { criterionId = matrixId.Value }) ?? [];
+            return await apiConnection.SendQueryAsync<List<NetworkZone>>(NetworkZoneQueries.getNetworkZonesForMatrix, new { criterionId = matrixId.Value }) ?? [];
         }
 
         /// <summary>Whether a person triggered the action by a button instead of a state change.</summary>

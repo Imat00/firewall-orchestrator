@@ -647,6 +647,114 @@ namespace FWO.Test
             Assert.That(GetTicketActionLockCount(), Is.Zero);
         }
 
+        [Test]
+        public async Task WorkflowController_FlushEmailBundleOnly_SucceedsWhenBundleIsMissing()
+        {
+            WorkflowController controller = CreateWorkflowController(
+                PrincipalWithRolesAndClaims(kAdminRole, new Claim("x-hasura-uuid", "uid=bundle-user,dc=test")));
+            WorkflowActionParameters parameters = new()
+            {
+                EmailBundleId = Guid.NewGuid().ToString("N")
+            };
+            WorkflowActionResult result = await InvokePrivateAsync<WorkflowActionResult>(controller, "FlushEmailBundleOnly",
+                new WfHandler(), parameters, 900101L, new WorkflowActionResult());
+
+            Assert.That(result.Success, Is.True);
+        }
+
+        [Test]
+        public async Task WorkflowController_FlushEmailBundleOnly_RemovesFlushedBundle()
+        {
+            const long ticketId = 900102;
+            string callerDn = "uid=bundle-owner,dc=test";
+            WorkflowController controller = CreateWorkflowController(
+                PrincipalWithRolesAndClaims(kAdminRole, new Claim("x-hasura-uuid", callerDn)));
+            WorkflowActionParameters parameters = new()
+            {
+                EmailBundleId = Guid.NewGuid().ToString("N")
+            };
+            object?[] getCollectorArguments = [parameters, ticketId, true];
+            WorkflowEmailBundleCollector collector = InvokePrivate<WorkflowEmailBundleCollector>(controller,
+                "GetEmailBundleCollector", getCollectorArguments);
+            WfHandler handler = new()
+            {
+                ActionHandler = new ActionHandler(new SimulatedApiConnection(), new WfHandler())
+            };
+
+            WorkflowActionResult result = await InvokePrivateAsync<WorkflowActionResult>(controller, "FlushEmailBundleOnly",
+                handler, parameters, ticketId, new WorkflowActionResult());
+            object?[] getExistingCollectorArguments = [parameters, ticketId, false];
+            WorkflowEmailBundleCollector? remainingCollector = InvokePrivate<WorkflowEmailBundleCollector?>(controller,
+                "GetEmailBundleCollector", getExistingCollectorArguments);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(collector, Is.Not.Null);
+                Assert.That(result.Success, Is.True);
+                Assert.That(remainingCollector, Is.Null);
+            });
+        }
+
+        [Test]
+        public async Task TicketActionLock_AllowsOneCallerToQueueActionsForOneTicket()
+        {
+            KeyedAsyncLock<long> ticketActionLocks = GetTicketActionLocks();
+            const long ticketId = 900099;
+            const string callerDn = "uid=batch,ou=users,dc=test";
+            IDisposable? firstLock = await ticketActionLocks.TryAcquireAsync(ticketId, callerDn);
+            Assert.That(firstLock, Is.Not.Null);
+
+            Task<IDisposable?> secondTask = ticketActionLocks.TryAcquireAsync(ticketId, callerDn);
+            Task<IDisposable?> thirdTask = ticketActionLocks.TryAcquireAsync(ticketId, callerDn);
+            await Task.Yield();
+
+            firstLock!.Dispose();
+            IDisposable? secondLock = await secondTask;
+            Assert.That(secondLock, Is.Not.Null);
+            secondLock!.Dispose();
+            IDisposable? thirdLock = await thirdTask;
+
+            Assert.That(thirdLock, Is.Not.Null);
+            thirdLock!.Dispose();
+            Assert.That(GetTicketActionLockCount(), Is.Zero);
+        }
+
+        [Test]
+        public async Task TicketActionLock_AllowsMoreThanThirtyTwoActionsForOneTicket()
+        {
+            KeyedAsyncLock<long> ticketActionLocks = GetTicketActionLocks();
+            const long ticketId = 900100;
+            const string callerDn = "uid=large-ticket,ou=users,dc=test";
+            IDisposable? firstLock = await ticketActionLocks.TryAcquireAsync(ticketId, callerDn);
+            Assert.That(firstLock, Is.Not.Null);
+            List<Task<bool>> waitingTasks = [.. Enumerable.Range(0, 32)
+                .Select(async _ =>
+                {
+                    IDisposable? ticketLock = await ticketActionLocks.TryAcquireAsync(ticketId, callerDn);
+                    try
+                    {
+                        return ticketLock is not null;
+                    }
+                    finally
+                    {
+                        ticketLock?.Dispose();
+                    }
+                })];
+            try
+            {
+                await Task.Yield();
+                firstLock!.Dispose();
+                bool[] acquired = await Task.WhenAll(waitingTasks);
+
+                Assert.That(acquired, Has.All.True);
+            }
+            finally
+            {
+                firstLock?.Dispose();
+            }
+            Assert.That(GetTicketActionLockCount(), Is.Zero);
+        }
+
         /// <summary>
         /// SEC-06: the object's state is persisted before its actions are requested, so a request
         /// that only claims "the object stands in the new state" stays valid after the transition
@@ -1796,6 +1904,33 @@ namespace FWO.Test
         }
 
         [Test]
+        public void WorkflowController_IsExplicitlyAssigned_AllowsDirectUserAssignments()
+        {
+            const string userDn = "uid=assigned,ou=users,dc=test";
+            ClaimsPrincipal user = PrincipalWithRolesAndClaims([Roles.Approver],
+                new Claim("x-hasura-uuid", userDn));
+            WfTicket handlerAssignment = new()
+            {
+                CurrentHandler = new UiUser { Dn = userDn }
+            };
+            WfApproval approverAssignment = new()
+            {
+                ApproverDn = userDn
+            };
+
+            bool handlerAllowed = InvokePrivateStatic<bool>(typeof(WorkflowController), "IsExplicitlyAssignedToUserOrGroups",
+                user, handlerAssignment, kNoUserGroups);
+            bool approverAllowed = InvokePrivateStatic<bool>(typeof(WorkflowController), "IsExplicitlyAssignedToUserOrGroups",
+                user, approverAssignment, kNoUserGroups);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(handlerAllowed, Is.True);
+                Assert.That(approverAllowed, Is.True);
+            });
+        }
+
+        [Test]
         public async Task WorkflowController_CallerCanAccessVisibility_ResolvesGroupAssignmentFromLdap()
         {
             // the group dns are no longer in the jwt, so an assigned group must be resolved from ldap
@@ -2291,6 +2426,20 @@ namespace FWO.Test
             MethodInfo method = instance.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new InvalidOperationException($"{methodName} not found.");
             return await (Task<T>)method.Invoke(instance, parameters)!;
+        }
+
+        private static T InvokePrivate<T>(object instance, string methodName, params object?[] parameters)
+        {
+            MethodInfo method = instance.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException($"{methodName} not found.");
+            return (T)method.Invoke(instance, parameters)!;
+        }
+
+        private static async Task InvokePrivateStaticTask(Type type, string methodName, params object?[] parameters)
+        {
+            MethodInfo method = type.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static)
+                ?? throw new InvalidOperationException($"{methodName} not found.");
+            await (Task)method.Invoke(null, parameters)!;
         }
 
         private static T InvokePrivateStaticWithRef<T>(Type type, string methodName, object?[] parameters)

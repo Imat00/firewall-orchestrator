@@ -264,3 +264,17 @@ For a feature-centric, thematically grouped view see
 ### 9.8.7 — 02.11.2026
 - Rule positioning calculates and persists semantic positions for Check Point access-rule implementation tasks, including placement at the end of a uniquely matched zone-pair section.
 - Auto-calculated undefined-internal zones cover complete IPv6 networks, and shared IP range parsing accepts dotted IPv4 netmasks.
+
+### 9.9.0 — 02.11.2026
+- Azure Firewall import module fetches firewall policies (network rules) and IP groups directly via the Azure Resource Manager API (api version 2026-01-01 with fallback to 2024-05-01).
+- Azure parent policies (policy hierarchy) are imported; their rules precede the rules of the child policy.
+- Azure gateway autodiscovery: finds the Azure Firewalls of the subscription and maps each to its firewall policy.
+- New importer setting "Skip unsupported rules": rules that cannot be represented (currently Azure geo-location filters) are skipped with a warning or fail the import.
+
+### 9.9.1 - 05.11.2026
+- Workflow state matrices can configure whether phases after request are promoted from the ticket, from individual tasks, or both. The request phase remains ticket-driven.
+- Access-task elements reference their ticket-local object-create task, keeping object changes consistent.
+- Approval-phase tickets provide a consolidated task-details view with read-only, technical and resolved task displays, configurable field editing, and task-specific editors for access, object, group and time-object tasks.
+- The promotion-mode setting supports an action-buttons-only option in addition to ticket, task and combined promotion.
+
+### 9.9.2 - 11.11.2026

@@ -3264,6 +3264,21 @@
                   "using": {
                     "foreign_key_constraint_on": "ticket_id"
                   }
+                },
+                {
+                  "name": "changer_user",
+                  "using": {
+                    "manual_configuration": {
+                      "column_mapping": {
+                        "changer_id": "uiuser_id"
+                      },
+                      "insertion_order": null,
+                      "remote_table": {
+                        "name": "uiuser",
+                        "schema": "public"
+                      }
+                    }
+                  }
                 }
               ],
               "insert_permissions": [
@@ -31287,6 +31302,12 @@
                   }
                 },
                 {
+                  "name": "object_task",
+                  "using": {
+                    "foreign_key_constraint_on": "object_task_id"
+                  }
+                },
+                {
                   "name": "object",
                   "using": {
                     "foreign_key_constraint_on": "network_object_id"
@@ -31349,7 +31370,8 @@
                       "user_id",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ]
                   }
                 },
@@ -31376,7 +31398,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ]
                   },
                   "comment": ""
@@ -31404,7 +31427,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ]
                   },
                   "comment": ""
@@ -31432,7 +31456,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ]
                   }
                 },
@@ -31459,7 +31484,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ]
                   }
                 }
@@ -31487,7 +31513,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -31514,7 +31541,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -31541,7 +31569,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -31568,7 +31597,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -31596,7 +31626,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -31624,7 +31655,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -31651,7 +31683,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -31679,7 +31712,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -31707,7 +31741,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -31734,7 +31769,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -31763,7 +31799,8 @@
                       "implementation_action",
                       "start_time",
                       "end_time",
-                      "time_obj_id"
+                      "time_obj_id",
+                      "object_task_id"
                     ],
                     "filter": {},
                     "check": null
@@ -32727,6 +32764,12 @@
                   }
                 },
                 {
+                  "name": "object_task",
+                  "using": {
+                    "foreign_key_constraint_on": "object_task_id"
+                  }
+                },
+                {
                   "name": "service",
                   "using": {
                     "foreign_key_constraint_on": "service_id"
@@ -32976,7 +33019,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ]
                   },
                   "comment": ""
@@ -33010,7 +33054,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ]
                   },
                   "comment": ""
@@ -33231,7 +33276,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ]
                   },
                   "comment": ""
@@ -33452,7 +33498,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ]
                   }
                 }
@@ -33486,7 +33533,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -33519,7 +33567,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -33552,7 +33601,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -33585,7 +33635,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -33619,7 +33670,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -33653,7 +33705,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -33686,7 +33739,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -33720,7 +33774,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   },
@@ -33754,7 +33809,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -33787,7 +33843,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {}
                   }
@@ -33822,7 +33879,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {},
                     "check": {
@@ -33971,6 +34029,7 @@
                       "flow_nwobj_id",
                       "flow_svcgrp_id",
                       "flow_svcobj_id",
+                      "object_task_id",
                       "flow_timeobj_id"
                     ],
                     "filter": {},
@@ -34006,7 +34065,8 @@
                       "start_time",
                       "end_time",
                       "time_obj_id",
-                      "flow_timeobj_id"
+                      "flow_timeobj_id",
+                      "object_task_id"
                     ],
                     "filter": {},
                     "check": {
@@ -34300,6 +34360,57 @@
                 }
               ],
               "insert_permissions": [
+                {
+                  "role": "approver",
+                  "permission": {
+                    "check": {
+                      "_and": [
+                        {
+                          "task_type": {
+                            "_eq": "object_create"
+                          }
+                        },
+                        {
+                          "request_action": {
+                            "_eq": "create"
+                          }
+                        },
+                        {
+                          "locked": {
+                            "_eq": true
+                          }
+                        },
+                        {
+                          "ticket": {
+                            "locked": {
+                              "_eq": true
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "columns": [
+                      "ticket_id",
+                      "locked",
+                      "task_type",
+                      "title",
+                      "mgm_id",
+                      "state_id",
+                      "task_number",
+                      "request_action",
+                      "rule_action",
+                      "rule_tracking",
+                      "target_begin_date",
+                      "target_end_date",
+                      "reason",
+                      "additional_info",
+                      "free_text",
+                      "svc_grp_id",
+                      "nw_obj_grp_id"
+                    ]
+                  },
+                  "comment": ""
+                },
                 {
                   "role": "middleware-server",
                   "permission": {
@@ -34907,6 +35018,38 @@
                 }
               ],
               "delete_permissions": [
+                {
+                  "role": "approver",
+                  "permission": {
+                    "filter": {
+                      "_and": [
+                        {
+                          "task_type": {
+                            "_eq": "object_create"
+                          }
+                        },
+                        {
+                          "request_action": {
+                            "_eq": "create"
+                          }
+                        },
+                        {
+                          "locked": {
+                            "_eq": true
+                          }
+                        },
+                        {
+                          "ticket": {
+                            "locked": {
+                              "_eq": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "comment": ""
+                },
                 {
                   "role": "requester",
                   "permission": {
@@ -35725,6 +35868,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35742,6 +35886,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35759,6 +35904,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35776,6 +35922,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35793,6 +35940,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35810,6 +35958,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35827,6 +35976,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
@@ -35844,6 +35994,7 @@
                     "columns": [
                       "active",
                       "phase_visibility_mode",
+                      "promotion_mode",
                       "name",
                       "phase",
                       "id",
