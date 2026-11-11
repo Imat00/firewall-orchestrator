@@ -285,7 +285,7 @@ namespace FWO.Middleware.Server
                 return false;
             }
             WfImplTask? writer = reqTask.ImplementationTasks.FirstOrDefault(task => task.TaskNumber == sharedRule.WriterTaskNumber);
-            return writer != null && writer.StateId < wfHandler.StateMatrix(writer.TaskType).ImplementationLowestEndState;
+            return writer != null && !IsImplTaskFinished(writer);
         }
 
         /// <summary>
@@ -359,7 +359,7 @@ namespace FWO.Middleware.Server
 
         private static bool IsBundledTaskType(string taskType)
         {
-            return taskType == WfTaskType.access.ToString() || IsRuleChangeOrDelete(taskType);
+            return taskType == WfTaskType.access.ToString() || WfTaskBase.IsRuleChangeOrDelete(taskType);
         }
     }
 }

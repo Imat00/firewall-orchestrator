@@ -277,7 +277,7 @@ namespace FWO.ExternalSystems.FirewallWrite
 
         private static List<FirewallWriteStep> PlanRuleDelete(WfImplTask implTask, FirewallVendorProfile profile, FirewallWriteContext context)
         {
-            List<string> ruleUids = [.. implTask.GetRuleElements().Select(rule => rule.RuleUid).Where(uid => !string.IsNullOrWhiteSpace(uid)).Distinct()];
+            List<string> ruleUids = implTask.GetRuleUids();
             if (ruleUids.Count == 0)
             {
                 throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData, $"Implementation task {implTask.Id} has no rule to delete.");
@@ -335,7 +335,7 @@ namespace FWO.ExternalSystems.FirewallWrite
 
         private static string RuleUid(WfImplTask implTask)
         {
-            string? ruleUid = implTask.GetRuleElements().Select(rule => rule.RuleUid).FirstOrDefault(uid => !string.IsNullOrWhiteSpace(uid));
+            string? ruleUid = implTask.GetRuleUids().FirstOrDefault();
             return ruleUid ?? throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData, $"Implementation task {implTask.Id} has no rule to modify.");
         }
 

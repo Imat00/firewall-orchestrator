@@ -217,23 +217,13 @@ namespace FWO.Middleware.Server
                     // now access request
                     (taskType == WfTaskType.access.ToString() ||
                     // or rule change handled by Tufin SC (independent of the system which handled the group)
-                    (nextSystem.IsTufinSecureChange() && IsRuleChangeOrDelete(taskType)) ||
+                    (nextSystem.IsTufinSecureChange() && WfTaskBase.IsRuleChangeOrDelete(taskType)) ||
                     // or last request created new objects in group
                     ContainsNewObj(oldRequest.ExtRequestContent)))
             {
                 return UserConfig.ExternalRequestWaitCycles;
             }
             return 0;
-        }
-
-        /// <summary>
-        /// Checks if a workflow task type is a rule modification or deletion.
-        /// </summary>
-        /// <param name="taskType">workflow task type</param>
-        /// <returns>true if the task type is rule_modify or rule_delete</returns>
-        private static bool IsRuleChangeOrDelete(string taskType)
-        {
-            return taskType == WfTaskType.rule_modify.ToString() || taskType == WfTaskType.rule_delete.ToString();
         }
 
         /// <summary>

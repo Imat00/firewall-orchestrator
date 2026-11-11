@@ -35,18 +35,11 @@ namespace FWO.Test
             FirewallWriteContext context = Context(FirewallVendors.kCheckPointR8x, settings);
             context.Gateway!.Package = null;
             context.Gateway.LocalRulebase = null;
-            return new FirewallWriteContext { Management = context.Management, Gateway = context.Gateway, Settings = settings, Rulebases = rulebases };
+            return context with { Rulebases = rulebases };
         }
 
         /// <summary>The context with the imported layer of the rule "uid-1", which rule_modify and rule_delete are addressed in.</summary>
-        private static FirewallWriteContext WithImportedRuleLayer(FirewallWriteContext context) => new()
-        {
-            Management = context.Management,
-            Gateway = context.Gateway,
-            Settings = context.Settings,
-            Rulebases = context.Rulebases,
-            RuleLayerUids = kImportedRuleLayers
-        };
+        private static FirewallWriteContext WithImportedRuleLayer(FirewallWriteContext context) => context with { RuleLayerUids = kImportedRuleLayers };
 
         private static WfImplTask AccessTask(int? ruleAction, params WfImplElement[] elements)
         {
@@ -125,14 +118,7 @@ namespace FWO.Test
             FirewallGatewayRulebases rulebases = FirewallGatewayRulebases.FromLinks(FirewallGatewayRulebasesTest.CheckPointLinks());
             FirewallWriteContext context = Context(FirewallVendors.kCheckPointR8x, settings);
             context.Gateway!.Package = "Stale Package";
-            (FirewallWriter writer, FirewallSimulation simulation) = Writer(new FirewallWriteContext
-            {
-                Management = context.Management,
-                Gateway = context.Gateway,
-                Settings = settings,
-                Rulebases = rulebases,
-                RuleLayerUids = kImportedRuleLayers
-            });
+            (FirewallWriter writer, FirewallSimulation simulation) = Writer(context with { Rulebases = rulebases, RuleLayerUids = kImportedRuleLayers });
             simulation.Handler = request => Ok(request.Resource == "login" ? kCheckPointLogin : "{}");
             ModifyFirewallResult result = await writer.ModifyFirewall(Task(WfTaskType.rule_delete, Rule("uid-1")));
             using (Assert.EnterMultipleScope())

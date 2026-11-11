@@ -16,14 +16,6 @@ namespace FWO.Services.Workflow
         /// <summary>Most rules of one management whose gateways are read at once.</summary>
         public const int kMaxRules = 1000;
 
-        /// <summary>Whether a task changes existing rules, which take effect on gateways of their own.</summary>
-        public static bool NamesExistingRules(string taskType) =>
-            taskType is nameof(WfTaskType.rule_modify) or nameof(WfTaskType.rule_delete);
-
-        /// <summary>The distinct rule uids of an implementation task.</summary>
-        public static List<string> RuleUids(WfImplTask implTask) =>
-            [.. implTask.GetRuleElements().Select(rule => rule.RuleUid).OfType<string>().Where(uid => !string.IsNullOrWhiteSpace(uid)).Distinct()];
-
         /// <summary>Loads the gateways of the given rules of a management, by rule uid; rules not found are left out.</summary>
         /// <exception cref="CollectionLimitExceededException">Thrown for more than <see cref="kMaxRules"/> rules.</exception>
         public static async Task<Dictionary<string, List<Device>>> Load(ApiConnection apiConnection, int managementId, List<string> ruleUids)
@@ -55,7 +47,7 @@ namespace FWO.Services.Workflow
         /// <summary>Loads the gateways the rules of one implementation task take effect on, ordered by name.</summary>
         public static async Task<List<Device>> LoadOfImplTask(ApiConnection apiConnection, int managementId, WfImplTask implTask)
         {
-            Dictionary<string, List<Device>> gatewaysByRuleUid = await Load(apiConnection, managementId, RuleUids(implTask));
+            Dictionary<string, List<Device>> gatewaysByRuleUid = await Load(apiConnection, managementId, implTask.GetRuleUids());
             return [.. gatewaysByRuleUid.Values.SelectMany(gateways => gateways).DistinctBy(gateway => gateway.Id)
                 .OrderBy(gateway => gateway.Name, StringComparer.OrdinalIgnoreCase)];
         }

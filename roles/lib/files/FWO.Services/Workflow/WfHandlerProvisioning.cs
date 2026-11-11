@@ -129,7 +129,7 @@ namespace FWO.Services.Workflow
         {
             ruleEnforcingGatewayIds = [];
             List<WfImplTask> implTasks = [.. reqTasks.SelectMany(task => task.ImplementationTasks)
-                .Where(implTask => RuleEnforcingGateways.NamesExistingRules(implTask.TaskType))];
+                .Where(implTask => WfTaskBase.IsRuleChangeOrDelete(implTask.TaskType))];
             if (implTasks.Count == 0 || apiConnection == null)
             {
                 return;
@@ -139,11 +139,11 @@ namespace FWO.Services.Workflow
                 await EnsureDevicesLoaded();
                 foreach (IGrouping<int, WfImplTask> managementTasks in implTasks.GroupBy(ManagementOfRuleTask).Where(group => group.Key > 0))
                 {
-                    List<string> ruleUids = [.. managementTasks.SelectMany(RuleEnforcingGateways.RuleUids).Distinct()];
+                    List<string> ruleUids = [.. managementTasks.SelectMany(implTask => implTask.GetRuleUids()).Distinct()];
                     Dictionary<string, List<Device>> gatewaysByRuleUid = await RuleEnforcingGateways.Load(apiConnection, managementTasks.Key, ruleUids);
                     foreach (WfImplTask implTask in managementTasks)
                     {
-                        ruleEnforcingGatewayIds[implTask.Id] = GatewayIdsOfRules(RuleEnforcingGateways.RuleUids(implTask), gatewaysByRuleUid);
+                        ruleEnforcingGatewayIds[implTask.Id] = GatewayIdsOfRules(implTask.GetRuleUids(), gatewaysByRuleUid);
                     }
                 }
             }

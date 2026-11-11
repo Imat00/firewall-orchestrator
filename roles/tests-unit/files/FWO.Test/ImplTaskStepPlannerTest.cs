@@ -527,13 +527,7 @@ namespace FWO.Test
             Device second = new() { Id = 2, Uid = "uid-c", Name = "gw-c" };
             Device sameAsFirst = new() { Id = 3, Uid = "uid-b", Name = "gw-b-again" };
             List<Device> installOnGateways = [first, second, sameAsFirst];
-            FirewallWriteContext group = new()
-            {
-                Management = single.Management,
-                Gateway = single.Gateway,
-                Settings = single.Settings,
-                InstallOnGateways = installOnGateways
-            };
+            FirewallWriteContext group = single with { InstallOnGateways = installOnGateways };
             Assert.That(InstallOn(group).Value, Is.EqualTo("[\"uid-b\",\"uid-c\"]"));
         }
 
@@ -595,14 +589,7 @@ namespace FWO.Test
 
         private static FirewallWriteContext WithRuleLayers(int deviceTypeId, Dictionary<string, string> ruleLayerUids)
         {
-            FirewallWriteContext context = Context(deviceTypeId);
-            return new FirewallWriteContext
-            {
-                Management = context.Management,
-                Gateway = context.Gateway,
-                Settings = context.Settings,
-                RuleLayerUids = ruleLayerUids
-            };
+            return Context(deviceTypeId) with { RuleLayerUids = ruleLayerUids };
         }
 
         [Test]

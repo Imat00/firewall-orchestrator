@@ -82,18 +82,13 @@ namespace FWO.ExternalSystems.FirewallWrite
         /// </summary>
         private async Task<Dictionary<string, string>> LoadRuleLayers(WfImplTask implTask, Management management)
         {
-            bool namesExistingRules = implTask.TaskType is nameof(WfTaskType.rule_modify) or nameof(WfTaskType.rule_delete);
             FirewallVendor vendor = FirewallVendors.FromDeviceTypeId(management.DeviceType.Id);
-            if (!namesExistingRules || vendor == FirewallVendor.Unsupported || !FirewallVendorProfile.For(vendor).AddressesRulesInImportedLayer)
+            if (!WfTaskBase.IsRuleChangeOrDelete(implTask.TaskType) || vendor == FirewallVendor.Unsupported || !FirewallVendorProfile.For(vendor).AddressesRulesInImportedLayer)
             {
                 return [];
             }
             int managementId = management.Id;
-            List<string> ruleUids = [.. implTask.GetRuleElements()
-                .Select(rule => rule.RuleUid)
-                .OfType<string>()
-                .Where(uid => !string.IsNullOrWhiteSpace(uid))
-                .Distinct()];
+            List<string> ruleUids = implTask.GetRuleUids();
             if (ruleUids.Count == 0)
             {
                 return [];

@@ -158,6 +158,10 @@ namespace FWO.Data.Workflow
             return elements;
         }
 
+        /// <summary>The distinct, non-empty uids of the existing rules the task names, in the order of its elements.</summary>
+        public List<string> GetRuleUids() =>
+            [.. GetRuleElements().Select(rule => rule.RuleUid).Where(uid => !string.IsNullOrWhiteSpace(uid)).Distinct()];
+
         public List<NwRuleElement> GetRuleElements()
         {
             List<NwRuleElement> elements = [];

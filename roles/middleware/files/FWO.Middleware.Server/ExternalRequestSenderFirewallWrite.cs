@@ -161,7 +161,7 @@ namespace FWO.Middleware.Server
         /// </summary>
         private async Task<string> EnforcingGatewaysNote(WfImplTask implTask)
         {
-            if (!RuleEnforcingGateways.NamesExistingRules(implTask.TaskType) || implTask.ManagementId is not int managementId)
+            if (!WfTaskBase.IsRuleChangeOrDelete(implTask.TaskType) || implTask.ManagementId is not int managementId)
             {
                 return "";
             }

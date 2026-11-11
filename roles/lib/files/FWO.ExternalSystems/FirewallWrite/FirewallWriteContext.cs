@@ -7,7 +7,7 @@ namespace FWO.ExternalSystems.FirewallWrite
     /// Target of a firewall write: the management with its export credentials, the gateway if the task names one, and the
     /// device specific settings in effect for the most specific of both.
     /// </summary>
-    public sealed class FirewallWriteContext
+    public sealed record FirewallWriteContext
     {
         public required Management Management { get; init; }
 
@@ -47,15 +47,7 @@ namespace FWO.ExternalSystems.FirewallWrite
                     ?? throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
                         $"Gateway {gatewayId} to install the rule on does not belong to management {Management.Id}."));
             }
-            return new FirewallWriteContext
-            {
-                Management = Management,
-                Gateway = Gateway,
-                Settings = Settings,
-                Rulebases = Rulebases,
-                RuleLayerUids = RuleLayerUids,
-                InstallOnGateways = gateways
-            };
+            return this with { InstallOnGateways = gateways };
         }
 
         public int DeviceTypeId => Management.DeviceType.Id;

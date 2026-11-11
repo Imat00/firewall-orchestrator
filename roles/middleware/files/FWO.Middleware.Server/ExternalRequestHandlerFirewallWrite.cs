@@ -47,8 +47,12 @@ namespace FWO.Middleware.Server
             {
                 return (null, false);
             }
-            return (implTask, implTask.StateId >= wfHandler.StateMatrix(implTask.TaskType).ImplementationLowestEndState);
+            return (implTask, IsImplTaskFinished(implTask));
         }
+
+        /// <summary>Whether an implementation task reached the end state of the implementation phase of its task type.</summary>
+        private bool IsImplTaskFinished(WfImplTask implTask) =>
+            implTask.StateId >= wfHandler.StateMatrix(implTask.TaskType).ImplementationLowestEndState;
 
         /// <summary>
         /// Takes over the result of a finished firewall write: the implementation task gets the internal state of the
@@ -88,7 +92,7 @@ namespace FWO.Middleware.Server
 
         private async Task CompleteImplTask(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, ExternalRequest request, bool rejected)
         {
-            if (implTask.StateId >= wfHandler.StateMatrix(implTask.TaskType).ImplementationLowestEndState)
+            if (IsImplTaskFinished(implTask))
             {
                 Log.WriteInfo(kFirewallWriteLogTitle, $"Implementation task {implTask.Id} is already finished, its state {implTask.StateId} is kept.");
                 return;
@@ -134,7 +138,7 @@ namespace FWO.Middleware.Server
             {
                 return (CoveringResult.NotCovered, writerTaskNumber);
             }
-            if (writer.StateId < wfHandler.StateMatrix(writer.TaskType).ImplementationLowestEndState)
+            if (!IsImplTaskFinished(writer))
             {
                 return (CoveringResult.WriterPending, writerTaskNumber);
             }
