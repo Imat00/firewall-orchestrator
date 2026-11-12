@@ -462,7 +462,20 @@ namespace FWO.Test
             {
                 Assert.That(Variable(creation, "extRequestState"), Is.EqualTo(ExtStates.ExtReqRejected.ToString()));
                 Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.StartWith("write failed"));
+                Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.EndWith("Firewall: native message"),
+                    "the reason given by the firewall is shown in the request");
             }
+        }
+
+        [Test]
+        public async Task Run_SuccessfulWrite_ShowsNoFirewallMessage()
+        {
+            FirewallWriteApiConn apiConnection = new(Ticket());
+
+            await RunSender(apiConnection, Request(), Success());
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).Single();
+            Assert.That(Variable(creation, "creationResponse")?.ToString(), Does.Not.Contain("Firewall:"));
         }
 
         [Test]
