@@ -177,10 +177,21 @@ namespace FWO.Middleware.Server
             }
         }
 
+        /// <summary>
+        /// Describes the write for the request: the summary, the status of every call and, for a failure, the firewall's
+        /// own message (e.g. the reason of a failed publish or of a refused TLS connection), so that the cause is visible
+        /// without the middleware log.
+        /// </summary>
         private static string DescribeResult(ModifyFirewallResult result)
         {
             string steps = string.Join("; ", result.Steps.Select(step => $"{step.Operation} {step.Target}: {step.StatusCode}"));
-            return steps == "" ? result.Message : $"{result.Message} ({steps})";
+            string description = steps == "" ? result.Message : $"{result.Message} ({steps})";
+            string? nativeMessage = result.Success ? null : result.Error?.NativeMessage;
+            if (string.IsNullOrWhiteSpace(nativeMessage) || description.Contains(nativeMessage, StringComparison.Ordinal))
+            {
+                return description;
+            }
+            return $"{description} Firewall: {nativeMessage}";
         }
     }
 }

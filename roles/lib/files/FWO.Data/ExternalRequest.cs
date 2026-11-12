@@ -25,8 +25,18 @@ namespace FWO.Data
         [JsonProperty("id"), JsonPropertyName("id")]
         public long Id { get; set; }
 
+        private FwoOwner owner = new();
+
+        /// <summary>
+        /// Owner of the request. Requests of tickets without owner, e.g. object tasks written to the firewall, have none
+        /// in the database; they get an empty owner, so that displays and filters need no null check.
+        /// </summary>
         [JsonProperty("owner"), JsonPropertyName("owner")]
-        public FwoOwner Owner { get; set; } = new();
+        public FwoOwner Owner
+        {
+            get => owner;
+            set => owner = value ?? new();
+        }
 
         [JsonProperty("ticket_id"), JsonPropertyName("ticket_id")]
         public long TicketId { get; set; }

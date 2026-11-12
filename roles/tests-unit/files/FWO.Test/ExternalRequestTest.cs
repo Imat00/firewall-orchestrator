@@ -1,3 +1,4 @@
+using FWO.Api.Client.Queries;
 using FWO.Data;
 using NUnit.Framework;
 
@@ -15,6 +16,7 @@ namespace FWO.Test
         private const string kRequestWithImplTask = """{"id":1,"ticket_id":2,"impltask_id":4711}""";
         private const string kRequestWithoutImplTask = """{"id":1,"ticket_id":2}""";
         private const string kRequestWithNullImplTask = """{"id":1,"ticket_id":2,"impltask_id":null}""";
+        private const string kRequestWithNullOwner = """{"id":1,"ticket_id":2,"owner":null}""";
 
         [Test]
         public void ImplTaskId_IsReadByBothSerializers()
@@ -41,6 +43,26 @@ namespace FWO.Test
                 Assert.That(missingRequest?.ImplTaskId, Is.Null);
                 Assert.That(nullRequest?.ImplTaskId, Is.Null);
             });
+        }
+
+        [Test]
+        public void Owner_IsEmptyForARequestWithoutOwner()
+        {
+            ExternalRequest? newtonsoftRequest = Newtonsoft.Json.JsonConvert.DeserializeObject<ExternalRequest>(kRequestWithNullOwner);
+            ExternalRequest? systemTextRequest = System.Text.Json.JsonSerializer.Deserialize<ExternalRequest>(kRequestWithNullOwner);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(newtonsoftRequest?.Owner, Is.Not.Null);
+                Assert.That(systemTextRequest?.Owner, Is.Not.Null);
+                Assert.That(systemTextRequest?.Owner.Display(""), Is.Empty);
+            });
+        }
+
+        [Test]
+        public void AddExtRequest_AcceptsARequestWithoutOwner()
+        {
+            Assert.That(ExtRequestQueries.addExtRequest, Does.Contain("$ownerId: Int").And.Not.Contain("$ownerId: Int!"));
         }
 
         [Test]

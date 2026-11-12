@@ -262,6 +262,7 @@ namespace FWO.Test
                 Assert.That(createdRequests, Has.Count.EqualTo(1));
                 Assert.That(Variable(createdRequests[0], "implTaskId"), Is.EqualTo(kNextImplTaskId));
                 Assert.That(Variable(createdRequests[0], "waitCycles"), Is.EqualTo(0));
+                Assert.That(Variable(createdRequests[0], "ownerId"), Is.Null, "a ticket without owner creates its requests without owner");
             }
         }
 

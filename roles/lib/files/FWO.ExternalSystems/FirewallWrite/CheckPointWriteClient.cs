@@ -42,12 +42,25 @@ namespace FWO.ExternalSystems.FirewallWrite
         private const string kInternalErrorPrefix = "generic_internal";
         private static readonly List<string> CheckPointAuthenticationCodes = ["login", "wrong_session", "session_expired", "unauthorized", "permission"];
 
+        private const string kShowTask = "show-task";
+        private const string kTaskId = "task-id";
+        private const string kTaskStatusInProgress = "in progress";
+        private const string kTaskStatusSucceeded = "succeeded";
+        private const int kDefaultPublishWaitSeconds = 300;
+        private static readonly TimeSpan PublishPollInterval = TimeSpan.FromSeconds(1);
+
+        private readonly int publishWaitSeconds;
         private string? sessionId;
 
         /// <summary>Creates a client for the web_api of a Check Point management.</summary>
+        /// <param name="management">Management with export credentials.</param>
+        /// <param name="checkCertificates">False accepts any server certificate.</param>
+        /// <param name="responseTimeout">Seconds a call may take; also the time a publish may take to finish. Null keeps the default.</param>
         public CheckPointWriteClient(Management management, bool checkCertificates, int? responseTimeout = null)
             : base(HostUrl(management, "/web_api/"), management, checkCertificates, responseTimeout)
-        { }
+        {
+            publishWaitSeconds = responseTimeout is > 0 ? responseTimeout.Value : kDefaultPublishWaitSeconds;
+        }
 
         /// <inheritdoc/>
         public override async Task Login()
@@ -84,6 +97,10 @@ namespace FWO.ExternalSystems.FirewallWrite
         public override async Task<FirewallStepResult> Execute(RenderedFirewallRequest request)
         {
             FirewallStepResult result = await base.Execute(request);
+            if (result.Success && request.Operation == FirewallWriteOperation.Publish)
+            {
+                return await AwaitPublishTask(result);
+            }
             if (result.Success || !RetryableOperations.Contains(request.Operation) || !IsDuplicateAddressWarning(result.Message))
             {
                 return result;
@@ -186,6 +203,59 @@ namespace FWO.ExternalSystems.FirewallWrite
             RestResponse response = await SendAuthenticated(showRequest);
             return response.IsSuccessful;
         }
+
+        /// <summary>
+        /// A Check Point publish only starts a task; its answer does not tell whether the changes were published. Waits
+        /// until the task is finished, at most the response timeout: only "succeeded" counts as published. A failed
+        /// task or one that is still running at the end fails the publish, so that the session is discarded instead of
+        /// being left behind unpublished. An answer without task id is kept as it is.
+        /// </summary>
+        private async Task<FirewallStepResult> AwaitPublishTask(FirewallStepResult published)
+        {
+            string? taskId = ParseJson(published.Message)?[kTaskId] is JsonValue idValue && idValue.TryGetValue(out string? id) ? id : null;
+            if (string.IsNullOrWhiteSpace(taskId))
+            {
+                Log.WriteWarning("Firewall Write", $"Check Point publish on '{Management.Name}' returned no task id, its result cannot be checked.");
+                return published;
+            }
+            int maxPolls = Math.Max(1, (int)Math.Ceiling(publishWaitSeconds / PublishPollInterval.TotalSeconds));
+            for (int poll = 0; poll < maxPolls; poll++)
+            {
+                RestResponse response = await ShowTask(taskId);
+                JsonNode? task = ParseJson(response.Content)?["tasks"]?[0];
+                string? status = task?["status"]?.ToString();
+                if (!response.IsSuccessful || status == null)
+                {
+                    return PublishFailure(published, FirewallWriteErrors.NativeMessage(response), ClassifyFailure(response, published.Operation).Kind);
+                }
+                if (status != kTaskStatusInProgress)
+                {
+                    return status == kTaskStatusSucceeded
+                        ? published with { Message = $"{published.Message} Publish task {taskId}: {status}." }
+                        : PublishFailure(published, task!.ToJsonString(), FirewallWriteErrorKind.Rejected);
+                }
+                await WaitBeforeNextPoll();
+            }
+            return PublishFailure(published, $"Publish task {taskId} did not finish within {publishWaitSeconds} seconds.", FirewallWriteErrorKind.Unreachable);
+        }
+
+        private async Task<RestResponse> ShowTask(string taskId)
+        {
+            RestRequest request = new(kShowTask, Method.Post);
+            request.AddStringBody(new JsonObject { [kTaskId] = taskId }.ToJsonString(), ContentType.Json);
+            return await SendAuthenticated(request);
+        }
+
+        private FirewallStepResult PublishFailure(FirewallStepResult published, string nativeMessage, FirewallWriteErrorKind kind)
+        {
+            string message = $"Check Point publish on '{Management.Name}' failed ({kind}): {nativeMessage}";
+            Log.WriteWarning("Firewall Write", message);
+            FirewallWriteError error = new(kind, nativeMessage, published.StatusCode, null, published.Operation);
+            return published with { Success = false, Message = message, Error = error };
+        }
+
+        /// <summary>Waits between two reads of a running publish task. Unit tests override this to run without delay.</summary>
+        protected virtual Task WaitBeforeNextPoll() => Task.Delay(PublishPollInterval);
 
         private static bool IsDuplicateAddressWarning(string content) =>
             DuplicateAddressWarnings.Any(warning => content.Contains(warning, StringComparison.OrdinalIgnoreCase));

@@ -1,5 +1,5 @@
 mutation addExtRequest(
-  $ownerId: Int!
+  $ownerId: Int
   $ticketId: bigint!
   $taskNumber: Int!
   $extTicketSystem: String!
