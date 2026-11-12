@@ -20,6 +20,12 @@ namespace FWO.ExternalSystems.FirewallWrite
         private const string kLogCategory = "Firewall Write";
         private const int kDefaultHttpsPort = 443;
 
+        /// <summary>Start of the message of a create call that counts as successful because the object is already present as requested.</summary>
+        public const string kAlreadyPresentNote = "Already present as requested.";
+
+        /// <summary>Start of the message of a delete call that counts as successful because the rule is already deleted.</summary>
+        public const string kAlreadyDeletedNote = "Already deleted.";
+
         protected Management Management { get; }
 
         /// <summary>Creates a client for a management.</summary>
@@ -61,13 +67,13 @@ namespace FWO.ExternalSystems.FirewallWrite
             if (result.Error?.Kind == FirewallWriteErrorKind.AlreadyExists && await IsDesiredStatePresent(request))
             {
                 Log.WriteInfo(kLogCategory, $"{request.Operation} on '{request.Step.TargetName}': the object already exists as requested.");
-                return result with { Success = true, Error = null, Message = $"Already present as requested. {result.Message}" };
+                return result with { Success = true, Error = null, Message = $"{kAlreadyPresentNote} {result.Message}" };
             }
             if (result.Error?.Kind == FirewallWriteErrorKind.NotFound && request.Operation == FirewallWriteOperation.RuleDelete
                 && await IsRuleAlreadyDeleted(request))
             {
                 Log.WriteInfo(kLogCategory, $"{request.Operation} on '{request.Step.TargetName}': the rule is already deleted.");
-                return result with { Success = true, Error = null, Message = $"Already deleted. {result.Message}" };
+                return result with { Success = true, Error = null, Message = $"{kAlreadyDeletedNote} {result.Message}" };
             }
             return result;
         }

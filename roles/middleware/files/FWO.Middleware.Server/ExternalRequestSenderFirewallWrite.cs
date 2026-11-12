@@ -184,7 +184,7 @@ namespace FWO.Middleware.Server
         /// </summary>
         private static string DescribeResult(ModifyFirewallResult result)
         {
-            string steps = string.Join("; ", result.Steps.Select(step => $"{step.Operation} {step.Target}: {step.StatusCode}"));
+            string steps = string.Join("; ", result.Steps.Select(DescribeStep));
             string description = steps == "" ? result.Message : $"{result.Message} ({steps})";
             string? nativeMessage = result.Success ? null : result.Error?.NativeMessage;
             if (string.IsNullOrWhiteSpace(nativeMessage) || description.Contains(nativeMessage, StringComparison.Ordinal))
@@ -192,6 +192,20 @@ namespace FWO.Middleware.Server
                 return description;
             }
             return $"{description} Firewall: {nativeMessage}";
+        }
+
+        /// <summary>
+        /// Describes one call by its status. A call that failed on the firewall but counts as successful, because the
+        /// object is already present or the rule already deleted, says so, as its status alone looks like an error.
+        /// </summary>
+        private static string DescribeStep(FirewallStepResult step)
+        {
+            string status = $"{step.Operation} {step.Target}: {step.StatusCode}";
+            if (step.Message.StartsWith(FirewallWriteClient.kAlreadyPresentNote, StringComparison.Ordinal))
+            {
+                return $"{status} already present as requested";
+            }
+            return step.Message.StartsWith(FirewallWriteClient.kAlreadyDeletedNote, StringComparison.Ordinal) ? $"{status} already deleted" : status;
         }
     }
 }

@@ -479,6 +479,28 @@ namespace FWO.Test
         }
 
         [Test]
+        public async Task Run_CallsThatCountAsDone_SayWhy()
+        {
+            List<FirewallStepResult> steps =
+            [
+                new(FirewallWriteOperation.HostCreate, "h1", true, 400, $"{FirewallWriteClient.kAlreadyPresentNote} duplicate"),
+                new(FirewallWriteOperation.RuleDelete, "r1", true, 404, $"{FirewallWriteClient.kAlreadyDeletedNote} not found"),
+                new(FirewallWriteOperation.Publish, "mgmt", true, 200, "{}")
+            ];
+            FirewallWriteApiConn apiConnection = new(Ticket());
+
+            await RunSender(apiConnection, Request(), ModifyFirewallResult.Succeeded("written", steps));
+
+            object creation = apiConnection.VariablesOf(ExtRequestQueries.updateExtRequestCreation).Single();
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(Variable(creation, "extRequestState"), Is.EqualTo(ExtStates.ExtReqDone.ToString()));
+                Assert.That(Variable(creation, "creationResponse"),
+                    Is.EqualTo("written (HostCreate h1: 400 already present as requested; RuleDelete r1: 404 already deleted; Publish mgmt: 200)"));
+            }
+        }
+
+        [Test]
         public async Task Run_ImplementationTaskAlreadyFinished_IsNotWrittenAgain()
         {
             WfTicket ticket = Ticket(kDoneStateId);
