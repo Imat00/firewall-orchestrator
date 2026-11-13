@@ -48,12 +48,11 @@ internal sealed class InMemoryDeviceSpecificSettingsApiConnection : SimulatedApi
         return [.. Managements.SelectMany(management => management.Devices).Where(device => Equals(device.Id, id))];
     }
 
-    /// <summary>Gateways with the id of the getRulePositioningTarget variables, with their management.</summary>
-    private List<Device> GatewaysWithManagement(object? variables)
+    /// <summary>Gateways with the implementation-target gateway ID.</summary>
+    private List<Device> ImplementationTaskGatewaysById(object? variables)
     {
         object? id = variables?.GetType().GetProperty("gatewayId")?.GetValue(variables);
-        return [.. Managements.SelectMany(management => management.Devices.Where(device => Equals(device.Id, id))
-            .Select(device => new Device { Id = device.Id, Name = device.Name, Management = management }))];
+        return [.. Managements.SelectMany(management => management.Devices).Where(device => Equals(device.Id, id))];
     }
 
     /// <summary>Optional test hook that can pause a query after it has been recorded and before it is applied.</summary>
@@ -148,8 +147,8 @@ internal sealed class InMemoryDeviceSpecificSettingsApiConnection : SimulatedApi
             _ when query == DeviceQueries.getManagementDetailsWithoutSecrets => Managements,
             _ when query == DeviceQueries.getManagementHierarchy => Managements,
             _ when query == DeviceQueries.getManagementById => ManagementsById(variables),
+            _ when query == DeviceQueries.getImplementationTaskGatewayTarget => ImplementationTaskGatewaysById(variables),
             _ when query == DeviceQueries.getGatewayRulebaseLinks => GatewaysById(variables),
-            _ when query == DeviceQueries.getRulePositioningTarget => GatewaysWithManagement(variables),
             _ when query == RuleQueries.getRuleLayers => RuleLayers,
             _ when query == RuleQueries.getRuleEnforcingGateways => EnforcingRules,
             _ when query == DeviceSpecificSettingsQueries.upsertNode => UpsertNode(variables),

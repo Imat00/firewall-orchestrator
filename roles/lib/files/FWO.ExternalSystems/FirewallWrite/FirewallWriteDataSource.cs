@@ -21,38 +21,50 @@ namespace FWO.ExternalSystems.FirewallWrite
     /// </summary>
     public sealed class ApiFirewallWriteDataSource(ApiConnection apiConnection) : IFirewallWriteDataSource
     {
-        /// <summary>
-        /// The management of the gateway of a task stored without management, e.g. a rule task created before the
-        /// management was stored with it.
-        /// </summary>
-        private async Task<int> ManagementOfGateway(WfImplTask implTask)
-        {
-            if (implTask.DeviceId is not int gatewayId)
-            {
-                throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData, $"Implementation task {implTask.Id} has no management.");
-            }
-            List<Device> gateways = await apiConnection.SendQueryAsync<List<Device>>(DeviceQueries.getRulePositioningTarget, new { gatewayId });
-            int managementId = gateways.FirstOrDefault()?.Management?.Id ?? 0;
-            if (managementId <= 0)
-            {
-                throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
-                    $"Implementation task {implTask.Id} has no management, and its gateway {gatewayId} has none either.");
-            }
-            return managementId;
-        }
-
         /// <inheritdoc/>
         public async Task<FirewallWriteContext> LoadContext(WfImplTask implTask)
         {
             ArgumentNullException.ThrowIfNull(implTask);
-            int managementId = implTask.ManagementId ?? await ManagementOfGateway(implTask);
 
-            List<Management> managements = await apiConnection.SendQueryAsync<List<Management>>(DeviceQueries.getManagementById, new { id = managementId });
+            Device? gatewayTarget = null;
+            int managementId;
+            if (implTask.DeviceId is > 0)
+            {
+                List<Device> gateways = await apiConnection.SendQueryAsync<List<Device>>(
+                    DeviceQueries.getImplementationTaskGatewayTarget,
+                    new { gatewayId = implTask.DeviceId.Value });
+                if (gateways.Count != 1 ||
+                    !WfImplTaskTargetManagementResolver.TryResolveManagementId(
+                        null,
+                        implTask,
+                        gateways[0],
+                        out managementId))
+                {
+                    throw new FirewallWriteException(
+                        FirewallWriteErrorKind.InvalidTaskData,
+                        $"Gateway {implTask.DeviceId} of implementation task {implTask.Id} is unavailable or inconsistent.");
+                }
+                gatewayTarget = gateways[0];
+            }
+            else if (!WfImplTaskTargetManagementResolver.TryResolveManagementId(
+                null,
+                implTask,
+                null,
+                out managementId))
+            {
+                throw new FirewallWriteException(
+                    FirewallWriteErrorKind.InvalidTaskData,
+                    $"Implementation task {implTask.Id} has no target management.");
+            }
+
+            List<Management> managements = await apiConnection.SendQueryAsync<List<Management>>(
+                DeviceQueries.getManagementById,
+                new { id = managementId });
             Management management = managements.FirstOrDefault()
                 ?? throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
                     $"Management {managementId} of implementation task {implTask.Id} not found.");
             Device? gateway = null;
-            if (implTask.DeviceId != null)
+            if (gatewayTarget != null)
             {
                 gateway = management.Devices.FirstOrDefault(device => device.Id == implTask.DeviceId)
                     ?? throw new FirewallWriteException(FirewallWriteErrorKind.InvalidTaskData,
