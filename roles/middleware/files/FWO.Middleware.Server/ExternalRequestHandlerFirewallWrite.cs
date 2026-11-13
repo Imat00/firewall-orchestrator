@@ -57,9 +57,10 @@ namespace FWO.Middleware.Server
         /// <summary>
         /// Takes over the result of a finished firewall write: the implementation task gets the internal state of the
         /// request and a history entry, unless it already reached the end state of the implementation phase otherwise.
-        /// A rejected write rejects the following request tasks as before; otherwise the next entry of the provisioning
-        /// work list of the ticket follows. Nothing follows the write of a single implementation task started by its own
-        /// action, and a rejection of it leaves the other tasks to the person who started it.
+        /// A rejected write rejects the other open implementation tasks of its request task and the following request
+        /// tasks, each with the reason in its history; otherwise the next entry of the provisioning work list of the
+        /// ticket follows. Nothing follows the write of a single implementation task started by its own action, and a
+        /// rejection of it leaves the other tasks to the person who started it.
         /// </summary>
         private async Task HandleImplTaskStateChange(WfTicket ticket, ExternalRequest request)
         {
@@ -72,7 +73,8 @@ namespace FWO.Middleware.Server
             (WfReqTask? reqTask, WfImplTask? implTask) = FindImplTask(ticket, request.ImplTaskId);
             if (reqTask != null && implTask != null)
             {
-                await CompleteImplTask(ticket, reqTask, implTask, request, rejected);
+                string? rejectReason = rejected ? request.LastProcessingResponse ?? request.LastCreationResponse ?? "" : null;
+                await CompleteImplTask(ticket, reqTask, implTask, request.ExtRequestState, rejectReason);
             }
             else
             {
@@ -81,7 +83,11 @@ namespace FWO.Middleware.Server
             await Acknowledge(request);
             if (rejected && !IsSingleImplTaskRequest(request))
             {
-                await RejectFollowingTasks(ticket, request.TaskNumber);
+                if (reqTask != null && implTask != null)
+                {
+                    await RejectOpenImplTasksOfRequestTask(ticket, reqTask, implTask, request);
+                }
+                await RejectFollowingTasks(ticket, request.TaskNumber, kFirewallWriteRequester);
                 Log.WriteInfo($"External Request {request.Id} rejected", $"Reject Following Tasks for internal ticket {ticket.Id}");
             }
             else if (!rejected)
@@ -90,26 +96,52 @@ namespace FWO.Middleware.Server
             }
         }
 
-        private async Task CompleteImplTask(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, ExternalRequest request, bool rejected)
+        /// <summary>
+        /// Rejects the implementation tasks of a request task that are still open after the write of one of them was
+        /// rejected, as the provisioning of the ticket stops there. A task covered by the shared rule of the rejected
+        /// task and a task writing its own rule are told apart in the history.
+        /// </summary>
+        private async Task RejectOpenImplTasksOfRequestTask(WfTicket ticket, WfReqTask reqTask, WfImplTask rejectedImplTask, ExternalRequest request)
+        {
+            List<int> coveredTaskNumbers = ExtQueryVariable(request, ExternalVarKeys.CoveredTasks) ?? [];
+            List<WfImplTask> openImplTasks = [.. reqTask.ImplementationTasks.Where(task => task.Id != rejectedImplTask.Id && !IsImplTaskFinished(task))];
+            foreach (WfImplTask openImplTask in openImplTasks)
+            {
+                string reason = coveredTaskNumbers.Contains(openImplTask.TaskNumber)
+                    ? $"covered by the rule of implementation task {rejectedImplTask.TaskNumber}, which was rejected"
+                    : $"not written, implementation task {rejectedImplTask.TaskNumber} of the same request task was rejected";
+                await CompleteImplTask(ticket, reqTask, openImplTask, ExtStates.ExtReqRejected.ToString(), reason);
+            }
+        }
+
+        /// <summary>
+        /// Sets an implementation task to the internal state of an external request state and writes its history entry.
+        /// </summary>
+        /// <param name="ticket">Ticket of the task.</param>
+        /// <param name="reqTask">Request task of the task.</param>
+        /// <param name="implTask">Implementation task to finish.</param>
+        /// <param name="extRequestState">External request state giving the internal state.</param>
+        /// <param name="rejectReason">Reason of a rejection; null if the task is implemented.</param>
+        private async Task CompleteImplTask(WfTicket ticket, WfReqTask reqTask, WfImplTask implTask, string extRequestState, string? rejectReason)
         {
             if (IsImplTaskFinished(implTask))
             {
                 Log.WriteInfo(kFirewallWriteLogTitle, $"Implementation task {implTask.Id} is already finished, its state {implTask.StateId} is kept.");
                 return;
             }
-            int? internalStateId = extStateHandler?.GetInternalStateId(request.ExtRequestState);
+            int? internalStateId = extStateHandler?.GetInternalStateId(extRequestState);
             wfHandler.SetTicketEnv(ticket);
             wfHandler.SetReqTaskEnv(reqTask);
             if (internalStateId == null || !wfHandler.TrySetImplTaskEnv(implTask))
             {
-                Log.WriteError(kFirewallWriteLogTitle, $"Implementation task {implTask.Id}: no internal state for {request.ExtRequestState} or no state matrix for {implTask.TaskType}.");
+                Log.WriteError(kFirewallWriteLogTitle, $"Implementation task {implTask.Id}: no internal state for {extRequestState} or no state matrix for {implTask.TaskType}.");
                 return;
             }
             wfHandler.ActImplTask.Stop ??= DateTime.Now;
             await wfHandler.PromoteImplTask(new WfStatefulObject { StateId = internalStateId.Value });
-            if (rejected)
+            if (rejectReason != null)
             {
-                await LogImplTaskChange(reqTask, implTask, ModellingTypes.ChangeType.Reject, request.LastProcessingResponse ?? request.LastCreationResponse ?? "");
+                await LogImplTaskChange(reqTask, implTask, ModellingTypes.ChangeType.Reject, rejectReason);
             }
             else
             {

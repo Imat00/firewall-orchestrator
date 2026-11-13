@@ -141,7 +141,20 @@ namespace FWO.ExternalSystems.FirewallWrite
         {
             return profile.ReferencesObjectsByAddress
                 ? [.. elements.Where(element => !string.IsNullOrWhiteSpace(element.Name)).Select(element => element.Name!.Trim()).Distinct()]
-                : [.. elements.Select(element => FirewallElementValues.RequireName(element, profile)).Distinct()];
+                : [.. elements.Select(element => ReferenceName(element, profile)).Distinct()];
+        }
+
+        /// <summary>
+        /// The name a rule references a network element by. An element without name but with a group name refers to the
+        /// whole group, as modelling requests do for app roles and network areas; any other element needs a name.
+        /// </summary>
+        private static string ReferenceName(WfImplElement element, FirewallVendorProfile profile)
+        {
+            if (string.IsNullOrWhiteSpace(element.Name) && !string.IsNullOrWhiteSpace(element.GroupName))
+            {
+                return profile.NormalizeName(element.GroupName.Trim());
+            }
+            return FirewallElementValues.RequireName(element, profile);
         }
 
         private static List<string> ServiceNames(List<WfImplElement> elements, FirewallVendorProfile profile) =>

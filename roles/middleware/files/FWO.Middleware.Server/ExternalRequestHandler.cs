@@ -110,7 +110,7 @@ namespace FWO.Middleware.Server
                     await Acknowledge(externalRequest);
                     if (externalRequest.ExtRequestState == ExtStates.ExtReqRejected.ToString())
                     {
-                        await RejectFollowingTasks(intTicket, externalRequest.TaskNumber);
+                        await RejectFollowingTasks(intTicket, externalRequest.TaskNumber, actSystem.Name);
                         Log.WriteInfo($"External Request {externalRequest.Id} rejected", $"Reject Following Tasks for internal ticket {intTicket.Id}");
                     }
                     else
@@ -306,7 +306,14 @@ namespace FWO.Middleware.Server
             return extQueryVariables;
         }
 
-        private async Task RejectFollowingTasks(WfTicket ticket, int lastTaskNumber)
+        /// <summary>
+        /// Rejects the request tasks following a rejected one, as the ticket is not processed further, and names the
+        /// rejected request task in the history of each task whose state changes.
+        /// </summary>
+        /// <param name="ticket">Ticket of the tasks.</param>
+        /// <param name="lastTaskNumber">Number of the rejected request task.</param>
+        /// <param name="requester">Requester written to the history entries.</param>
+        private async Task RejectFollowingTasks(WfTicket ticket, int lastTaskNumber, string? requester)
         {
             int actTaskNumber = lastTaskNumber + 1;
             bool taskFound = true;
@@ -315,7 +322,12 @@ namespace FWO.Middleware.Server
                 WfReqTask? furtherTask = ticket.Tasks.FirstOrDefault(ta => ta.TaskNumber == actTaskNumber);
                 if (furtherTask != null)
                 {
-                    await UpdateTaskState(ticket, furtherTask, ExtStates.ExtReqRejected.ToString());
+                    if (await UpdateTaskState(ticket, furtherTask, ExtStates.ExtReqRejected.ToString()))
+                    {
+                        List<WfReqTask> rejectedTasks = [furtherTask];
+                        await LogRequestTasks(rejectedTasks, requester, ModellingTypes.ChangeType.Reject,
+                            $"not processed, request task {lastTaskNumber} was rejected");
+                    }
                     actTaskNumber++;
                 }
                 else
@@ -391,7 +403,11 @@ namespace FWO.Middleware.Server
             }
         }
 
-        private async Task UpdateTaskState(WfTicket ticket, WfReqTask reqTask, string extReqState)
+        /// <summary>
+        /// Sets a request task to the internal state of an external request state.
+        /// </summary>
+        /// <returns>true if the state of the task changed.</returns>
+        private async Task<bool> UpdateTaskState(WfTicket ticket, WfReqTask reqTask, string extReqState)
         {
             int? internalStateId = extStateHandler?.GetInternalStateId(extReqState);
 
@@ -399,19 +415,21 @@ namespace FWO.Middleware.Server
             {
                 if (extReqState == ExtStates.ExtReqRequested.ToString())
                 {
-                    return;
+                    return false;
                 }
 
                 throw new ArgumentException($"No translation defined for external state {extReqState}.");
             }
 
-            if (reqTask.StateId != internalStateId)
+            if (reqTask.StateId == internalStateId)
             {
-                wfHandler.SetTicketEnv(ticket);
-                wfHandler.SetReqTaskEnv(reqTask);
-                reqTask.StateId = internalStateId.Value;
-                await wfHandler.PromoteReqTask(reqTask);
+                return false;
             }
+            wfHandler.SetTicketEnv(ticket);
+            wfHandler.SetReqTaskEnv(reqTask);
+            reqTask.StateId = internalStateId.Value;
+            await wfHandler.PromoteReqTask(reqTask);
+            return true;
         }
 
         private async Task Acknowledge(ExternalRequest extRequest)

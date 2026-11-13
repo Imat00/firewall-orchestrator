@@ -608,8 +608,82 @@ namespace FWO.Test
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kOpenStateId), "the other tasks are left to the person who started the write");
                 Assert.That(ticket.Tasks.Single(task => task.Id == kSecondReqTaskId).StateId, Is.EqualTo(kOpenStateId));
                 Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_Rejected_RejectsTheOpenImplementationTasksOfTheRequestTaskWithReason()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.PatchState(Request(state: ExtStates.ExtReqRejected.ToString()));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTask(ticket, kImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(ImplTask(ticket, kNextImplTaskId).Stop, Is.Not.Null);
+                Assert.That(apiConnection.History, Has.Some.Contains("Rejected Implementation 11 on")
+                    .And.Contains("not written, implementation task 1 of the same request task was rejected"));
+                Assert.That(apiConnection.VariablesOf(ExtRequestQueries.addExtRequest), Is.Empty);
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_RejectedSharedRule_RejectsTheCoveredTasksWithReason()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.PatchState(Request(state: ExtStates.ExtReqRejected.ToString(),
+                extQueryVariables: "{\"ManagementId\":[1],\"InstallOnGateways\":[200,300],\"CoveredTasks\":[2]}"));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(apiConnection.History, Has.Some.Contains("Rejected Implementation 11 on")
+                    .And.Contains("covered by the rule of implementation task 1, which was rejected"));
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_Rejected_NamesTheRejectedRequestTaskInTheFollowingOnes()
+        {
+            WfTicket ticket = Ticket();
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.PatchState(Request(state: ExtStates.ExtReqRejected.ToString()));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ticket.Tasks.Single(task => task.Id == kSecondReqTaskId).StateId, Is.EqualTo(kRejectedStateId));
+                Assert.That(apiConnection.History, Has.Some.Contains("Rejected Group 2 on").And.Contains("not processed, request task 1 was rejected"));
+                Assert.That(ImplTask(ticket, kSecondReqTaskImplTaskId).StateId, Is.EqualTo(kRejectedStateId),
+                    "the implementation tasks of a following request task take its state over");
+            }
+        }
+
+        [Test]
+        public async Task HandleStateChange_FinishedImplementationTask_KeepsItsStateWhenAnotherIsRejected()
+        {
+            WfTicket ticket = Ticket();
+            ImplTask(ticket, kNextImplTaskId).StateId = kDoneStateId;
+            FirewallWriteApiConn apiConnection = new(ticket);
+            using ExternalRequestHandler handler = CreateHandler(apiConnection);
+
+            await handler.PatchState(Request(state: ExtStates.ExtReqRejected.ToString()));
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(ImplTask(ticket, kNextImplTaskId).StateId, Is.EqualTo(kDoneStateId));
+                Assert.That(apiConnection.History, Has.None.Contains("Rejected Implementation 11 on"));
             }
         }
 

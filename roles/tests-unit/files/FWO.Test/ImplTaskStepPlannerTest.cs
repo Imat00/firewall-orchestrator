@@ -382,6 +382,29 @@ namespace FWO.Test
             AssertKind(FirewallWriteErrorKind.InvalidTaskData, () => Plan(Task(WfTaskType.access, Network(null, "10.0.0.1", action: RequestAction.unchanged))));
         }
 
+        /// <summary>
+        /// Modelling requests name app roles and network areas only by their group name: the rule references the group,
+        /// and no object is created for it.
+        /// </summary>
+        [Test]
+        public void Access_ReferencesModelledGroupsByTheirGroupName()
+        {
+            WfImplElement appRole = Network(null, null);
+            appRole.GroupName = "AR5005630-001";
+            WfImplElement networkArea = Network(null, null, field: ElemFieldType.destination);
+            networkArea.GroupName = " NA50 ";
+            WfImplTask task = Task(WfTaskType.access, appRole, networkArea, Service("https", kTcp, 443));
+
+            List<FirewallWriteStep> steps = Plan(task);
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(steps.Single().Operation, Is.EqualTo(FirewallWriteOperation.RuleCreate));
+                Assert.That(Value(steps[0], FirewallWritePlaceholders.RuleSources), Is.EqualTo("[\"AR5005630-001\"]"));
+                Assert.That(Value(steps[0], FirewallWritePlaceholders.RuleDestinations), Is.EqualTo("[\"NA50\"]"));
+            }
+        }
+
         [Test]
         public void Azure_UsesAddressesAndCreatesNoObjects()
         {
