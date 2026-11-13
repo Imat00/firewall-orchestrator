@@ -4,13 +4,6 @@
 - middleware REST API: `getAddressGroups` and `getServiceGroups` accept `filter.includeTechnicalDetails=true` to include each member's standalone address or service object fields; omitted, null or false keep the existing compact id/name response, and address details can be combined with separated zone groups
 - UI fix: links from rule report objects to the right sidebar work again on the first click and no longer jump to another page on a following click (#4919). The per-page API role is now determined from the current page with every request instead of a navigation handler, which had broken the browser's in-page navigation
 - installer: pin the .NET SDK to `dotnet_version` (10.0) with a `global.json` below `/usr/local/fworch`, so a newer major SDK installed alongside (e.g. .NET 11 on GitHub runners) no longer builds the middleware, UI and unit tests; the repository and the CI workflows use the same pin, and the test-install workflow checks that all pins match (#5700)
-
-
-## 9.9.2 - 10.11.2026
-- dependencies: update NuGet packages (AngleSharp 1.10.1, bunit 2.15.2, IPNetwork2 5.0.1, Microsoft.AspNetCore.Http 2.3.14, Microsoft.NET.Test.Sdk 18.11.1, Quartz 4.7.3, Scalar.AspNetCore 2.20.0, SoPro.FancyTable 1.5.0)
-- dependencies: update ASP.NET Core packages to 10.0.15 (Microsoft.AspNetCore.Authentication.JwtBearer, Microsoft.AspNetCore.Components, Microsoft.AspNetCore.Mvc.Testing, Microsoft.AspNetCore.OpenApi), .NET 10.0.15 security release
-- dependencies: update the graphql-core Python package of the importer and customizing scripts to 3.3.1 (security fix, FWO not exploitable).
-- dependencies: update the graphql-core Python package of the importer and customizing scripts to 3.3.2 (denial-of-service fixes in validator and parser).
 - request workflow: new state action "Create external requests" (`CreateExtRequests`) implements a ticket step by step through external requests, ordered by request task and implementation task, at most one active request per ticket
   - a request task of a management with the implementation mode external ticket system is handed to Tufin SecureChange as a whole; implementation tasks with mode automatic are written directly to the firewall with the firewall write library (`ext_request.impltask_id`)
   - offered as a button, implementation tasks on targets set to manual are written as well within the scope of the action (ticket or request task); on an implementation task it writes only this one task
@@ -21,6 +14,13 @@
   - new rules of one request task going to the same layer are written once, installed on the gateways of all of these tasks; the other tasks take over the result
   - rules to modify or delete are addressed in their layer according to the import (sections traced up to their layer); their implementation mode is the strictest one of all gateways they take effect on, a manual gateway is reported with an alert; a rule already deleted counts as done once its layer is verified
   - objects already present as requested count as created
+
+
+## 9.9.2 - 10.11.2026
+- dependencies: update NuGet packages (AngleSharp 1.10.1, bunit 2.15.2, IPNetwork2 5.0.1, Microsoft.AspNetCore.Http 2.3.14, Microsoft.NET.Test.Sdk 18.11.1, Quartz 4.7.3, Scalar.AspNetCore 2.20.0, SoPro.FancyTable 1.5.0)
+- dependencies: update ASP.NET Core packages to 10.0.15 (Microsoft.AspNetCore.Authentication.JwtBearer, Microsoft.AspNetCore.Components, Microsoft.AspNetCore.Mvc.Testing, Microsoft.AspNetCore.OpenApi), .NET 10.0.15 security release
+- dependencies: update the graphql-core Python package of the importer and customizing scripts to 3.3.1 (security fix, FWO not exploitable).
+- dependencies: update the graphql-core Python package of the importer and customizing scripts to 3.3.2 (denial-of-service fixes in validator and parser).
 - workflow UI: planning-phase tickets can use a dedicated planning view that groups request tasks with their implementation tasks, keeps request-task details read-only, and allows planners to create, edit and delete implementation tasks; the view also supports configurable offered actions and optional owner changes
 
 

@@ -1,4 +1,4 @@
--- Test of the implementation mode migration of upgrade/9.9.2.sql. The test task inserts the upgrade file at the two
+-- Test of the implementation mode migration of upgrade/9.9.3.sql. The test task inserts the upgrade file at the two
 -- run-upgrade markers below, which also shows that the upgrade can be repeated.
 -- An isolated schema and temporary tables protect the settings; the transaction is rolled back.
 -- This probes: the rule mode key is renamed, levels with only the object mode get it as rule mode, a Tufin SecureChange
@@ -45,7 +45,7 @@ CREATE TEMP TABLE management (mgm_id integer PRIMARY KEY, mgm_name varchar, dev_
 INSERT INTO management VALUES (100, 'mgm100', 10), (101, 'mgm101', 10), (102, 'mgm102', 10), (103, 'mgm103', 11),
     (104, 'mgm104', 10), (105, 'mgm105', 12), (106, 'mgm106', 10), (107, 'mgm107', 10);
 
--- @run-upgrade-9.9.2
+-- @run-upgrade-9.9.3
 
 CREATE TEMP TABLE expected_values (node_type varchar, object_key varchar, config_key varchar, config_value jsonb);
 INSERT INTO expected_values VALUES
@@ -127,7 +127,7 @@ UPDATE expected_values SET config_value = '"Manual"' WHERE object_key = '100' AN
 DELETE FROM device_specific_config_value WHERE node_id = 5 AND config_key = 'implementationModeForRules';
 DELETE FROM expected_values WHERE object_key = '106' AND config_key = 'implementationModeForRules';
 
--- @run-upgrade-9.9.2
+-- @run-upgrade-9.9.3
 SELECT pg_temp.assert_migration();
 ROLLBACK;
-\echo '9.9.2 implementation mode migration and idempotency checks passed'
+\echo '9.9.3 implementation mode migration and idempotency checks passed'
