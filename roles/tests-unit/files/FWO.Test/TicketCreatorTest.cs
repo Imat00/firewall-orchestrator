@@ -310,6 +310,38 @@ namespace FWO.Test
             });
         }
 
+        /// <summary>
+        /// The rule action, tracking and request action set by the modelling reach the stored request task; without them
+        /// a rule from a modelling ticket cannot be written to the firewall.
+        /// </summary>
+        [Test]
+        public async Task CreateTicket_CopiesRuleActionTrackingAndRequestAction()
+        {
+            TicketCreatorTestApiConn apiConn = new();
+            TicketCreator ticketCreator = CreateTicketCreator(apiConn);
+            WfReqTask reqTask = new()
+            {
+                Title = "Delete rule",
+                TaskNumber = 1,
+                TaskType = WfTaskType.rule_delete.ToString(),
+                RequestAction = RequestAction.delete.ToString(),
+                RuleAction = 1,
+                Tracking = 1,
+                ManagementId = 5
+            };
+            List<WfReqTask> reqTasks = [reqTask];
+
+            await ticketCreator.CreateTicket(new FwoOwner { Id = 7, Name = "App" }, reqTasks, "Request title", 7);
+
+            WfReqTaskWriter writtenTask = apiConn.LastTicketWriter!.Tasks.Single();
+            Assert.Multiple(() =>
+            {
+                Assert.That(writtenTask.RequestAction, Is.EqualTo(RequestAction.delete.ToString()));
+                Assert.That(writtenTask.RuleAction, Is.EqualTo(1));
+                Assert.That(writtenTask.Tracking, Is.EqualTo(1));
+            });
+        }
+
         [Test]
         public async Task CreateRequestNewInterfaceTicket_WritesRequestingOwnerAdditionalInfo()
         {
