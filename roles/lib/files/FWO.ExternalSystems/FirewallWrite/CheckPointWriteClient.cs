@@ -141,6 +141,8 @@ namespace FWO.ExternalSystems.FirewallWrite
                 null => null,
                 _ when code.Contains("not_found", StringComparison.OrdinalIgnoreCase) => FirewallWriteErrorKind.NotFound,
                 _ when code.Contains("locked", StringComparison.OrdinalIgnoreCase) => FirewallWriteErrorKind.Conflict,
+                // validation errors of the policy on publish do not go away by retrying
+                _ when code.Contains("publish_failed", StringComparison.OrdinalIgnoreCase) => FirewallWriteErrorKind.Rejected,
                 _ when code.Contains("too_many_requests", StringComparison.OrdinalIgnoreCase) => FirewallWriteErrorKind.RateLimited,
                 _ when CheckPointAuthenticationCodes.Any(part => code.Contains(part, StringComparison.OrdinalIgnoreCase)) => FirewallWriteErrorKind.Authentication,
                 _ when code.Contains("not_unique", StringComparison.OrdinalIgnoreCase)
